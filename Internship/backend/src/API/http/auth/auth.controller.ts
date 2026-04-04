@@ -1,0 +1,28 @@
+import {Body, Controller, Post} from "@nestjs/common";
+import {CommandBus} from "@nestjs/cqrs";
+import {RegisterCommand} from "../../../Application/Features/AuthFeature/Commands/register.command";
+import {LoginCommand} from "../../../Application/Features/AuthFeature/Commands/login.command";
+import {RegisterDto} from "./dto/register.dto";
+import {LoginDto} from "./dto/login.dto";
+
+@Controller('auth')
+export class AuthController {
+    constructor(
+        private readonly commandBus: CommandBus
+    ) {
+    }
+
+    @Post('/register')
+    async register(@Body() body: RegisterDto) {
+        return this.commandBus.execute(
+            new RegisterCommand(body.username, body.email, body.password)
+        );
+    }
+
+    @Post('/login')
+    async login(@Body() body: LoginDto) {
+        return this.commandBus.execute(
+            new LoginCommand(body.username, body.password)
+        );
+    }
+}
