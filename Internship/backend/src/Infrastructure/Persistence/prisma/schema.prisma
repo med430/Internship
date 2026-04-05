@@ -48,7 +48,7 @@ model User {
   lastname     String
   username     String   @unique
   passwordHash String
-  roles        Role[]
+  role        Role
 
   studentProfile    StudentProfile?
   teacherProfile    TeacherProfile?
