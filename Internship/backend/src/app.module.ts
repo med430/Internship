@@ -6,16 +6,6 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 
 @Module({
   imports: [
-      TypeOrmModule.forRoot({
-        type: 'postgres',
-        host: 'localhost',
-        port: 5432,
-        username: 'postgres',
-        password: 'Abc123987456',
-        database: 'trading',
-        autoLoadEntities: false,
-        synchronize: true
-      }),
       HttpApiModule
   ],
   controllers: [AppController],

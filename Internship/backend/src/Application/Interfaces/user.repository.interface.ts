@@ -1,7 +1,7 @@
 import {User} from "../../Domain/entities/user.entity";
 
-export interface IUserRepository {
-    findByUsername(username: string): Promise<User | null>;
-    findByEmail(email: string): Promise<User | null>;
-    save(user: User): Promise<User>;
+export abstract class IUserRepository {
+    abstract findByUsername(username: string): Promise<User | null>;
+    abstract findByEmail(email: string): Promise<User | null>;
+    abstract save(user: User): Promise<User>;
 }

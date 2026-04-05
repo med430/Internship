@@ -1,17 +1,23 @@
 import {Module} from "@nestjs/common";
 import {CqrsModule} from "@nestjs/cqrs";
-import {TypeOrmPersistenceModule} from "../Infrastrucutre/Persistence/typeorm/typeorm.module";
 import {RegisterHandler} from "./Features/AuthFeature/Commands/handlers/register.handler";
 import {LoginHandler} from "./Features/AuthFeature/Commands/handlers/login.handler";
+import {IAuthService} from "./Services/AuthService/IAuthService";
+import {AuthService} from "./Services/AuthService/AuthService";
+import {PersistenceModule} from "../Infrastructure/Persistence/persistence.module";
 
 @Module({
     imports: [
         CqrsModule,
-        TypeOrmPersistenceModule
+        PersistenceModule
     ],
     providers: [
         RegisterHandler,
-        LoginHandler
-    ]
+        LoginHandler,
+        {
+            provide: IAuthService,
+            useClass: AuthService,
+        },
+    ],
 })
 export class ApplicationModule {}

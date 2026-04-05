@@ -15,7 +15,7 @@ export class AuthController {
     @Post('/register')
     async register(@Body() body: RegisterDto) {
         return this.commandBus.execute(
-            new RegisterCommand(body.username, body.email, body.password)
+            new RegisterCommand(body.firstName, body.lastName, body.username, body.email, body.password, body.role)
         );
     }
 
