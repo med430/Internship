@@ -2,6 +2,8 @@ import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
 import {RegisterCommand} from "../register.command";
 import {IUserRepository} from "../../../../repositories/user.repository";
 import {User} from "../../../../../Domain/entities/user.entity";
+import {Role} from "../../../../../Domain/enums/role.enum";
+import {Inject} from "@nestjs/common";
 
 @CommandHandler(RegisterCommand)
 export class RegisterHandler implements ICommandHandler<RegisterCommand> {
@@ -23,7 +25,7 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
             command.username,
             command.email,
             command.password,
-            ['STUDENT']
+            command.role
         );
 
         return this.userRepository.save(user);
