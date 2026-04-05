@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//
+// ENUMS
+//
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  RECRUITER
+  ADMIN
+}
+
+enum OfferType {
+  INTERNSHIP
+  PFE
+  RESEARCH
+  PHD
+}
+
+//
+// USER
+//
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  lastname     String
+  username     String   @unique
+  passwordHash String
+  role        Role
+
+  studentProfile    StudentProfile?
+  teacherProfile    TeacherProfile?
+  recruiterProfile  RecruiterProfile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//
+// PROFILES
+//
+
+model StudentProfile {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  cvs           CV[]
+  skills        SkillAssignment[]
+  applications  Application[]
+  recommendations Recommendation[]
+}
+
+model TeacherProfile {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  recommendations Recommendation[]
+}
+
+model RecruiterProfile {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  offers Offer[]
+}
+
+//
+// CV
+//
+
+model CV {
+  id        String @id @default(uuid())
+
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  fileUrl   String
+  parsedData Json
+
+  skills     String[]
+
+  projects    Project[]
+  experiences Experience[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//
+// PROJECT
+//
+
+model Project {
+  id    String @id @default(uuid())
+  cvId  String
+  cv    CV @relation(fields: [cvId], references: [id])
+
+  title        String
+  description  String
+  technologies String[]
+}
+
+//
+// EXPERIENCE
+//
+
+model Experience {
+  id    String @id @default(uuid())
+  cvId  String
+  cv    CV @relation(fields: [cvId], references: [id])
+
+  company     String
+  role        String
+  duration    String
+  description String?
+}
+
+//
+// OFFER
+//
+
+model Offer {
+  id          String @id @default(uuid())
+  creatorId   String
+
+  recruiter   RecruiterProfile @relation(fields: [creatorId], references: [id])
+
+  title       String
+  description String
+  type        OfferType
+
+  requiredSkills SkillAssignment[]
+
+  applications Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//
+// APPLICATION
+//
+
+model Application {
+  id String @id @default(uuid())
+
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  offerId String
+  offer   Offer @relation(fields: [offerId], references: [id])
+
+  status ApplicationStatus @default(PENDING)
+  matchScore Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//
+// SKILLS
+//
+
+model Skill {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  assignments SkillAssignment[]
+}
+
+model SkillAssignment {
+  id String @id @default(uuid())
+
+  skillId Int
+  skill   Skill @relation(fields: [skillId], references: [id])
+
+  level SkillLevel?
+
+  studentId String?
+  student   StudentProfile? @relation(fields: [studentId], references: [id])
+
+  offerId String?
+  offer   Offer? @relation(fields: [offerId], references: [id])
+}
+
+//
+// RECOMMENDATION
+//
+
+model Recommendation {
+  id String @id @default(uuid())
+
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id])
+
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//
+// INTERVIEW
+//
+
+model Interview {
+  id String @id @default(uuid())
+
+  studentId String
+  offerId   String
+
+  score    Float
+  feedback String
+  summary  String?
+}

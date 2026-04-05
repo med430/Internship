@@ -1,7 +1,7 @@
 import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
 import {RegisterCommand} from "../register.command";
-import {IUserRepository} from "../../../../Intrerfaces/user.repository.interface";
-import {User} from "../../../../../Domain/user.entity";
+import {IUserRepository} from "../../../../Interfaces/user.repository.interface";
+import {User} from "../../../../../Domain/entities/user.entity";
 
 @CommandHandler(RegisterCommand)
 export class RegisterHandler implements ICommandHandler<RegisterCommand> {
@@ -18,10 +18,12 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
 
         const user = new User(
             crypto.randomUUID(),
+            command.firstName,
+            command.lastName,
             command.username,
             command.email,
             command.password,
-            'user'
+            ['STUDENT']
         );
 
         return this.userRepository.save(user);
