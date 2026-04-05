@@ -1,5 +1,5 @@
 import { Application } from '../../Domain/entities/application.entity'
-import { IGenericRepository } from './generic.repository.interface'
+import { IGenericRepository } from './generic.repository'
 
 export abstract class IApplicationRepository extends IGenericRepository<Application> {
     abstract findByStudent(studentId: string): Promise<Application[]>
