@@ -1,6 +1,6 @@
 import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
 import {RegisterCommand} from "../register.command";
-import {IUserRepository} from "../../../../Interfaces/user.repository.interface";
+import {IUserRepository} from "../../../../repositories/user.repository";
 import {User} from "../../../../../Domain/entities/user.entity";
 
 @CommandHandler(RegisterCommand)

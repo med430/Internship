@@ -1,5 +1,5 @@
 import { Offer } from '../../Domain/entities/offer.entity'
-import { IGenericRepository } from './generic.repository.interface'
+import { IGenericRepository } from './generic.repository'
 
 export interface IOfferRepository extends IGenericRepository<Offer> {
     findByCreator(creatorId: string): Promise<Offer[]>

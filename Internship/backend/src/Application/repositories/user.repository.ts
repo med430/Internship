@@ -1,4 +1,4 @@
-import { IGenericRepository } from './generic.repository.interface'
+import { IGenericRepository } from './generic.repository'
 import {User} from "../../Domain/entities/user.entity";
 
 export interface IUserRepository extends IGenericRepository<User> {

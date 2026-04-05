@@ -1,9 +1,11 @@
-import {IsEmail, MinLength} from "class-validator";
+import {Role} from "../../../../Domain/enums/role.enum";
 
-export class RegisterDto {
-    username: string;
-    @IsEmail()
-    email: string;
-    @MinLength(6)
-    password: string;
+export class RegisterDTO {
+    email: string
+    username: string
+    password: string
+    name: string
+    lastname: string
+    role: Role
 }
+
