@@ -9,7 +9,7 @@ export class User extends BaseEntity {
         public lastname: string,
         public username: string,
         public passwordHash: string,
-        public roles: Role,
+        public role: Role,
         createdAt?: Date,
         updatedAt?: Date,
         deletedAt?: Date,
