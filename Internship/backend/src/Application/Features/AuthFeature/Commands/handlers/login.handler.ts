@@ -1,6 +1,6 @@
 import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
 import {LoginCommand} from "../login.command";
-import {IUserRepository} from "../../../../Intrerfaces/user.repository.interface";
+import {IUserRepository} from "../../../../Interfaces/user.repository.interface";
 import {User} from "../../../../../Domain/user.entity";
 
 @CommandHandler(LoginCommand)
