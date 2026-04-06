@@ -5,19 +5,30 @@ import {LoginHandler} from "./Features/AuthFeature/Commands/handlers/login.handl
 import {IAuthService} from "./Services/AuthService/IAuthService";
 import {AuthService} from "./Services/AuthService/AuthService";
 import {PersistenceModule} from "../Infrastructure/Persistence/persistence.module";
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
-    imports: [
-        CqrsModule,
-        PersistenceModule
-    ],
-    providers: [
-        RegisterHandler,
-        LoginHandler,
-        {
-            provide: IAuthService,
-            useClass: AuthService,
+  imports: [
+    CqrsModule,
+    PersistenceModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: Number(config.get<string>('JWT_EXPIRATION_TIME')),
         },
-    ],
+      }),
+    }),
+  ],
+  providers: [
+    RegisterHandler,
+    LoginHandler,
+    {
+      provide: IAuthService,
+      useClass: AuthService,
+    },
+  ],
 })
 export class ApplicationModule {}

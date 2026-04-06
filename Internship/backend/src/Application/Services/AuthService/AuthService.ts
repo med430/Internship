@@ -2,7 +2,9 @@ import {IAuthService} from "./IAuthService";
 import {PayloadDto} from "./dto/payload.dto";
 import {Role} from "../../../Domain/enums/role.enum";
 import {JwtService} from "@nestjs/jwt";
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class AuthService implements IAuthService {
     constructor(
         private readonly jwtService: JwtService

@@ -4,6 +4,7 @@ import {RegisterCommand} from "../../../Application/Features/AuthFeature/Command
 import {LoginCommand} from "../../../Application/Features/AuthFeature/Commands/login.command";
 import {RegisterDTO} from "./dto/register.dto";
 import {LoginDTO} from "./dto/login.dto";
+import { TokenDto } from '../../../Application/Features/AuthFeature/dto/token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -14,15 +15,15 @@ export class AuthController {
 
     @Post('/register')
     async register(@Body() body: RegisterDTO) {
-        return this.commandBus.execute(
+    return this.commandBus.execute(
             new RegisterCommand(body.name, body.lastname, body.username, body.email, body.password, body.role)
         );
     }
 
     @Post('/login')
-    async login(@Body() body: LoginDTO) {
+    async login(@Body() body: LoginDTO): Promise<TokenDto> {
         return this.commandBus.execute(
-            new LoginCommand(body.email, body.password)
+            new LoginCommand(body.username, body.password)
         );
     }
 }

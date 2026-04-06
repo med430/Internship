@@ -3,32 +3,38 @@ import {PrismaService} from "../prisma.service";
 import {IUserRepository} from "../../../../Application/repositories/user.repository";
 import {User} from "../../../../Domain/entities/user.entity";
 import { UserPrismaMapper } from '../mappers/user.mapper';
+import { GenericRepository } from './generic.repositories';
+import { User as UserDB } from "@prisma/client";
 
 @Injectable()
-export class UserRepository implements IUserRepository {
-  constructor(private prisma: PrismaService) {}
-  findAll(): Promise<User[]> {
-    throw new Error('Method not implemented.');
+export class UserRepository extends GenericRepository<User, UserDB> implements IUserRepository {
+  constructor(
+    protected readonly prisma: PrismaService,
+    protected mapper: UserPrismaMapper,
+  ) {
+    const modelName: keyof PrismaService = "user";
+    super(prisma, modelName, mapper);
   }
-  delete(id: string): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
+  async findByUsername(username: string): Promise<User | null> {
+    const user_db: UserDB | null = await this.prisma.user.findUnique({
+      where: { username },
+    });
 
-  findByUsername(username: string): Promise<User | null> {
-    throw new Error('Method not implemented.');
-  }
-  findByEmail(email: string): Promise<User | null> {
-    throw new Error('Method not implemented.');
-  }
-  save(user: User): Promise<User> {
-    throw new Error('Method not implemented.');
-  }
+    if (!user_db) {
+      return null;
+    }
 
-  async findById(id: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    return this.mapper.toDomain(user_db);
+  }
+  async findByEmail(email: string): Promise<User | null> {
+    const user_db: UserDB | null = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-    if (!user) return null;
+    if (!user_db) {
+      return null;
+    }
 
-    return UserPrismaMapper.toDomain(user);
+    return this.mapper.toDomain(user_db);
   }
 }
