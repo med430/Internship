@@ -1,8 +1,8 @@
 import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
 import {LoginCommand} from "../login.command";
-import {IUserRepository} from "../../../../Interfaces/user.repository.interface";
 import {User} from "../../../../../Domain/entities/user.entity";
 import * as bcrypt from "bcrypt";
+import { IUserRepository } from '../../../../repositories/user.repository';
 
 @CommandHandler(LoginCommand)
 export class LoginHandler implements ICommandHandler<LoginCommand> {

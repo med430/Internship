@@ -1,7 +1,7 @@
 import { IGenericRepository } from './generic.repository'
 import {User} from "../../Domain/entities/user.entity";
 
-export interface IUserRepository extends IGenericRepository<User> {
-    findByEmail(email: string): Promise<User | null>
-    findByUsername(username: string): Promise<User | null>
+export abstract class IUserRepository extends IGenericRepository<User> {
+    abstract findByEmail(email: string): Promise<User | null>;
+    abstract findByUsername(username: string): Promise<User | null>;
 }
