@@ -6,6 +6,6 @@ export default defineConfig({
         path: './src/Infrastructure/Persistence/prisma/migrations',
     },
     datasource: {
-        url: "postgres://postgres:Abc123987456@localhost:5432/Internship",
+        url: "postgres://postgres:samira@localhost:5432/Internship",
     },
 });

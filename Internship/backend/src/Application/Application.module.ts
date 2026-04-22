@@ -8,6 +8,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {JwtAuthService} from "../Infrastructure/auth/jwt-auth.service";
 
+
+const CommandHandlers = [
+  RegisterHandler,
+  LoginHandler,
+];
+
 @Module({
   imports: [
     CqrsModule,
@@ -17,18 +23,22 @@ import {JwtAuthService} from "../Infrastructure/auth/jwt-auth.service";
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: Number(config.get<string>('JWT_EXPIRATION_TIME')),
+          expiresIn: Number(config.get('JWT_EXPIRATION_TIME') || 3600)
         },
       }),
     }),
   ],
+
   providers: [
-    RegisterHandler,
-    LoginHandler,
+    ...CommandHandlers,
     {
       provide: AuthService,
       useClass: JwtAuthService,
     },
+  ],
+
+  exports: [
+    CqrsModule // 🔥 🔥 🔥 AJOUTE ÇA
   ],
 })
 export class ApplicationModule {}

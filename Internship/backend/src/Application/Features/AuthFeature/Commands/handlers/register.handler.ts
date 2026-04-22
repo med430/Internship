@@ -5,6 +5,7 @@ import {RegisterCommand} from "../register.command";
 import {IUserRepository} from "../../../../repositories/user.repository";
 import {User} from "../../../../../Domain/entities/user.entity";
 import {Inject} from "@nestjs/common";
+import {RegisterResponseDTO} from "../../../../../API/http/auth/dto/register-response.dto";
 
 @CommandHandler(RegisterCommand)
 export class RegisterHandler implements ICommandHandler<RegisterCommand> {
@@ -28,6 +29,15 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
             command.role
         )
 
-        return this.userRepo.save(user)
+        const savedUser = await this.userRepo.save(user)
+
+        return new RegisterResponseDTO(
+            savedUser.id,
+            savedUser.email,
+            savedUser.username,
+            savedUser.name,
+            savedUser.lastname,
+            savedUser.role
+        )
     }
 }
