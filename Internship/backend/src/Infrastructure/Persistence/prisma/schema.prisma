@@ -57,7 +57,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-  offers    Offer[]
+  offers    Offer[]   @relation("UserOffers")
 }
 
 //
@@ -74,6 +74,7 @@ model StudentProfile {
   skills          SkillAssignment[]
   applications    Application[]
   recommendations Recommendation[]
+  interviews      Interview[]
 }
 
 model TeacherProfile {
@@ -149,12 +150,11 @@ model Experience {
 //
 // OFFER
 //
-
 model Offer {
   id String @id @default(uuid())
 
-  creatorId String
-  creator   User   @relation(fields: [creatorId], references: [id])
+  recruiterProfileId String
+  recruiterProfile   RecruiterProfile @relation(fields: [recruiterProfileId], references: [id])
 
   title       String
   description String
@@ -171,32 +171,37 @@ model Offer {
   requiredSkills SkillAssignment[]
   applications   Application[]
 
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  deletedAt          DateTime?
-  recruiterProfile   RecruiterProfile? @relation(fields: [recruiterProfileId], references: [id])
-  recruiterProfileId String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
+  interviews Interview[]
+  user       User?       @relation("UserOffers", fields: [userId], references: [id])
+  userId     String?
 }
 
 //
 // APPLICATION
 //
-
 model Application {
   id String @id @default(uuid())
 
   studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
+  offerId   String
 
-  offerId String
-  offer   Offer  @relation(fields: [offerId], references: [id])
-
-  status     ApplicationStatus @default(PENDING)
+  status     ApplicationStatus
+  cvUrl      String
   matchScore Float
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  offer   Offer          @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, offerId])
+  @@index([studentId])
+  @@index([offerId])
 }
 
 //
@@ -250,12 +255,14 @@ model Recommendation {
 //
 // INTERVIEW
 //
-
 model Interview {
   id String @id @default(uuid())
 
   studentId String
-  offerId   String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  offerId String
+  offer   Offer  @relation(fields: [offerId], references: [id])
 
   score    Float
   feedback String

@@ -1,47 +1,55 @@
 import { Module } from '@nestjs/common'
+import { PrismaModule } from './prisma/prisma.module'
 
-import { PrismaService } from './prisma/prisma.service'
-
-import { OfferRepository } from './prisma/repositories/offer.prisma.repository'
 import { UserRepository } from './prisma/repositories/user.prisma.repository'
+import { OfferRepository } from './prisma/repositories/offer.prisma.repository'
+import { SkillRepository } from './prisma/repositories/skill.prisma.repository'
+import { StudentProfileRepository } from './prisma/repositories/student-profile.prisma.repository'
+import { RecruiterProfileRepository } from './prisma/repositories/recruiter-profile.prisma.repository'
+import { ApplicationRepository } from './prisma/repositories/application.repository'
 
-import { OfferPrismaMapper } from './prisma/mappers/offer.mapper'
-import { UserPrismaMapper } from './prisma/mappers/user.mapper'
-
-import { IOfferRepository } from '../../Application/repositories/offer.repository'
 import { IUserRepository } from '../../Application/repositories/user.repository'
-import {SkillPrismaMapper} from "./prisma/mappers/skill.mapper";
-import {ISkillRepository} from "../../Application/repositories/skill.repository";
-import {SkillRepository} from "./prisma/repositories/skill.prisma.repository";
+import { IOfferRepository } from '../../Application/repositories/offer.repository'
+import { ISkillRepository } from '../../Application/repositories/skill.repository'
+import { IStudentProfileRepository } from '../../Application/repositories/student-profile.repository'
+import { IRecruiterProfileRepository } from '../../Application/repositories/recruiter-profile.repository'
+
+import { SkillPrismaMapper } from './prisma/mappers/skill.mapper'
+import { OfferPrismaMapper } from './prisma/mappers/offer.mapper'
+import {IApplicationRepository} from "../../Application/repositories/application.repository.";
+
 @Module({
+    imports: [PrismaModule],
+
     providers: [
-        PrismaService,
+        // repos
+        UserRepository,
+        OfferRepository,
+        SkillRepository,
+        StudentProfileRepository,
+        RecruiterProfileRepository,
+        ApplicationRepository,
 
-        // 🔥 MAPPERS
+        // mappers
         OfferPrismaMapper,
-        UserPrismaMapper,
-        SkillPrismaMapper, // 🔥 AJOUT
+        SkillPrismaMapper,
 
-        // 🔥 REPOSITORIES
-        {
-            provide: IOfferRepository,
-            useClass: OfferRepository,
-        },
-        {
-            provide: IUserRepository,
-            useClass: UserRepository,
-        },
-        {
-            provide: ISkillRepository, // 🔥 AJOUT
-            useClass: SkillRepository,
-        },
+        // bindings
+        { provide: IUserRepository, useClass: UserRepository },
+        { provide: IOfferRepository, useClass: OfferRepository },
+        { provide: ISkillRepository, useClass: SkillRepository },
+        { provide: IStudentProfileRepository, useClass: StudentProfileRepository },
+        { provide: IRecruiterProfileRepository, useClass: RecruiterProfileRepository },
+        { provide: IApplicationRepository, useClass: ApplicationRepository },
     ],
 
     exports: [
-        PrismaService,
-        IOfferRepository,
         IUserRepository,
-        ISkillRepository, // 🔥 AJOUT
+        IOfferRepository,
+        ISkillRepository,
+        IStudentProfileRepository,
+        IRecruiterProfileRepository,
+        IApplicationRepository, // 🔥 MANQUANT → FIX PRINCIPAL
     ],
 })
 export class PersistenceModule {}

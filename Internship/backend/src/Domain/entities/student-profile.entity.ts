@@ -5,6 +5,7 @@ import {SkillAssignment} from "./skill-assignment.entity";
 
 export class StudentProfile {
     constructor(
+        public readonly id: string,
         public readonly userId: string,
         public cvs: CV[] = [],
         public skills: SkillAssignment[],

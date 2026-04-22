@@ -11,6 +11,7 @@ export class Application extends BaseEntity {
         public readonly studentId: string,
         public readonly offerId: string,
         public status: ApplicationStatus,
+        public cvUrl: string,
         public matchScore: number,
         createdAt?: Date,
         updatedAt?: Date,

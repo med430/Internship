@@ -1,33 +1,52 @@
-import { Offer as OfferDB } from '@prisma/client'
 import { Offer } from '../../../../Domain/entities/offer.entity'
-import { IGenericMapper } from './generic.mapper'
-import { OfferType as PrismaOfferType } from '@prisma/client'
-import { OfferType as DomainOfferType } from '../../../../Domain/enums/offer-type.enum'
+import { SkillAssignment } from '../../../../Domain/entities/skill-assignment.entity'
+import { SkillPrismaMapper } from './skill.mapper'
+import { Injectable } from '@nestjs/common'
 
-export class OfferPrismaMapper implements IGenericMapper<Offer, OfferDB> {
+@Injectable()
+export class OfferPrismaMapper {
 
-    toDomain(entity: OfferDB): Offer {
+    private skillMapper = new SkillPrismaMapper()
+
+    toDomain(entity: any): Offer {
+
+        const requiredSkills = entity.requiredSkills
+            ? entity.requiredSkills.map(rs =>
+                new SkillAssignment(
+                    this.skillMapper.toDomain(rs.skill),
+                    rs.level
+                )
+            )
+            : []
+
         return new Offer(
             entity.id,
-            entity.creatorId,
+            entity.recruiterProfileId, // 🔥 FIX
+
             entity.title,
             entity.description,
+
             entity.company,
             entity.location,
             entity.domain,
+
             entity.startDate,
             entity.endDate,
-            [],
-            entity.type as unknown as DomainOfferType,
+
+            requiredSkills,
+            entity.type,
+
             entity.createdAt,
-            entity.updatedAt ?? undefined,      // 🔥 FIX
-            entity.deletedAt ?? undefined       // 🔥 FIX
+            entity.updatedAt,
+            entity.deletedAt ?? undefined
         )
     }
-    toPersistence(entity: Offer): OfferDB {
+    toPersistence(entity: Offer) {
         return {
             id: entity.id,
-            creatorId: entity.creatorId,
+
+            recruiterProfileId: entity.recruiterProfileId, // 🔥 FIX
+
             title: entity.title,
             description: entity.description,
             company: entity.company,
@@ -35,10 +54,11 @@ export class OfferPrismaMapper implements IGenericMapper<Offer, OfferDB> {
             domain: entity.domain,
             startDate: entity.startDate,
             endDate: entity.endDate,
-            type: entity.type as unknown as PrismaOfferType, // 🔥 FIX
-            createdAt: entity.createdAt!,
-            updatedAt: entity.updatedAt!,
+            type: entity.type,
+
+            createdAt: entity.createdAt,
+            updatedAt: new Date(),
             deletedAt: entity.deletedAt ?? null
-        } as OfferDB
+        }
     }
 }

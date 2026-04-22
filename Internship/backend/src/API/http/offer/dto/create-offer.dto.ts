@@ -4,23 +4,22 @@ import {
     IsDateString,
     IsArray,
     ValidateNested,
-    IsInt
+    IsInt,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
 import { OfferType } from '../../../../Domain/enums/offer-type.enum'
 import { SkillLevel } from '../../../../Domain/enums/skill-level.enum'
 
-class SkillAssignmentDTO {
+export class SkillAssignmentDTO {
     @IsInt()
     skillId: number
 
     @IsEnum(SkillLevel)
-    level: SkillLevel
+    level: SkillLevel // 🔥 obligatoire (PAS ?)
 }
 
 export class CreateOfferDTO {
-
     @IsString()
     title: string
 
@@ -36,10 +35,10 @@ export class CreateOfferDTO {
     @IsString()
     domain: string
 
-    @IsDateString() // 🔥 IMPORTANT
+    @IsDateString()
     startDate: string
 
-    @IsDateString() // 🔥 IMPORTANT
+    @IsDateString()
     endDate: string
 
     @IsEnum(OfferType)
