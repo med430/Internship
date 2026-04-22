@@ -5,6 +5,7 @@ import { join } from 'path';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ApplicationModule } from '../../Application/Application.module';
 import { UserResolver } from './resolvers/user.resolver';
+import { OfferResolver } from './resolvers/offer.resolver';
 
 @Module({
   imports: [
@@ -16,6 +17,9 @@ import { UserResolver } from './resolvers/user.resolver';
     CqrsModule,
     ApplicationModule,
   ],
-  providers: [UserResolver],
+  providers: [
+    UserResolver,
+    OfferResolver,
+  ],
 })
 export class GraphQLAPIModule {}

@@ -8,6 +8,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {JwtAuthService} from "../Infrastructure/auth/jwt-auth.service";
 import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/get-users-query.handler';
+import { GetOffersQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offers-query.handler';
+import { GetOfferQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offer-query.handler';
+import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
 
 
 const CommandHandlers = [
@@ -16,7 +19,10 @@ const CommandHandlers = [
 ];
 
 const QueryHandlers = [
+  GetUserQueryHandler,
   GetUsersQueryHandler,
+  GetOfferQueryHandler,
+  GetOffersQueryHandler,
 ];
 
 @Module({
