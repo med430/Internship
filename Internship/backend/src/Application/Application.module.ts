@@ -7,6 +7,7 @@ import {AuthService} from "./Services/AuthService/AuthService";
 import {PersistenceModule} from "../Infrastructure/Persistence/persistence.module";
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/get-users-query.handler';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ConfigService } from '@nestjs/config';
   providers: [
     RegisterHandler,
     LoginHandler,
+    GetUsersQueryHandler,
     {
       provide: IAuthService,
       useClass: AuthService,
