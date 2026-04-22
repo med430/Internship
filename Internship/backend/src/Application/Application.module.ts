@@ -7,11 +7,16 @@ import {PersistenceModule} from "../Infrastructure/Persistence/persistence.modul
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {JwtAuthService} from "../Infrastructure/auth/jwt-auth.service";
+import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/get-users-query.handler';
 
 
 const CommandHandlers = [
   RegisterHandler,
   LoginHandler,
+];
+
+const QueryHandlers = [
+  GetUsersQueryHandler,
 ];
 
 @Module({
@@ -31,6 +36,7 @@ const CommandHandlers = [
 
   providers: [
     ...CommandHandlers,
+    ...QueryHandlers,
     {
       provide: AuthService,
       useClass: JwtAuthService,
