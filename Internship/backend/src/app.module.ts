@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import {HttpApiModule} from "./API/http/http.module";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import { ConfigModule } from '@nestjs/config';
+import { GraphQLAPIModule } from './API/graphql/graphql.module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    HttpApiModule
+    HttpApiModule,
+    GraphQLAPIModule,
   ],
   controllers: [AppController],
   providers: [AppService],
