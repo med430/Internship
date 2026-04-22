@@ -28,8 +28,8 @@ import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/ge
     LoginHandler,
     GetUsersQueryHandler,
     {
-      provide: IAuthService,
-      useClass: AuthService,
+      provide: AuthService,
+      useClass: JwtAuthService,
     },
   ],
 })

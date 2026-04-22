@@ -1,16 +1,21 @@
-import {Module} from "@nestjs/common";
-import {UserRepository} from "./prisma/repositories/user.prisma.repository";
-import {IUserRepository} from "../../Application/repositories/user.repository";
-import {PrismaModule} from "./prisma/prisma.module";
+import { Module } from '@nestjs/common'
+import { PrismaModule } from './prisma/prisma.module'
+
+import { IUserRepository } from '../../Application/repositories/user.repository'
+import { UserRepository } from './prisma/repositories/user.prisma.repository'
 
 @Module({
     imports: [PrismaModule],
+
     providers: [
         {
             provide: IUserRepository,
-            useClass: UserRepository
-        }
+            useClass: UserRepository,
+        },
     ],
-    exports: [IUserRepository],
+
+    exports: [
+        IUserRepository,
+    ],
 })
 export class PersistenceModule {}

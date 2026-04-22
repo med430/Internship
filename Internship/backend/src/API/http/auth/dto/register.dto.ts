@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator'
-import { Role } from '../../../../Domain/enums/role.enum'
+import {Role} from "../../../../Domain/enums/role.enum";
 
 export class RegisterDTO {
 
@@ -11,7 +11,7 @@ export class RegisterDTO {
     username: string
 
     @IsString()
-    @MinLength(8)
+    @MinLength(6)
     password: string
 
     @IsString()
