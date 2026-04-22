@@ -42,21 +42,22 @@ enum OfferType {
 //
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String @id @default(uuid())
+  email        String @unique
   name         String
   lastname     String
-  username     String   @unique
+  username     String @unique
   passwordHash String
-  role        Role
+  role         Role
 
-  studentProfile    StudentProfile?
-  teacherProfile    TeacherProfile?
-  recruiterProfile  RecruiterProfile?
+  studentProfile   StudentProfile?
+  teacherProfile   TeacherProfile?
+  recruiterProfile RecruiterProfile?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+  offers    Offer[]
 }
 
 //
@@ -69,9 +70,9 @@ model StudentProfile {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
 
-  cvs           CV[]
-  skills        SkillAssignment[]
-  applications  Application[]
+  cvs             CV[]
+  skills          SkillAssignment[]
+  applications    Application[]
   recommendations Recommendation[]
 }
 
@@ -98,21 +99,21 @@ model RecruiterProfile {
 //
 
 model CV {
-  id        String @id @default(uuid())
+  id String @id @default(uuid())
 
   studentId String
   student   StudentProfile @relation(fields: [studentId], references: [id])
 
-  fileUrl   String
+  fileUrl    String
   parsedData Json
 
-  skills     String[]
+  skills String[]
 
   projects    Project[]
   experiences Experience[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -121,9 +122,9 @@ model CV {
 //
 
 model Project {
-  id    String @id @default(uuid())
-  cvId  String
-  cv    CV @relation(fields: [cvId], references: [id])
+  id   String @id @default(uuid())
+  cvId String
+  cv   CV     @relation(fields: [cvId], references: [id])
 
   title        String
   description  String
@@ -135,9 +136,9 @@ model Project {
 //
 
 model Experience {
-  id    String @id @default(uuid())
-  cvId  String
-  cv    CV @relation(fields: [cvId], references: [id])
+  id   String @id @default(uuid())
+  cvId String
+  cv   CV     @relation(fields: [cvId], references: [id])
 
   company     String
   role        String
@@ -150,22 +151,31 @@ model Experience {
 //
 
 model Offer {
-  id          String @id @default(uuid())
-  creatorId   String
+  id String @id @default(uuid())
 
-  recruiter   RecruiterProfile @relation(fields: [creatorId], references: [id])
+  creatorId String
+  creator   User   @relation(fields: [creatorId], references: [id])
 
   title       String
   description String
-  type        OfferType
+
+  company  String
+  location String
+  domain   String
+
+  startDate DateTime
+  endDate   DateTime
+
+  type OfferType
 
   requiredSkills SkillAssignment[]
+  applications   Application[]
 
-  applications Application[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
+  recruiterProfile   RecruiterProfile? @relation(fields: [recruiterProfileId], references: [id])
+  recruiterProfileId String?
 }
 
 //
@@ -179,13 +189,13 @@ model Application {
   student   StudentProfile @relation(fields: [studentId], references: [id])
 
   offerId String
-  offer   Offer @relation(fields: [offerId], references: [id])
+  offer   Offer  @relation(fields: [offerId], references: [id])
 
-  status ApplicationStatus @default(PENDING)
+  status     ApplicationStatus @default(PENDING)
   matchScore Float
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -196,22 +206,25 @@ model Application {
 model Skill {
   id   Int    @id @default(autoincrement())
   name String @unique
+
   assignments SkillAssignment[]
 }
 
 model SkillAssignment {
   id String @id @default(uuid())
 
+  // 🔥 relation vers Skill
   skillId Int
   skill   Skill @relation(fields: [skillId], references: [id])
 
-  level SkillLevel?
+  // 🔥 relation vers Offer
+  offerId String
+  offer   Offer  @relation(fields: [offerId], references: [id])
 
-  studentId String?
-  student   StudentProfile? @relation(fields: [studentId], references: [id])
-
-  offerId String?
-  offer   Offer? @relation(fields: [offerId], references: [id])
+  // 🔥 niveau
+  level            SkillLevel
+  studentProfile   StudentProfile? @relation(fields: [studentProfileId], references: [id])
+  studentProfileId String?
 }
 
 //
@@ -229,8 +242,8 @@ model Recommendation {
 
   description String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 

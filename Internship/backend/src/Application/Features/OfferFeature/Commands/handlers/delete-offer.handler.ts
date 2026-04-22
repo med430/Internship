@@ -1,13 +1,16 @@
-// application/handlers/offer/delete-offer.handler.ts
-
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
-import {DeleteOfferCommand} from "../delete-offer.command";
-import {IOfferRepository} from "../../../../repositories/offer.repository";
+import { NotFoundException, ForbiddenException, Inject } from '@nestjs/common'
+
+import { DeleteOfferCommand } from '../delete-offer.command'
+import { IOfferRepository } from '../../../../repositories/offer.repository'
+
 @CommandHandler(DeleteOfferCommand)
 export class DeleteOfferHandler implements ICommandHandler<DeleteOfferCommand> {
 
-    constructor(private offerRepo: IOfferRepository) {}
+    constructor(
+        @Inject(IOfferRepository)
+        private readonly offerRepo: IOfferRepository
+    ) {}
 
     async execute(command: DeleteOfferCommand) {
 
@@ -20,9 +23,9 @@ export class DeleteOfferHandler implements ICommandHandler<DeleteOfferCommand> {
             throw new ForbiddenException('Not allowed')
         }
 
+        // 🔥 soft delete via repo
+        await this.offerRepo.softDelete(offerId)
 
-        offer.deletedAt = new Date()
-
-        return this.offerRepo.save(offer)
+        return { success: true }
     }
 }

@@ -1,4 +1,4 @@
-import {Module} from "@nestjs/common";
+import {Global, Module} from "@nestjs/common";
 import {CqrsModule} from "@nestjs/cqrs";
 import {RegisterHandler} from "./Features/AuthFeature/Commands/handlers/register.handler";
 import {LoginHandler} from "./Features/AuthFeature/Commands/handlers/login.handler";
@@ -7,17 +7,26 @@ import {PersistenceModule} from "../Infrastructure/Persistence/persistence.modul
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {JwtAuthService} from "../Infrastructure/auth/jwt-auth.service";
+import {PassportModule} from "@nestjs/passport";
+import {JwtStrategy} from "../API/http/guards/jwt.strategy";
+import {CreateOfferHandler} from "./Features/OfferFeature/Commands/handlers/create-offer.handler";
+import {UpdateOfferHandler} from "./Features/OfferFeature/Commands/handlers/update-offer.handler";
+import {DeleteOfferHandler} from "./Features/OfferFeature/Commands/handlers/delete-offer.handler";
 
 
 const CommandHandlers = [
   RegisterHandler,
   LoginHandler,
+  CreateOfferHandler, // 🔥 AJOUT
+  UpdateOfferHandler,
+  DeleteOfferHandler,
 ];
-
+@Global()
 @Module({
   imports: [
     CqrsModule,
     PersistenceModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -31,6 +40,7 @@ const CommandHandlers = [
 
   providers: [
     ...CommandHandlers,
+      JwtStrategy,
     {
       provide: AuthService,
       useClass: JwtAuthService,
@@ -38,7 +48,7 @@ const CommandHandlers = [
   ],
 
   exports: [
-    CqrsModule // 🔥 🔥 🔥 AJOUTE ÇA
+    CqrsModule
   ],
 })
 export class ApplicationModule {}

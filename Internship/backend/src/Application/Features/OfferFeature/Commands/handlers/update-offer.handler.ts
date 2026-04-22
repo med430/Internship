@@ -1,18 +1,22 @@
-// application/handlers/offer/update-offer.handler.ts
-
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
-import {UpdateOfferCommand} from "../update-offer.command";
-import {IOfferRepository} from "../../../../repositories/offer.repository";
-import {ISkillRepository} from "../../../../repositories/skill.repository";
-import {SkillAssignment} from "../../../../../Domain/entities/skill-assignment.entity";
+import { NotFoundException, ForbiddenException, Inject } from '@nestjs/common'
+
+import { UpdateOfferCommand } from '../update-offer.command'
+import { IOfferRepository } from '../../../../repositories/offer.repository'
+import { ISkillRepository } from '../../../../repositories/skill.repository'
+
+import { SkillAssignment } from '../../../../../Domain/entities/skill-assignment.entity'
+import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum'
 
 @CommandHandler(UpdateOfferCommand)
 export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
     constructor(
-        private offerRepo: IOfferRepository,
-        private skillRepo: ISkillRepository
+        @Inject(IOfferRepository)
+        private readonly offerRepo: IOfferRepository,
+
+        @Inject(ISkillRepository)
+        private readonly skillRepo: ISkillRepository
     ) {}
 
     async execute(command: UpdateOfferCommand) {
@@ -22,12 +26,11 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
         const offer = await this.offerRepo.findById(offerId)
         if (!offer) throw new NotFoundException('Offer not found')
 
-        // 🔐 sécurité
         if (offer.creatorId !== userId) {
             throw new ForbiddenException('Not allowed')
         }
 
-        // 🔹 update champs simples
+        // 🔹 update simple fields
         offer.title = dto.title ?? offer.title
         offer.description = dto.description ?? offer.description
         offer.company = dto.company ?? offer.company
@@ -39,7 +42,12 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
         if (dto.type) offer.type = dto.type
 
-        // 🔹 update skills (si envoyés)
+        // 🔥 validation dates après update
+        if (offer.startDate >= offer.endDate) {
+            throw new Error('Invalid date range')
+        }
+
+        // 🔹 update skills
         if (dto.requiredSkills) {
             const skills = await this.skillRepo.findByIds(
                 dto.requiredSkills.map(s => s.skillId)
@@ -47,12 +55,16 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
             offer.requiredSkills = dto.requiredSkills.map(req => {
                 const skill = skills.find(s => s.id === req.skillId)
-                if (!skill) throw new NotFoundException('Skill not found')
+                if (!skill) throw new NotFoundException(`Skill ${req.skillId} not found`)
 
-                return new SkillAssignment(skill, req.level as any)
+                return new SkillAssignment(
+                    skill,
+                    req.level as SkillLevel // 🔥 FIX
+                )
             })
         }
 
+        // ⚠️ IMPORTANT → utiliser update si tu l’as
         return this.offerRepo.save(offer)
     }
 }
