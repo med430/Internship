@@ -24,6 +24,10 @@ import { ApplyOfferDTO } from "./dto/apply-offer.dto"
 import { ApplyToOfferCommand } from "../../../Application/Features/ApplicationFeature/Commands/apply-offer.command"
 import { UpdateApplicationStatusCommand } from "../../../Application/Features/ApplicationFeature/Commands/update-application-status.command"
 import { DownloadCvCommand } from "../../../Application/Features/ApplicationFeature/Commands/download-cv.command"
+import {
+    WithdrawApplicationCommand
+} from "../../../Application/Features/ApplicationFeature/Commands/withdraw-application.command";
+import {randomUUID} from "crypto";
 
 @Controller('applications')
 export class ApplicationController {
@@ -36,17 +40,27 @@ export class ApplicationController {
     @UseInterceptors(
         FileInterceptor('cv', {
             storage: diskStorage({
-                destination: './uploads',
+                destination: './uploads/cvs',
                 filename: (req, file, callback) => {
-                    const uniqueName =
-                        Date.now() +
-                        '-' +
-                        Math.round(Math.random() * 1e9) +
-                        extname(file.originalname)
-
-                    callback(null, uniqueName)
+                    const filename = `${randomUUID()}.pdf`
+                    callback(null, filename)
                 },
             }),
+
+            limits: {
+                fileSize: 2 * 1024 * 1024, // 2MB
+            },
+
+            fileFilter: (req, file, callback) => {
+                if (file.mimetype !== 'application/pdf') {
+                    return callback(
+                        new BadRequestException('Only PDF allowed'),
+                        false
+                    )
+                }
+
+                callback(null, true)
+            },
         }),
     )
     async apply(
@@ -59,7 +73,7 @@ export class ApplicationController {
             throw new BadRequestException('CV is required')
         }
 
-        const cvUrl = `/uploads/${file.filename}`
+        const cvUrl = `/uploads/cvs/${file.filename}`
 
         return this.commandBus.execute(
             new ApplyToOfferCommand(
@@ -116,5 +130,18 @@ export class ApplicationController {
         )
 
         return res.download(filePath)
+    }
+    @Patch(':id/withdraw')
+    @UseGuards(JwtAuthGuard)
+    withdraw(
+        @Param('id') id: string,
+        @CurrentUser() user
+    ) {
+        return this.commandBus.execute(
+            new WithdrawApplicationCommand(
+                id,
+                user.id
+            )
+        )
     }
 }

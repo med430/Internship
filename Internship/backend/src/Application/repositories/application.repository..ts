@@ -10,4 +10,5 @@ export abstract class IApplicationRepository {
     abstract findById(id: string): Promise<Application | null>
     abstract update(app: Application): Promise<Application>
     abstract rejectAllExcept(offerId: string, acceptedId: string): Promise<void>
+    abstract delete(id: string): Promise<void>
 }

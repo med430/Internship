@@ -17,6 +17,7 @@ import {
   UpdateApplicationStatusHandler
 } from "./Features/ApplicationFeature/Commands/handlers/update-application-status.handler";
 import {DownloadCvHandler} from "./Features/ApplicationFeature/Commands/handlers/download-cv.handler";
+import {WithdrawApplicationHandler} from "./Features/ApplicationFeature/Commands/handlers/withdraw-application.handler";
 
 
 const CommandHandlers = [
@@ -27,7 +28,8 @@ const CommandHandlers = [
   DeleteOfferHandler,
   ApplyToOfferHandler,
   UpdateApplicationStatusHandler,
-  DownloadCvHandler
+  DownloadCvHandler,
+  WithdrawApplicationHandler
 ];
 @Global()
 @Module({

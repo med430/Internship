@@ -137,4 +137,9 @@ export class ApplicationRepository implements IApplicationRepository {
             res.company   // ✔ maintenant cohérent
         )
     }
+    async delete(id: string): Promise<void> {
+        await this.prisma.application.delete({
+            where: { id }
+        })
+    }
 }

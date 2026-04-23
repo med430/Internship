@@ -5,6 +5,8 @@ import {
     NotFoundException
 } from '@nestjs/common'
 import { randomUUID } from 'crypto'
+import { unlinkSync, existsSync } from 'fs'
+import { join } from 'path'
 
 import { ApplyToOfferCommand } from "../apply-offer.command"
 
@@ -33,41 +35,63 @@ export class ApplyToOfferHandler implements ICommandHandler<ApplyToOfferCommand>
 
         const { studentId: userId, offerId, cvUrl } = command
 
-        // 🔥 1. Vérifier que l’offre existe
+        // 🔥 1. Vérifier offre
         const offer = await this.offerRepo.findById(offerId)
 
         if (!offer || offer.deletedAt) {
             throw new NotFoundException('Offer not found')
         }
 
-        // 🔥 2. Récupérer le StudentProfile depuis le User
+        // 🔥 2. Récupérer StudentProfile
         const studentProfile = await this.studentRepo.findByUserId(userId)
 
         if (!studentProfile) {
             throw new NotFoundException('Student profile not found')
         }
 
-        // 🔥 3. Empêcher double candidature
-        const existing = await this.appRepo.findByStudentAndOffer(
-            studentProfile.id, // ✔ IMPORTANT
+        // 🔥 3. Vérifier CV
+        if (!cvUrl) {
+            throw new BadRequestException('CV is required')
+        }
+
+        // 🔥 4. Vérifier ancienne candidature (RE-APPLY LOGIC)
+        const previous = await this.appRepo.findByStudentAndOffer(
+            studentProfile.id,
             offerId
         )
 
-        if (existing) {
-            throw new BadRequestException('Already applied')
+        if (previous) {
+
+            // 🔒 protection path
+            if (!previous.cvUrl.startsWith('/uploads/cvs')) {
+                throw new BadRequestException('Invalid file path')
+            }
+
+            // 🔥 supprimer ancien fichier
+            const oldPath = join(process.cwd(), previous.cvUrl)
+
+            if (existsSync(oldPath)) {
+                try {
+                    unlinkSync(oldPath)
+                } catch (e) {
+                    console.warn('Failed to delete old CV:', e)
+                }
+            }
+
+            // 🔥 supprimer ancienne candidature
+            await this.appRepo.delete(previous.id)
         }
 
-        // 🔥 4. Créer l'application
+        // 🔥 5. Create nouvelle candidature
         const application = new Application(
             randomUUID(),
-            studentProfile.id, // ✔ FK correcte
+            studentProfile.id,
             offerId,
             ApplicationStatus.PENDING,
             cvUrl,
-            0 // matchScore initial
+            0
         )
 
-        // 🔥 5. Sauvegarder
         return await this.appRepo.save(application)
     }
 }
