@@ -7,9 +7,11 @@ import {
     UseGuards,
     UseInterceptors,
     UploadedFile,
-    BadRequestException
+    BadRequestException,
+    Get,
+    Res
 } from '@nestjs/common'
-
+import type { Response } from 'express'
 import { CommandBus } from '@nestjs/cqrs'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
@@ -21,6 +23,7 @@ import { CurrentUser } from '../decorators/current-user.decorator'
 import { ApplyOfferDTO } from "./dto/apply-offer.dto"
 import { ApplyToOfferCommand } from "../../../Application/Features/ApplicationFeature/Commands/apply-offer.command"
 import { UpdateApplicationStatusCommand } from "../../../Application/Features/ApplicationFeature/Commands/update-application-status.command"
+import { DownloadCvCommand } from "../../../Application/Features/ApplicationFeature/Commands/download-cv.command"
 
 @Controller('applications')
 export class ApplicationController {
@@ -60,7 +63,7 @@ export class ApplicationController {
 
         return this.commandBus.execute(
             new ApplyToOfferCommand(
-                user.id,   // ✔ userId (converti en StudentProfile dans handler)
+                user.id,
                 dto.offerId,
                 cvUrl
             )
@@ -97,5 +100,21 @@ export class ApplicationController {
                 'REJECTED'
             )
         )
+    }
+
+    // ================= DOWNLOAD CV =================
+    @Get(':id/cv')
+    @UseGuards(JwtAuthGuard)
+    async downloadCV(
+        @Param('id') applicationId: string,
+        @CurrentUser() user,
+        @Res() res: Response
+    ) {
+
+        const filePath = await this.commandBus.execute(
+            new DownloadCvCommand(applicationId, user.id)
+        )
+
+        return res.download(filePath)
     }
 }
