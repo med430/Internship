@@ -15,7 +15,10 @@ export class OfferResolver {
   }
 
   @Query('offers')
-  async getOffers(): Promise<Offer[]> {
-    return this.queryBus.execute(new GetOffersQuery());
+  async getOffers(
+    @Args('pageNumber') pageNumber: number,
+    @Args('pageSize') pageSize: number,
+  ): Promise<Offer[]> {
+    return this.queryBus.execute(new GetOffersQuery(pageNumber, pageSize));
   }
 }

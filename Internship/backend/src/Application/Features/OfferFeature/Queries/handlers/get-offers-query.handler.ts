@@ -9,6 +9,6 @@ export class GetOffersQueryHandler implements IQueryHandler<GetOffersQuery> {
   }
 
   async execute(query: GetOffersQuery): Promise<Offer[]> {
-    return this.offerRepository.findAll();
+    return this.offerRepository.findPaginated(query.pageNumber, query.pageSize);
   }
 }

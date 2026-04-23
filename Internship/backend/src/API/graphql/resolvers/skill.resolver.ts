@@ -6,12 +6,14 @@ import { QueryBus } from '@nestjs/cqrs';
 
 @Resolver('Skill')
 export class SkillResolver {
-  constructor(private readonly queryBus: QueryBus) {
-  }
+  constructor(private readonly queryBus: QueryBus) {}
 
   @Query('skills')
-  async getSkills(): Promise<Skill[]> {
-    return this.queryBus.execute(new GetSkillsQuery());
+  async getSkills(
+    @Args('pageNumber') pageNumber: number,
+    @Args('pageSize') pageSize: number,
+  ): Promise<Skill[]> {
+    return this.queryBus.execute(new GetSkillsQuery(pageNumber, pageSize));
   }
 
   @Query('skill')

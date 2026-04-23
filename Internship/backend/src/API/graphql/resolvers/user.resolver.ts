@@ -14,7 +14,10 @@ export class UserResolver {
   }
 
   @Query('users')
-  async getUsers(): Promise<User[]> {
-    return await this.queryBus.execute(new GetUsersQuery());
+  async getUsers(
+    @Args('pageNumber') pageNumber: number,
+    @Args('pageSize') pageSize: number,
+  ): Promise<User[]> {
+    return await this.queryBus.execute(new GetUsersQuery(pageNumber, pageSize));
   }
 }

@@ -11,6 +11,6 @@ export class GetSkillsQueryHandler {
   }
 
   async execute(query: GetSkillsQuery): Promise<Skill[]> {
-    return this.skillRepository.findAll();
+    return this.skillRepository.findPaginated(query.pageNumber, query.pageSize);
   }
 }

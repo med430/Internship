@@ -47,6 +47,17 @@ export class SkillRepository implements ISkillRepository {
         return results.map(r => this.mapper.toDomain(r))
     }
 
+    async findPaginated(pageNumber: number, pageSize: number): Promise<Skill[]> {
+      const skip = (pageNumber - 1) * pageSize;
+
+      const results = await (this.prisma['skill'] as any).findMany({
+        skip,
+        take: pageSize,
+      });
+
+      return results.map(r => this.mapper.toDomain(r));
+    }
+
     async save(entity: Skill): Promise<Skill> {
         const result = await this.prisma.skill.create({
             data: {

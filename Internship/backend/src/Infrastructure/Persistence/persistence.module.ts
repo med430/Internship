@@ -17,6 +17,11 @@ import { IRecruiterProfileRepository } from '../../Application/repositories/recr
 import { SkillPrismaMapper } from './prisma/mappers/skill.mapper'
 import { OfferPrismaMapper } from './prisma/mappers/offer.mapper'
 import {IApplicationRepository} from "../../Application/repositories/application.repository";
+import { UserPrismaMapper } from './prisma/mappers/user.mapper';
+import { SkillAssignmentPrismaMapper } from './prisma/mappers/skill-assignment.mapper';
+import { StudentProfilePrismaMapper } from './prisma/mappers/student-profile.mapper';
+import { CVPrismaMapper } from './prisma/mappers/cv.mapper';
+import { ApplicationPrismaMapper } from './prisma/mappers/application.mapper';
 
 @Module({
     imports: [PrismaModule],
@@ -33,6 +38,11 @@ import {IApplicationRepository} from "../../Application/repositories/application
         // mappers
         OfferPrismaMapper,
         SkillPrismaMapper,
+      UserPrismaMapper,
+      SkillAssignmentPrismaMapper,
+      StudentProfilePrismaMapper,
+      CVPrismaMapper,
+      ApplicationPrismaMapper,
 
         // bindings
         { provide: IUserRepository, useClass: UserRepository },

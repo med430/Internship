@@ -25,12 +25,23 @@ export abstract class GenericRepository<
     return results.map((r: P) => this.mapper.toDomain(r))
   }
 
+  async findPaginated(pageNumber: number, pageSize: number): Promise<T[]> {
+    const skip = (pageNumber - 1) * pageSize;
+
+    const results = await (this.prisma[this.modelName] as any).findMany({
+      skip,
+      take: pageSize,
+    });
+
+    return results.map((r: P) => this.mapper.toDomain(r));
+  }
+
   async save(entity: T): Promise<T> {
     const persistence = this.mapper.toPersistence(entity)
     const result = await (this.prisma[this.modelName] as any).create({
       data: persistence,
-    })
-    return this.mapper.toDomain(result)
+    });
+    return this.mapper.toDomain(result);
   }
 
   async delete(id: ID): Promise<void> {

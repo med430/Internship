@@ -4,6 +4,8 @@ export abstract class IGenericRepository<T, ID = string> {
 
     abstract findAll(): Promise<T[]>
 
+    abstract findPaginated(pageNumber: number, pageSize: number): Promise<T[]>
+
     abstract save(entity: T): Promise<T>
 
     abstract delete(id: ID): Promise<void>

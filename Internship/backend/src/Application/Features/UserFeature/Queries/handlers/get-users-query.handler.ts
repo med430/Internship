@@ -8,6 +8,6 @@ export class GetUsersQueryHandler implements IQueryHandler<GetUsersQuery> {
   constructor(private readonly userRepository: IUserRepository) {}
 
   async execute(query: GetUsersQuery): Promise<User[]> {
-    return this.userRepository.findAll();
+    return this.userRepository.findPaginated(query.pageNumber, query.pageSize);
   }
 }
