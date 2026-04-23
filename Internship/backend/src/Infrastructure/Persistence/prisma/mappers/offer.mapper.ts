@@ -8,20 +8,20 @@ export class OfferPrismaMapper implements IGenericMapper<OfferDomain, OfferDB> {
   toDomain(offer: OfferDB): OfferDomain {
     return new OfferDomain(
       offer.id,
-      offer.creatorId,
 
-      // ⚠️ missing in DB → placeholder or future join mapping
+      '', // ⚠️ creatorId (not in DB yet)
+
       offer.title,
       offer.description,
 
-      '', // company (not in prisma)
-      '', // location (not in prisma)
-      '', // domain (not in prisma)
+      '', // company (not in DB yet)
+      '', // location (not in DB yet)
+      '', // domain (not in DB yet)
 
-      new Date(), // startDate placeholder
-      new Date(), // endDate placeholder
+      new Date(), // startDate (placeholder)
+      new Date(), // endDate (placeholder)
 
-      [] as SkillAssignment[], // requires join mapping later
+      [] as SkillAssignment[], // requiredSkills
 
       offer.type as OfferType,
 
@@ -34,7 +34,6 @@ export class OfferPrismaMapper implements IGenericMapper<OfferDomain, OfferDB> {
   toPersistence(domain: OfferDomain): OfferDB {
     return {
       id: domain.id,
-      creatorId: domain.creatorId,
       title: domain.title,
       description: domain.description,
       type: domain.type,

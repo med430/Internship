@@ -7,6 +7,9 @@ import { IOfferRepository } from '../../Application/repositories/offer.repositor
 import { OfferRepository } from './prisma/repositories/offer.prisma.repository';
 import { UserPrismaMapper } from './prisma/mappers/user.mapper';
 import { OfferPrismaMapper } from './prisma/mappers/offer.mapper';
+import { ISkillRepository } from '../../Application/repositories/skill.repository';
+import { SkillRepository } from './prisma/repositories/skill.prisma.repository';
+import {SkillPrismaMapper} from "./prisma/mappers/skill.mapper";
 
 @Module({
     imports: [PrismaModule],
@@ -14,6 +17,7 @@ import { OfferPrismaMapper } from './prisma/mappers/offer.mapper';
     providers: [
       UserPrismaMapper,
       OfferPrismaMapper,
+      SkillPrismaMapper,
         {
             provide: IUserRepository,
             useClass: UserRepository,
@@ -21,12 +25,17 @@ import { OfferPrismaMapper } from './prisma/mappers/offer.mapper';
       {
         provide: IOfferRepository,
         useClass: OfferRepository,
-      }
+      },
+      {
+        provide: ISkillRepository,
+        useClass: SkillRepository,
+      },
     ],
 
     exports: [
         IUserRepository,
         IOfferRepository,
+      ISkillRepository,
     ],
 })
 export class PersistenceModule {}
