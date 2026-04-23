@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto'
 import { ApplyToOfferCommand } from "../apply-offer.command"
 
 import { IOfferRepository } from "../../../../repositories/offer.repository"
-import { IApplicationRepository } from "../../../../repositories/application.repository."
+import { IApplicationRepository } from "../../../../repositories/application.repository"
 import { IStudentProfileRepository } from "../../../../repositories/student-profile.repository"
 
 import { Application } from "../../../../../Domain/entities/application.entity"

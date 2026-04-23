@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
 import { PrismaModule } from './prisma/prisma.module'
 
-import { IUserRepository } from '../../Application/repositories/user.repository'
 import { UserRepository } from './prisma/repositories/user.prisma.repository'
 import { OfferRepository } from './prisma/repositories/offer.prisma.repository'
 import { SkillRepository } from './prisma/repositories/skill.prisma.repository'
@@ -17,7 +16,7 @@ import { IRecruiterProfileRepository } from '../../Application/repositories/recr
 
 import { SkillPrismaMapper } from './prisma/mappers/skill.mapper'
 import { OfferPrismaMapper } from './prisma/mappers/offer.mapper'
-import {IApplicationRepository} from "../../Application/repositories/application.repository.";
+import {IApplicationRepository} from "../../Application/repositories/application.repository";
 
 @Module({
     imports: [PrismaModule],

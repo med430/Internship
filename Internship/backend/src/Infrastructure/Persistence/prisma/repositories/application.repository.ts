@@ -1,73 +1,71 @@
-import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma.service'
-import { Application } from '../../../../Domain/entities/application.entity'
-import { ApplicationStatus } from '../../../../Domain/enums/application-status.enum'
-import { Prisma } from '@prisma/client'
-import {IApplicationRepository} from "../../../../Application/repositories/application.repository.";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
+import { Application } from '../../../../Domain/entities/application.entity';
+import { ApplicationStatus } from '../../../../Domain/enums/application-status.enum';
+import { Prisma } from '@prisma/client';
+import { IApplicationRepository } from '../../../../Application/repositories/application.repository';
 
 @Injectable()
 export class ApplicationRepository implements IApplicationRepository {
+  constructor(private prisma: PrismaService) {}
 
-    constructor(private prisma: PrismaService) {}
+  async findByStudentAndOffer(studentId: string, offerId: string) {
+    const res = await this.prisma.application.findUnique({
+      where: {
+        studentId_offerId: {
+          studentId,
+          offerId,
+        },
+      },
+    });
 
-    async findByStudentAndOffer(studentId: string, offerId: string) {
+    if (!res) return null;
 
-        const res = await this.prisma.application.findUnique({
-            where: {
-                studentId_offerId: {
-                    studentId,
-                    offerId
-                }
-            }
-        })
+    return new Application(
+      res.id,
+      res.studentId,
+      res.offerId,
+      res.status as ApplicationStatus,
+      res.cvUrl,
+      res.matchScore,
+      res.createdAt,
+      res.updatedAt,
+      res.deletedAt ?? undefined,
+    );
+  }
 
-        if (!res) return null
+  async save(app: Application): Promise<Application> {
+    try {
+      const res = await this.prisma.application.create({
+        data: {
+          id: app.id,
+          studentId: app.studentId,
+          offerId: app.offerId,
+          status: app.status,
+          cvUrl: app.cvUrl,
+          matchScore: app.matchScore,
+        },
+      });
 
-        return new Application(
-            res.id,
-            res.studentId,
-            res.offerId,
-            res.status as ApplicationStatus,
-            res.cvUrl,
-            res.matchScore,
-            res.createdAt,
-            res.updatedAt,
-            res.deletedAt ?? undefined
-        )
+      return new Application(
+        res.id,
+        res.studentId,
+        res.offerId,
+        res.status as ApplicationStatus,
+        res.cvUrl,
+        res.matchScore,
+        res.createdAt,
+        res.updatedAt,
+        res.deletedAt ?? undefined,
+      );
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new Error('Already applied to this offer');
+      }
+      throw e;
     }
-
-    async save(app: Application): Promise<Application> {
-        try {
-            const res = await this.prisma.application.create({
-                data: {
-                    id: app.id,
-                    studentId: app.studentId,
-                    offerId: app.offerId,
-                    status: app.status,
-                    cvUrl: app.cvUrl,
-                    matchScore: app.matchScore
-                }
-            })
-
-            return new Application(
-                res.id,
-                res.studentId,
-                res.offerId,
-                res.status as ApplicationStatus,
-                res.cvUrl,
-                res.matchScore,
-                res.createdAt,
-                res.updatedAt,
-                res.deletedAt ?? undefined
-            )
-
-        } catch (e) {
-            if (e instanceof Prisma.PrismaClientKnownRequestError) {
-                if (e.code === 'P2002') {
-                    throw new Error('Already applied to this offer')
-                }
-            }
-            throw e
-        }
-    }
+  }
 }

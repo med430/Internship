@@ -16,8 +16,8 @@ export class SkillAssignmentPrismaMapper implements IGenericMapper<Domain, DB> {
       id: undefined as any, // Prisma generates it
       skillId: domain.skill.id,
       level: domain.level,
-      studentId: null,
-      offerId: null,
+      studentProfileId: null,
+      offerId: '' as any,
     } as DB;
   }
 }

@@ -11,5 +11,4 @@ export class StudentProfile {
         public skills: SkillAssignment[],
         public applications: Application[] = []
     ) {}
-  public id = () => this.userId;
 }

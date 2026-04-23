@@ -14,7 +14,7 @@ export class SkillAssignmentRepository extends GenericRepository<Domain, DB> {
 
   async findByStudent(studentId: string) {
     const result = await this.prisma.skillAssignment.findMany({
-      where: { studentId },
+      where: { studentProfileId: studentId },
       include: {
         skill: true,
       },

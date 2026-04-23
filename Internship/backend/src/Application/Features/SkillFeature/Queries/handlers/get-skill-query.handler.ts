@@ -11,6 +11,6 @@ export class GetSkillQueryHandler implements IQueryHandler<GetSkillQuery> {
   }
 
   async execute(query: GetSkillQuery): Promise<Skill | null> {
-    return this.skillRepository.findById(query.id);
+    return this.skillRepository.findById(Number(query.id));
   }
 }
