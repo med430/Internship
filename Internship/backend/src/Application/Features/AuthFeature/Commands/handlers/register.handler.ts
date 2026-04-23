@@ -1,18 +1,27 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
 import { randomUUID } from 'crypto'
-import {RegisterCommand} from "../register.command";
-import {IUserRepository} from "../../../../repositories/user.repository";
-import {User} from "../../../../../Domain/entities/user.entity";
-import {Inject} from "@nestjs/common";
-import {RegisterResponseDTO} from "../../../../../API/http/auth/dto/register-response.dto";
+import { Inject } from '@nestjs/common'
+
+import { RegisterCommand } from "../register.command"
+import { IUserRepository } from "../../../../repositories/user.repository"
+import { IStudentProfileRepository } from "../../../../repositories/student-profile.repository"
+import { IRecruiterProfileRepository } from "../../../../repositories/recruiter-profile.repository"
+
+import { User } from "../../../../../Domain/entities/user.entity"
 
 @CommandHandler(RegisterCommand)
 export class RegisterHandler implements ICommandHandler<RegisterCommand> {
 
     constructor(
         @Inject(IUserRepository)
-        private userRepo: IUserRepository
+        private userRepo: IUserRepository,
+
+        @Inject(IStudentProfileRepository)
+        private studentProfileRepo: IStudentProfileRepository,
+
+        @Inject(IRecruiterProfileRepository)
+        private recruiterProfileRepo: IRecruiterProfileRepository
     ) {}
 
     async execute(command: RegisterCommand) {
@@ -31,13 +40,21 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
 
         const savedUser = await this.userRepo.save(user)
 
-        return new RegisterResponseDTO(
-            savedUser.id,
-            savedUser.email,
-            savedUser.username,
-            savedUser.name,
-            savedUser.lastname,
-            savedUser.role
-        )
+        // 🔥 CREATE PROFILE SELON ROLE
+        if (command.role === 'RECRUITER') {
+            await this.recruiterProfileRepo.create({
+                id: randomUUID(),
+                userId: savedUser.id
+            })
+        }
+
+        if (command.role === 'STUDENT') {
+            await this.studentProfileRepo.create({
+                id: randomUUID(),
+                userId: savedUser.id
+            })
+        }
+
+        return savedUser
     }
 }

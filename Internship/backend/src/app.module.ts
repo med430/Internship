@@ -17,5 +17,6 @@ import { GraphQLAPIModule } from './API/graphql/graphql.module';
   ],
   controllers: [AppController],
   providers: [AppService],
+  
 })
 export class AppModule {}

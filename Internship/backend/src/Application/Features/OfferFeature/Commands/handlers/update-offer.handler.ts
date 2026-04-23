@@ -1,18 +1,31 @@
-// application/handlers/offer/update-offer.handler.ts
-
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
-import {UpdateOfferCommand} from "../update-offer.command";
-import {IOfferRepository} from "../../../../repositories/offer.repository";
-import {ISkillRepository} from "../../../../repositories/skill.repository";
-import {SkillAssignment} from "../../../../../Domain/entities/skill-assignment.entity";
+import {
+    NotFoundException,
+    ForbiddenException,
+    BadRequestException,
+    Inject
+} from '@nestjs/common'
+
+import { UpdateOfferCommand } from '../update-offer.command'
+import { IOfferRepository } from '../../../../repositories/offer.repository'
+import { ISkillRepository } from '../../../../repositories/skill.repository'
+import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
+
+import { SkillAssignment } from '../../../../../Domain/entities/skill-assignment.entity'
+import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum'
 
 @CommandHandler(UpdateOfferCommand)
 export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
     constructor(
-        private offerRepo: IOfferRepository,
-        private skillRepo: ISkillRepository
+        @Inject(IOfferRepository)
+        private readonly offerRepo: IOfferRepository,
+
+        @Inject(ISkillRepository)
+        private readonly skillRepo: ISkillRepository,
+
+        @Inject(IRecruiterProfileRepository)
+        private readonly recruiterRepo: IRecruiterProfileRepository
     ) {}
 
     async execute(command: UpdateOfferCommand) {
@@ -22,8 +35,14 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
         const offer = await this.offerRepo.findById(offerId)
         if (!offer) throw new NotFoundException('Offer not found')
 
-        // 🔐 sécurité
-        if (offer.creatorId !== userId) {
+        // 🔐 récupérer recruiter profile
+        const recruiterProfile = await this.recruiterRepo.findByUserId(userId)
+
+        if (!recruiterProfile) {
+            throw new ForbiddenException('No recruiter profile')
+        }
+
+        if (offer.recruiterProfileId !== recruiterProfile.id) {
             throw new ForbiddenException('Not allowed')
         }
 
@@ -39,20 +58,32 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
         if (dto.type) offer.type = dto.type
 
-        // 🔹 update skills (si envoyés)
+        // 🔥 validation dates
+        if (offer.startDate >= offer.endDate) {
+            throw new BadRequestException('Invalid date range')
+        }
+
+        // 🔹 update skills
         if (dto.requiredSkills) {
+
             const skills = await this.skillRepo.findByIds(
                 dto.requiredSkills.map(s => s.skillId)
             )
 
-            offer.requiredSkills = dto.requiredSkills.map(req => {
-                const skill = skills.find(s => s.id === req.skillId)
-                if (!skill) throw new NotFoundException('Skill not found')
+            if (skills.length !== dto.requiredSkills.length) {
+                throw new BadRequestException('Invalid skill IDs')
+            }
 
-                return new SkillAssignment(skill, req.level as any)
+            offer.requiredSkills = dto.requiredSkills.map(req => {
+                const skill = skills.find(s => s.id === req.skillId)!
+
+                return new SkillAssignment(
+                    skill,
+                    req.level as SkillLevel
+                )
             })
         }
 
-        return this.offerRepo.save(offer)
+        return this.offerRepo.update(offer)
     }
 }

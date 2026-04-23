@@ -1,39 +1,100 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { GenericRepository } from './generic.repositories';
-import { Offer as OfferDomain } from '../../../../Domain/entities/offer.entity';
-import { Offer as OfferDB } from '@prisma/client';
-import { OfferPrismaMapper } from '../mappers/offer.mapper';
-
+import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma.service'
+import { GenericRepository } from './generic.repositories'
+import { Offer } from '../../../../Domain/entities/offer.entity'
+import { Offer as OfferDB } from '@prisma/client'
+import { OfferPrismaMapper } from '../mappers/offer.mapper'
+import { IOfferRepository } from '../../../../Application/repositories/offer.repository'
 @Injectable()
-export class OfferRepository extends GenericRepository<OfferDomain, OfferDB> {
-  constructor(
-    protected readonly prisma: PrismaService,
-    protected readonly mapper: OfferPrismaMapper,
-  ) {
-    const modelName: keyof PrismaService = 'offer';
-    super(prisma, modelName, mapper);
-  }
+export class OfferRepository
+    extends GenericRepository<Offer, any>
+    implements IOfferRepository
+{
+    constructor(
+        protected readonly prisma: PrismaService,
+        protected readonly mapper: OfferPrismaMapper
+    ) {
+        super(prisma, 'offer', mapper)
+    }
 
-  // 🔥 custom queries (CQRS READ optimization ready)
+    async save(entity: Offer): Promise<Offer> {
+        const data = this.mapper.toPersistence(entity)
 
-  async findByCreator(creatorId: string): Promise<OfferDomain[]> {
-    const results = await this.prisma.offer.findMany({
-      where: { creatorId },
-    });
+        const result = await this.prisma.offer.create({
+            data: {
+                ...data,
 
-    return results.map((r) => this.mapper.toDomain(r));
-  }
+                requiredSkills: {
+                    create: entity.requiredSkills.map(rs => ({
+                        level: rs.level,
+                        skill: {
+                            connect: { id: rs.skill.id },
+                        },
+                    })),
+                },
+            },
 
-  async findWithApplications(id: string) {
-    const result = await this.prisma.offer.findUnique({
-      where: { id },
-      include: {
-        applications: true,
-        requiredSkills: true,
-      },
-    });
+            include: {
+                requiredSkills: {
+                    include: { skill: true },
+                },
+            },
+        })
 
-    return result ? this.mapper.toDomain(result as any) : null;
-  }
+        return this.mapper.toDomain(result)
+    }
+
+    async update(entity: Offer): Promise<Offer> {
+        const data = this.mapper.toPersistence(entity)
+
+        const result = await this.prisma.offer.update({
+            where: { id: entity.id },
+
+            data: {
+                ...data,
+
+                requiredSkills: {
+                    deleteMany: {},
+
+                    create: entity.requiredSkills.map(rs => ({
+                        level: rs.level,
+                        skill: {
+                            connect: { id: rs.skill.id },
+                        },
+                    })),
+                },
+            },
+
+            include: {
+                requiredSkills: {
+                    include: { skill: true },
+                },
+            },
+        })
+
+        return this.mapper.toDomain(result)
+    }
+
+    async findByRecruiterProfileId(recruiterProfileId: string): Promise<Offer[]> {
+        const results = await this.prisma.offer.findMany({
+            where: {
+                recruiterProfileId,
+                deletedAt: null
+            },
+            include: {
+                requiredSkills: {
+                    include: { skill: true },
+                },
+            },
+        })
+
+        return results.map(r => this.mapper.toDomain(r))
+    }
+
+    async softDelete(id: string): Promise<void> {
+        await this.prisma.offer.update({
+            where: { id },
+            data: { deletedAt: new Date() },
+        })
+    }
 }

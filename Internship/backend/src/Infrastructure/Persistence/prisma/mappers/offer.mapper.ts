@@ -1,46 +1,64 @@
-import { IGenericMapper } from './generic.mapper';
-import { Offer as OfferDomain } from '../../../../Domain/entities/offer.entity';
-import { Offer as OfferDB } from '@prisma/client';
-import { OfferType } from '../../../../Domain/enums/offer-type.enum';
-import { SkillAssignment } from '../../../../Domain/entities/skill-assignment.entity';
+import { Offer } from '../../../../Domain/entities/offer.entity'
+import { SkillAssignment } from '../../../../Domain/entities/skill-assignment.entity'
+import { SkillPrismaMapper } from './skill.mapper'
+import { Injectable } from '@nestjs/common'
 
-export class OfferPrismaMapper implements IGenericMapper<OfferDomain, OfferDB> {
-  toDomain(offer: OfferDB): OfferDomain {
-    return new OfferDomain(
-      offer.id,
+@Injectable()
+export class OfferPrismaMapper {
 
-      '', // ⚠️ creatorId (not in DB yet)
+    private skillMapper = new SkillPrismaMapper()
 
-      offer.title,
-      offer.description,
+    toDomain(entity: any): Offer {
 
-      '', // company (not in DB yet)
-      '', // location (not in DB yet)
-      '', // domain (not in DB yet)
+        const requiredSkills = entity.requiredSkills
+            ? entity.requiredSkills.map(rs =>
+                new SkillAssignment(
+                    this.skillMapper.toDomain(rs.skill),
+                    rs.level
+                )
+            )
+            : []
 
-      new Date(), // startDate (placeholder)
-      new Date(), // endDate (placeholder)
+        return new Offer(
+            entity.id,
+            entity.recruiterProfileId, // 🔥 FIX
 
-      [] as SkillAssignment[], // requiredSkills
+            entity.title,
+            entity.description,
 
-      offer.type as OfferType,
+            entity.company,
+            entity.location,
+            entity.domain,
 
-      offer.createdAt,
-      offer.updatedAt,
-      offer.deletedAt ?? undefined,
-    );
-  }
+            entity.startDate,
+            entity.endDate,
 
-  toPersistence(domain: OfferDomain): OfferDB {
-    return {
-      id: domain.id,
-      title: domain.title,
-      description: domain.description,
-      type: domain.type,
+            requiredSkills,
+            entity.type,
 
-      createdAt: domain.createdAt as Date,
-      updatedAt: domain.updatedAt as Date,
-      deletedAt: domain.deletedAt as Date | null,
-    } as OfferDB;
-  }
+            entity.createdAt,
+            entity.updatedAt,
+            entity.deletedAt ?? undefined
+        )
+    }
+    toPersistence(entity: Offer) {
+        return {
+            id: entity.id,
+
+            recruiterProfileId: entity.recruiterProfileId, // 🔥 FIX
+
+            title: entity.title,
+            description: entity.description,
+            company: entity.company,
+            location: entity.location,
+            domain: entity.domain,
+            startDate: entity.startDate,
+            endDate: entity.endDate,
+            type: entity.type,
+
+            createdAt: entity.createdAt,
+            updatedAt: new Date(),
+            deletedAt: entity.deletedAt ?? null
+        }
+    }
 }

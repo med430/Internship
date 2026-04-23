@@ -1,16 +1,22 @@
-import { IGenericMapper } from './generic.mapper';
-import { Skill as SkillDomain } from '../../../../Domain/entities/skill.entity';
-import { Skill as SkillDB } from '@prisma/client';
+import { Skill as SkillDB } from '@prisma/client'
+import { Skill } from '../../../../Domain/entities/skill.entity'
+import { IGenericMapper } from './generic.mapper'
 
-export class SkillPrismaMapper implements IGenericMapper<SkillDomain, SkillDB> {
-  toDomain(skill: SkillDB): SkillDomain {
-    return new SkillDomain(skill.id, skill.name);
-  }
+export class SkillPrismaMapper implements IGenericMapper<Skill, SkillDB> {
 
-  toPersistence(domain: SkillDomain): SkillDB {
-    return {
-      id: domain.id,
-      name: domain.name,
-    };
-  }
+    // 🔥 DB → Domain
+    toDomain(entity: SkillDB): Skill {
+        return new Skill(
+            entity.id,
+            entity.name // mapping name → designation
+        )
+    }
+
+    // 🔥 Domain → DB
+    toPersistence(entity: Skill): SkillDB {
+        return {
+            id: entity.id,
+            name: entity.name // mapping designation → name
+        }
+    }
 }
