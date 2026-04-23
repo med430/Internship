@@ -46,6 +46,7 @@ CREATE TABLE "TeacherProfile" (
 CREATE TABLE "RecruiterProfile" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "company" TEXT NOT NULL,
 
     CONSTRAINT "RecruiterProfile_pkey" PRIMARY KEY ("id")
 );

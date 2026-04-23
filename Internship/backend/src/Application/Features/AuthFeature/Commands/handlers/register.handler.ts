@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
 import { randomUUID } from 'crypto'
-import { Inject } from '@nestjs/common'
+import {BadRequestException, Inject} from '@nestjs/common'
 
 import { RegisterCommand } from "../register.command"
 import { IUserRepository } from "../../../../repositories/user.repository"
@@ -40,11 +40,15 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
 
         const savedUser = await this.userRepo.save(user)
 
-        // 🔥 CREATE PROFILE SELON ROLE
         if (command.role === 'RECRUITER') {
+            if (!command.company) {
+                throw new BadRequestException('Company is required for recruiter')
+            }
+
             await this.recruiterProfileRepo.create({
                 id: randomUUID(),
-                userId: savedUser.id
+                userId: savedUser.id,
+                company: command.company
             })
         }
 

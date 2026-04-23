@@ -19,7 +19,8 @@ export class AuthController {
                 dto.password,
                 dto.name,
                 dto.lastname,
-                dto.role
+                dto.role,
+                dto.company
             )
         )
     }

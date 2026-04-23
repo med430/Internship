@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator'
+import {IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength} from 'class-validator'
 import {Role} from "../../../../Domain/enums/role.enum";
 
 export class RegisterDTO {
@@ -24,4 +24,8 @@ export class RegisterDTO {
 
     @IsEnum(Role)
     role: Role
+
+    @IsOptional()
+    @IsString()
+    company?: string
 }

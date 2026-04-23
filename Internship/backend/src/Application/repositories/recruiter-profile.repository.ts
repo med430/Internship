@@ -1,13 +1,11 @@
-export abstract class IRecruiterProfileRepository {
+import {RecruiterProfile} from "../../Domain/entities/recruiter-profile.entity";
 
+export abstract class IRecruiterProfileRepository {
     abstract create(data: {
         id: string
         userId: string
+        company: string // 🔥 AJOUT
     }): Promise<void>
 
-    // 🔥 AJOUT ICI
-    abstract findByUserId(userId: string): Promise<{
-        id: string
-        userId: string
-    } | null>
+    abstract findByUserId(userId: string): Promise<RecruiterProfile | null>
 }

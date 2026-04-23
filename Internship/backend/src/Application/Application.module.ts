@@ -13,15 +13,19 @@ import {CreateOfferHandler} from "./Features/OfferFeature/Commands/handlers/crea
 import {UpdateOfferHandler} from "./Features/OfferFeature/Commands/handlers/update-offer.handler";
 import {DeleteOfferHandler} from "./Features/OfferFeature/Commands/handlers/delete-offer.handler";
 import {ApplyToOfferHandler} from "./Features/ApplicationFeature/Commands/handlers/apply-offer.handler";
+import {
+  UpdateApplicationStatusHandler
+} from "./Features/ApplicationFeature/Commands/handlers/update-application-status.handler";
 
 
 const CommandHandlers = [
   RegisterHandler,
   LoginHandler,
-  CreateOfferHandler, // 🔥 AJOUT
+  CreateOfferHandler,
   UpdateOfferHandler,
   DeleteOfferHandler,
   ApplyToOfferHandler,
+  UpdateApplicationStatusHandler,
 ];
 @Global()
 @Module({
