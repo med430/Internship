@@ -1,6 +1,7 @@
 import { SkillAssignment } from './skill-assignment.entity';
 import { OfferType } from "../enums/offer-type.enum";
 import { BaseEntity } from "./base.entity";
+import { SkillRequirement } from './skill-requirement';
 
 export class Offer extends BaseEntity {
     constructor(
@@ -18,7 +19,7 @@ export class Offer extends BaseEntity {
         public startDate: Date,
         public endDate: Date,
 
-        public requiredSkills: SkillAssignment[],
+        public skillRequirements: SkillRequirement[],
         public type: OfferType,
 
         createdAt?: Date,

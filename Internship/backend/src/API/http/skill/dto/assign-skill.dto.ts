@@ -1,5 +1,5 @@
 import { IsInt, IsEnum } from 'class-validator'
-import { SkillLevel } from '../../../Domain/enums/skill-level.enum'
+import { SkillLevel } from '../../../../Domain/enums/skill-level.enum';
 
 export class AssignSkillDTO {
     @IsInt()

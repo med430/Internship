@@ -1,15 +1,15 @@
 import {CommandHandler, ICommandHandler} from "@nestjs/cqrs";
-import {AssignSkillCommand} from "../assign-skill.command";
 import {BadRequestException, ForbiddenException, Inject, NotFoundException} from "@nestjs/common";
 import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
-import {SkillAssignmentRepository} from "../../../../repositories/skill-assignment.repository";
+import {ISkillAssignmentRepository} from "../../../../repositories/skill-assignment.repository";
 import { UpdateSkillCommand } from "../update-skill.command";
+import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum';
 @CommandHandler(UpdateSkillCommand)
 export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
 
     constructor(
-        @Inject(SkillAssignmentRepository)
-        private readonly skillRepo: SkillAssignmentRepository,
+        @Inject(ISkillAssignmentRepository)
+        private readonly skillRepo: ISkillAssignmentRepository,
 
         @Inject(IStudentProfileRepository)
         private readonly studentRepo: IStudentProfileRepository
@@ -24,13 +24,13 @@ export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
         if (!skill) throw new NotFoundException()
 
         // 🔐 ownership check
-        if (skill.studentProfileId !== profile.id) {
+        if (skill.studentProfile.id !== profile.id) {
             throw new ForbiddenException()
         }
 
         return this.skillRepo.updateLevel(
             command.assignmentId,
-            command.level
+            command.level as SkillLevel
         )
     }
 }

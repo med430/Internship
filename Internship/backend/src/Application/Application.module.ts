@@ -19,12 +19,6 @@ import { GetOfferQueryHandler } from './Features/OfferFeature/Queries/handlers/g
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
 import { GetSkillQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skill-query.handler';
 import { GetSkillsQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skills-query.handler';
-import {
-  UpdateStudentProfileHandler
-} from "./Features/StudentProfileFeature/Commands/handlers/update-student-profile.handler";
-import {
-  UpdateRecruiterProfileHandler
-} from "./Features/RecruiterProfileFeature/Commands/handlers/update-recruiter-profile.handler";
 
 
 const CommandHandlers = [
@@ -34,8 +28,6 @@ const CommandHandlers = [
   UpdateOfferHandler,
   DeleteOfferHandler,
   ApplyToOfferHandler,
-  UpdateRecruiterProfileHandler,
-  UpdateStudentProfileHandler,
 ];
 
 const QueryHandlers = [

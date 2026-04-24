@@ -4,6 +4,8 @@ import {BadRequestException, Inject, NotFoundException} from "@nestjs/common";
 import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 import {ISkillAssignmentRepository} from "../../../../repositories/skill-assignment.repository";
 import {randomUUID} from "crypto";
+import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum';
+import { ISkillRepository } from '../../../../repositories/skill.repository';
 @CommandHandler(AssignSkillCommand)
 export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
 
@@ -12,7 +14,10 @@ export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
         private readonly studentRepo: IStudentProfileRepository,
 
         @Inject(ISkillAssignmentRepository)
-        private readonly skillRepo: ISkillAssignmentRepository
+        private readonly skillRepo: ISkillAssignmentRepository,
+
+        @Inject(ISkillRepository)
+        private readonly skillRepository: ISkillRepository
     ) {}
 
     async execute(command: AssignSkillCommand) {
@@ -29,11 +34,15 @@ export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
             throw new BadRequestException('Skill already assigned')
         }
 
-        return this.skillRepo.create({
-            id: randomUUID(),
-            studentProfileId: profile.id,
-            skillId: command.skillId,
-            level: command.level
-        })
+        const skill = await this.skillRepository.findById(command.skillId);
+
+        if (!skill) throw new NotFoundException('Skill not found');
+
+        return this.skillRepo.save({
+          id: randomUUID(),
+          skill,
+          studentProfile: profile,
+          level: command.level as SkillLevel,
+        });
     }
 }

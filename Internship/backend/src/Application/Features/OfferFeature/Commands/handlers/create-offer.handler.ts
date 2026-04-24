@@ -7,8 +7,8 @@ import { ISkillRepository } from '../../../../repositories/skill.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
 
 import { Offer } from '../../../../../Domain/entities/offer.entity'
-import { SkillAssignment } from '../../../../../Domain/entities/skill-assignment.entity'
 import { CreateOfferCommand } from "../create-offer.command"
+import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement';
 
 @CommandHandler(CreateOfferCommand)
 export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
@@ -50,10 +50,11 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
         }
 
         // 🔥 construire SkillAssignment
-        const skillAssignments = dto.requiredSkills.map(req => {
+        const skillRequirements = dto.requiredSkills.map(req => {
             const skill = skills.find(s => s.id === req.skillId)!
 
-            return new SkillAssignment(
+            return new SkillRequirement(
+                randomUUID(),
                 skill,
                 req.level
             )
@@ -70,7 +71,7 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
             dto.domain,
             new Date(dto.startDate),
             new Date(dto.endDate),
-            skillAssignments,
+            skillRequirements,
             dto.type
         )
 

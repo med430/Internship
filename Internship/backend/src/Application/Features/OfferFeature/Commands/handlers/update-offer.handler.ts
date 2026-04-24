@@ -13,6 +13,8 @@ import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-
 
 import { SkillAssignment } from '../../../../../Domain/entities/skill-assignment.entity'
 import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum'
+import { randomUUID } from 'crypto';
+import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement';
 
 @CommandHandler(UpdateOfferCommand)
 export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
@@ -74,10 +76,11 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
                 throw new BadRequestException('Invalid skill IDs')
             }
 
-            offer.requiredSkills = dto.requiredSkills.map(req => {
+            offer.skillRequirements = dto.requiredSkills.map(req => {
                 const skill = skills.find(s => s.id === req.skillId)!
 
-                return new SkillAssignment(
+                return new SkillRequirement(
+                    randomUUID(),
                     skill,
                     req.level as SkillLevel
                 )

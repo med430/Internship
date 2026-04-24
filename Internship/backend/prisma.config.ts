@@ -1,4 +1,9 @@
 import { defineConfig } from '@prisma/config';
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+const url = process.env.DB_URL;
 
 export default defineConfig({
     schema: './src/Infrastructure/Persistence/prisma/schema.prisma',
@@ -6,6 +11,6 @@ export default defineConfig({
         path: './src/Infrastructure/Persistence/prisma/migrations',
     },
     datasource: {
-        url: "postgres://postgres:Abc123987456@localhost:5432/Internship",
+        url: url,
     },
 });

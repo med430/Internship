@@ -44,7 +44,8 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
         if (command.role === 'RECRUITER') {
             await this.recruiterProfileRepo.create({
                 id: randomUUID(),
-                userId: savedUser.id
+                userId: savedUser.id,
+                company: '',
             })
         }
 
