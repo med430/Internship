@@ -21,7 +21,6 @@ enum OfferType {
 enum Role {
     STUDENT
     RECRUITER
-    TEACHER
     ADMIN
 }
 
@@ -173,7 +172,7 @@ type Interview {
 
 type Recommendation implements BaseEntity {
     id: ID!
-    teacherId: ID!
+    recruiterId: ID!
     studentId: ID!
     description: String!
 
@@ -200,11 +199,6 @@ type RecruiterProfile {
     offers: [Offer!]!
 }
 
-type TeacherProfile {
-    userId: ID!
-    recommendations: [Recommendation!]!
-    offers: [Offer!]!
-}
 
 # =======================
 # ROOT TYPES
@@ -230,7 +224,6 @@ type Query {
     # Profiles
     studentProfile(userId: ID!): StudentProfile
     recruiterProfile(userId: ID!): RecruiterProfile
-    teacherProfile(userId: ID!): TeacherProfile
 
     # CV
     cv(id: ID!): CV

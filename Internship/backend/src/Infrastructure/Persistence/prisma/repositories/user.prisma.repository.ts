@@ -37,4 +37,18 @@ export class UserRepository extends GenericRepository<User, UserDB> implements I
 
     return this.mapper.toDomain(user_db);
   }
+  async update(user: User): Promise<User> {
+    const result = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: user.name,
+        lastname: user.lastname,
+        username: user.username,
+        passwordHash: user.passwordHash,
+        deletedAt: user.deletedAt
+      }
+    })
+
+    return this.mapper.toDomain(result)
+  }
 }

@@ -28,7 +28,7 @@ export class OfferController {
     // 🔥 CREATE OFFER
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER', 'TEACHER')
+    @Roles('RECRUITER')
     createOffer(
         @Body() dto: CreateOfferDTO,
         @CurrentUser() user: User
@@ -41,7 +41,7 @@ export class OfferController {
     // 🔄 UPDATE OFFER
     @Put(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER', 'TEACHER')
+    @Roles('RECRUITER')
     updateOffer(
         @Param('id') id: string,
         @Body() dto: Partial<CreateOfferDTO>,
@@ -55,7 +55,7 @@ export class OfferController {
     // 🗑️ DELETE OFFER (SOFT DELETE)
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER', 'TEACHER')
+    @Roles('RECRUITER')
     deleteOffer(
         @Param('id') id: string,
         @CurrentUser() user: User

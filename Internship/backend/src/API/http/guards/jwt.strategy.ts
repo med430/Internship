@@ -1,12 +1,19 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { ConfigService } from '@nestjs/config'
 
+import { IUserRepository } from '../../../Application/repositories/user.repository'
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
 
-    constructor(config: ConfigService) {
+    constructor(
+        config: ConfigService,
+
+        @Inject(IUserRepository)
+        private readonly userRepo: IUserRepository
+    ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
@@ -20,11 +27,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException()
         }
 
-        // 🔥 IMPORTANT : format propre pour ton app
+        // 🔥 récupérer user depuis DB
+        const user = await this.userRepo.findById(payload.userId)
+
+        if (!user) {
+            throw new UnauthorizedException()
+        }
+
+        // 🔥 BLOQUER SI SUPPRIMÉ
+        if (user.deletedAt) {
+            throw new UnauthorizedException('User deleted')
+        }
+
+        // 🔥 retourner user clean pour @CurrentUser()
         return {
-            id: payload.userId,
-            username: payload.username,
-            roles: payload.roles,
+            id: user.id,
+            username: user.username,
+            role: user.role
         }
     }
 }

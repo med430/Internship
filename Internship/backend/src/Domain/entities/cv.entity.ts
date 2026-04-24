@@ -1,6 +1,4 @@
-import { Project } from './project.entity'
-import { Experience } from './experience.entity'
-import {BaseEntity} from "./base.entity";
+import { BaseEntity } from "./base.entity";
 
 export class CV extends BaseEntity {
     constructor(
@@ -9,15 +7,12 @@ export class CV extends BaseEntity {
 
         public fileUrl: string,
 
-        public parsedData: any,
+        public parsedData?: Record<string, any>,
 
-        public skills: string[],
-        public projects: Project[],
-        public experiences: Experience[],
         createdAt?: Date,
         updatedAt?: Date,
         deletedAt?: Date,
     ) {
-        super(createdAt, updatedAt, deletedAt)
+        super(createdAt, updatedAt, deletedAt);
     }
 }

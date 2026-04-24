@@ -12,29 +12,39 @@ export class StudentProfileRepository extends GenericRepository<StudentProfile, 
     super(prisma, 'studentProfile', mapper);
   }
 
-  async create(data: { id: string; userId: string }): Promise<void> {
+  async create(data: { id: string; userId: string; bio?: string }): Promise<void> {
     await this.prisma.studentProfile.create({
-      data,
+      data: {
+        id: data.id,
+        userId: data.userId,
+        bio: data.bio ?? null
+      },
     });
   }
   async findByUserId(userId: string): Promise<StudentProfile | null> {
     const res = await this.prisma.studentProfile.findUnique({
       where: { userId },
-    });
+    })
 
-    if (!res) return null;
+    if (!res) return null
 
-    return new StudentProfile(
-      res.id,
-      res.userId,
-      [], // cvs (tu peux laisser vide)
-      [], // skills
-      [], // applications
-    );
+    return this.mapper.toDomain(res)
+  }
+
+  async update(profile: StudentProfile): Promise<StudentProfile> {
+    const result = await this.prisma.studentProfile.update({
+      where: { userId: profile.userId },
+      data: {
+        bio: profile.bio // 🔥 OK maintenant
+      }
+    })
+
+    return this.mapper.toDomain(result)
   }
 
   async findAll(): Promise<StudentProfile[]> {
-    const results = await this.prisma.skill.findMany();
-    return results.map((r) => this.mapper.toDomain(r));
+    const results = await this.prisma.studentProfile.findMany()
+
+    return results.map((r) => this.mapper.toDomain(r))
   }
 }

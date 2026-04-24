@@ -1,10 +1,11 @@
-export class Experience {
+export class Education {
     constructor(
         public readonly id: string,
         public readonly studentProfileId: string,
 
-        public company: string,
-        public role: string,
+        public school: string,
+        public degree: string,
+        public field: string,
 
         public startDate: Date,
         public endDate?: Date,

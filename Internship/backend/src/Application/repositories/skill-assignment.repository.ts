@@ -1,6 +1,11 @@
-import { IGenericRepository } from './generic.repository';
-import { SkillAssignment } from '../../Domain/entities/skill-assignment.entity';
+import {SkillLevel} from "@prisma/client";
 
-export abstract class ISkillAssignmentRepository extends IGenericRepository<SkillAssignment> {
-  abstract findByStudent(studentId: string): Promise<SkillAssignment[]>;
+export class SkillAssignmentRepository {
+  constructor(
+      public readonly id: string,
+      public readonly skillId: number,
+      public readonly studentProfileId?: string,
+      public readonly offerId?: string,
+      public level?: SkillLevel
+  ) {}
 }

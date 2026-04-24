@@ -10,30 +10,31 @@ import { IGenericMapper } from './generic.mapper';
 @Injectable()
 export class StudentProfilePrismaMapper implements IGenericMapper<Domain, DB> {
   constructor(
-    private readonly skillMapper: SkillAssignmentPrismaMapper,
-    private readonly applicationMapper: ApplicationPrismaMapper,
-    private readonly cvMapper: CVPrismaMapper,
+      private readonly skillMapper: SkillAssignmentPrismaMapper,
+      private readonly applicationMapper: ApplicationPrismaMapper,
+      private readonly cvMapper: CVPrismaMapper,
   ) {}
 
   toDomain(entity: any): Domain {
     return new Domain(
-      entity.id,
-      entity.userId,
+        entity.id,
+        entity.userId,
+        entity.bio ?? undefined, // 🔥 AJOUT ICI
 
-      // ✅ CVs
-      entity.cvs ? entity.cvs.map((cv: any) => this.cvMapper.toDomain(cv)) : [],
+        // ✅ CVs
+        entity.cvs ? entity.cvs.map((cv: any) => this.cvMapper.toDomain(cv)) : [],
 
-      // ✅ Skills (SkillAssignment)
-      entity.skills
-        ? entity.skills.map((s: any) => this.skillMapper.toDomain(s))
-        : [],
+        // ✅ Skills
+        entity.skills
+            ? entity.skills.map((s: any) => this.skillMapper.toDomain(s))
+            : [],
 
-      // ✅ Applications
-      entity.applications
-        ? entity.applications.map((a: any) =>
-            this.applicationMapper.toDomain(a),
-          )
-        : [],
+        // ✅ Applications
+        entity.applications
+            ? entity.applications.map((a: any) =>
+                this.applicationMapper.toDomain(a),
+            )
+            : [],
     );
   }
 
@@ -41,8 +42,7 @@ export class StudentProfilePrismaMapper implements IGenericMapper<Domain, DB> {
     return {
       id: domain.id,
       userId: domain.userId,
-
-      // ❗ relations handled separately in Prisma (create/connect)
+      bio: domain.bio ?? null, // 🔥 AJOUT ICI
     };
   }
 }

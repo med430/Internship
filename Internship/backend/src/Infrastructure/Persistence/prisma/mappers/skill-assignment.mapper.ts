@@ -1,23 +1,27 @@
-import { IGenericMapper } from './generic.mapper';
-import { SkillAssignment as Domain } from '../../../../Domain/entities/skill-assignment.entity';
-import { Skill as SkillDomain } from '../../../../Domain/entities/skill.entity';
-import { SkillAssignment as DB } from '@prisma/client';
+import { Injectable } from '@nestjs/common'
+import { SkillAssignment as Domain } from '../../../../Domain/entities/skill-assignment.entity'
+import { SkillAssignment as DB } from '@prisma/client'
 
-export class SkillAssignmentPrismaMapper implements IGenericMapper<Domain, DB> {
-  toDomain(data: DB): Domain {
+@Injectable()
+export class SkillAssignmentPrismaMapper {
+
+  toDomain(entity: DB): Domain {
     return new Domain(
-      new SkillDomain(data.skillId, ''), // name optional (can be enriched later)
-      data.level as any,
-    );
+        entity.id,
+        entity.skillId,
+        entity.studentProfileId ?? undefined,
+        entity.offerId ?? undefined,
+        entity.level
+    )
   }
 
-  toPersistence(domain: Domain): DB {
+  toPersistence(domain: Domain) {
     return {
-      id: undefined as any, // Prisma generates it
-      skillId: domain.skill.id,
-      level: domain.level,
-      studentProfileId: null,
-      offerId: '' as any,
-    } as DB;
+      id: domain.id,
+      skillId: domain.skillId,
+      studentProfileId: domain.studentProfileId ?? null,
+      offerId: domain.offerId ?? null,
+      level: domain.level
+    }
   }
 }
