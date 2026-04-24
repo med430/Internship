@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common'
-import { PrismaModule } from './prisma/prisma.module'
 
 import { UserRepository } from './prisma/repositories/user.prisma.repository'
 import { OfferRepository } from './prisma/repositories/offer.prisma.repository'
@@ -22,11 +21,14 @@ import { SkillAssignmentPrismaMapper } from './prisma/mappers/skill-assignment.m
 import { StudentProfilePrismaMapper } from './prisma/mappers/student-profile.mapper';
 import { CVPrismaMapper } from './prisma/mappers/cv.mapper';
 import { ApplicationPrismaMapper } from './prisma/mappers/application.mapper';
+import { PrismaService } from './prisma/prisma.service';
+import { RecruiterProfilePrismaMapper } from './prisma/mappers/recruiter-profile.mapper';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [],
 
     providers: [
+      PrismaService,
         // repos
         UserRepository,
         OfferRepository,
@@ -43,6 +45,7 @@ import { ApplicationPrismaMapper } from './prisma/mappers/application.mapper';
       StudentProfilePrismaMapper,
       CVPrismaMapper,
       ApplicationPrismaMapper,
+      RecruiterProfilePrismaMapper,
 
         // bindings
         { provide: IUserRepository, useClass: UserRepository },

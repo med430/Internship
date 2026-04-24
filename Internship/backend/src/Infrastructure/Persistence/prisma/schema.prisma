@@ -186,15 +186,16 @@ model Offer {
 
   type OfferType
 
-  requiredSkills SkillAssignment[]
-  applications   Application[]
+  skillRequirements SkillRequirement[]
+  applications      Application[]
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  deletedAt  DateTime?
-  interviews Interview[]
-  user       User?       @relation("UserOffers", fields: [userId], references: [id])
-  userId     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  interviews       Interview[]
+  user             User?             @relation("UserOffers", fields: [userId], references: [id])
+  userId           String?
+  skillAssignments SkillAssignment[]
 }
 
 //
@@ -230,7 +231,8 @@ model Skill {
   id   Int    @id @default(autoincrement())
   name String @unique
 
-  assignments SkillAssignment[]
+  assignments       SkillAssignment[]
+  skillRequirements SkillRequirement[]
 }
 
 model SkillAssignment {
@@ -248,6 +250,20 @@ model SkillAssignment {
   studentProfile   StudentProfile? @relation(fields: [studentProfileId], references: [id])
 
   level SkillLevel
+}
+
+///
+/// SKILLREQUIREMENT
+///
+model SkillRequirement {
+  id String @id @default(uuid())
+
+  skillId Int
+  skill   Skill @relation(fields: [skillId], references: [id])
+
+  level   SkillLevel
+  offer   Offer?     @relation(fields: [offerId], references: [id])
+  offerId String?
 }
 
 //

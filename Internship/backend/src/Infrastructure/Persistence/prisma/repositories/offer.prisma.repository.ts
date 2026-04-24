@@ -24,8 +24,8 @@ export class OfferRepository
             data: {
                 ...data,
 
-                requiredSkills: {
-                    create: entity.requiredSkills.map(rs => ({
+                skillRequirements: {
+                    create: entity.skillRequirements.map(rs => ({
                         level: rs.level,
                         skill: {
                             connect: { id: rs.skill.id },
@@ -35,7 +35,7 @@ export class OfferRepository
             },
 
             include: {
-                requiredSkills: {
+                skillRequirements: {
                     include: { skill: true },
                 },
             },
@@ -53,10 +53,10 @@ export class OfferRepository
             data: {
                 ...data,
 
-                requiredSkills: {
+                skillRequirements: {
                     deleteMany: {},
 
-                    create: entity.requiredSkills.map(rs => ({
+                    create: entity.skillRequirements.map(rs => ({
                         level: rs.level,
                         skill: {
                             connect: { id: rs.skill.id },
@@ -66,7 +66,7 @@ export class OfferRepository
             },
 
             include: {
-                requiredSkills: {
+                skillRequirements: {
                     include: { skill: true },
                 },
             },
@@ -82,7 +82,7 @@ export class OfferRepository
                 deletedAt: null
             },
             include: {
-                requiredSkills: {
+                skillRequirements: {
                     include: { skill: true },
                 },
             },

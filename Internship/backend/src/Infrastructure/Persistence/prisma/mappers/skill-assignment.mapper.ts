@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { SkillAssignment as Domain } from '../../../../Domain/entities/skill-assignment.entity'
 import { SkillAssignment as DB } from '@prisma/client'
+import { SkillLevel } from '../../../../Domain/enums/skill-level.enum';
 
 @Injectable()
 export class SkillAssignmentPrismaMapper {
@@ -9,9 +10,8 @@ export class SkillAssignmentPrismaMapper {
     return new Domain(
         entity.id,
         entity.skillId,
-        entity.studentProfileId ?? undefined,
-        entity.offerId ?? undefined,
-        entity.level
+        entity.studentProfileId ?? '',
+        entity.level as SkillLevel
     )
   }
 
@@ -20,7 +20,6 @@ export class SkillAssignmentPrismaMapper {
       id: domain.id,
       skillId: domain.skillId,
       studentProfileId: domain.studentProfileId ?? null,
-      offerId: domain.offerId ?? null,
       level: domain.level
     }
   }

@@ -8,13 +8,13 @@ import { Offer as DB } from '@prisma/client';
 
 @Injectable()
 export class OfferPrismaMapper implements IGenericMapper<Domain, DB> {
-  constructor(private skillMapper = new SkillPrismaMapper()) {}
+  constructor(private skillMapper: SkillPrismaMapper) {}
 
   toDomain(entity: any): Offer {
-    const requiredSkills = entity.requiredSkills
-      ? entity.requiredSkills.map(
+    const skillRequirements = entity.skillRequirements
+      ? entity.skillRequirements.map(
           (rs) =>
-            new SkillAssignment(this.skillMapper.toDomain(rs.skill), rs.level),
+            this.skillMapper.toDomain(rs.skill),
         )
       : [];
 
@@ -32,7 +32,7 @@ export class OfferPrismaMapper implements IGenericMapper<Domain, DB> {
       entity.startDate,
       entity.endDate,
 
-      requiredSkills,
+      skillRequirements,
       entity.type,
 
       entity.createdAt,
@@ -53,11 +53,12 @@ export class OfferPrismaMapper implements IGenericMapper<Domain, DB> {
       domain: entity.domain,
       startDate: entity.startDate,
       endDate: entity.endDate,
+      skillRequirements: entity.skillRequirements,
       type: entity.type,
 
       createdAt: entity.createdAt,
       updatedAt: new Date(),
       deletedAt: entity.deletedAt ?? null,
-    };
+    } as unknown as DB;
   }
 }

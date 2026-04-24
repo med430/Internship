@@ -5,8 +5,8 @@ import { StudentProfile } from './student-profile.entity';
 export class SkillAssignment {
     constructor(
       public id: string,
-        public skill: Skill,
-        public studentProfile: StudentProfile,
+        public skillId: number,
+        public studentProfileId: string,
         public level: SkillLevel // 🔥 PAS optionnel
     ) {}
 }

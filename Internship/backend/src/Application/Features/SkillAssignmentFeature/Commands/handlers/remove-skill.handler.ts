@@ -24,7 +24,7 @@ export class RemoveSkillHandler implements ICommandHandler<RemoveSkillCommand> {
         const skill = await this.skillRepo.findById(command.assignmentId)
         if (!skill) throw new NotFoundException()
 
-        if (skill.studentProfile.id !== profile.id) {
+        if (skill.studentProfileId !== profile.id) {
             throw new ForbiddenException()
         }
 

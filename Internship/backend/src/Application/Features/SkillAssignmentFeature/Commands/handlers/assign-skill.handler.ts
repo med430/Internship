@@ -34,14 +34,10 @@ export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
             throw new BadRequestException('Skill already assigned')
         }
 
-        const skill = await this.skillRepository.findById(command.skillId);
-
-        if (!skill) throw new NotFoundException('Skill not found');
-
         return this.skillRepo.save({
           id: randomUUID(),
-          skill,
-          studentProfile: profile,
+          skillId: command.skillId,
+          studentProfileId: profile.id,
           level: command.level as SkillLevel,
         });
     }

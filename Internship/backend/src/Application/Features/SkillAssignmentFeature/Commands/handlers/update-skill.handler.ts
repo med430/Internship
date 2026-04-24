@@ -24,7 +24,7 @@ export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
         if (!skill) throw new NotFoundException()
 
         // 🔐 ownership check
-        if (skill.studentProfile.id !== profile.id) {
+        if (skill.studentProfileId !== profile.id) {
             throw new ForbiddenException()
         }
 
