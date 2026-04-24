@@ -5,7 +5,7 @@ import { BaseEntity } from "./base.entity";
 export class Offer extends BaseEntity {
     constructor(
         public readonly id: string,
-        public readonly creatorId: string,
+        public readonly recruiterProfileId: string,
 
         public title: string,
         public description: string,

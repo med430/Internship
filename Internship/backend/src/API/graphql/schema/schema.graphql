@@ -213,15 +213,19 @@ type TeacherProfile {
 type Query {
     # Users
     user(id: ID!): User
-    users: [User!]!
+    users(pageNumber: Int, pageSize: Int): [User]!
 
     # Offers
     offer(id: ID!): Offer
-    offers: [Offer!]!
+    offers(pageNumber: Int, pageSize: Int): [Offer]!
+
+    # Skills
+    skill(id: ID!): Skill
+    skills(pageNumber: Int, pageSize: Int): [Skill]!
 
     # Applications
     application(id: ID!): Application
-    applications: [Application!]!
+    applications: [Application]!
 
     # Profiles
     studentProfile(userId: ID!): StudentProfile
@@ -230,7 +234,7 @@ type Query {
 
     # CV
     cv(id: ID!): CV
-    cvsByStudent(studentId: ID!): [CV!]!
+    cvsByStudent(studentId: ID!): [CV]!
 }
 
 type Mutation {

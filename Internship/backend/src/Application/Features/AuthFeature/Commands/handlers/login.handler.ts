@@ -30,7 +30,8 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
 
         const token = await this.authService.createJwtToken(
             user.username,
-            [user.role]
+            [user.role],
+            user.id
         )
 
         return { token }

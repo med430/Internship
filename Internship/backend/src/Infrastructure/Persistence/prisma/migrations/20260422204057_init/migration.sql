@@ -90,13 +90,19 @@ CREATE TABLE "Experience" (
 -- CreateTable
 CREATE TABLE "Offer" (
     "id" TEXT NOT NULL,
-    "creatorId" TEXT NOT NULL,
+    "recruiterProfileId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
+    "company" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "domain" TEXT NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
     "type" "OfferType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
+    "userId" TEXT,
 
     CONSTRAINT "Offer_pkey" PRIMARY KEY ("id")
 );
@@ -106,7 +112,8 @@ CREATE TABLE "Application" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "offerId" TEXT NOT NULL,
-    "status" "ApplicationStatus" NOT NULL DEFAULT 'PENDING',
+    "status" "ApplicationStatus" NOT NULL,
+    "cvUrl" TEXT NOT NULL,
     "matchScore" DOUBLE PRECISION NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -127,9 +134,9 @@ CREATE TABLE "Skill" (
 CREATE TABLE "SkillAssignment" (
     "id" TEXT NOT NULL,
     "skillId" INTEGER NOT NULL,
-    "level" "SkillLevel",
-    "studentId" TEXT,
-    "offerId" TEXT,
+    "offerId" TEXT NOT NULL,
+    "level" "SkillLevel" NOT NULL,
+    "studentProfileId" TEXT,
 
     CONSTRAINT "SkillAssignment_pkey" PRIMARY KEY ("id")
 );
@@ -175,6 +182,15 @@ CREATE UNIQUE INDEX "TeacherProfile_userId_key" ON "TeacherProfile"("userId");
 CREATE UNIQUE INDEX "RecruiterProfile_userId_key" ON "RecruiterProfile"("userId");
 
 -- CreateIndex
+CREATE INDEX "Application_studentId_idx" ON "Application"("studentId");
+
+-- CreateIndex
+CREATE INDEX "Application_offerId_idx" ON "Application"("offerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Application_studentId_offerId_key" ON "Application"("studentId", "offerId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Skill_name_key" ON "Skill"("name");
 
 -- AddForeignKey
@@ -196,25 +212,34 @@ ALTER TABLE "Project" ADD CONSTRAINT "Project_cvId_fkey" FOREIGN KEY ("cvId") RE
 ALTER TABLE "Experience" ADD CONSTRAINT "Experience_cvId_fkey" FOREIGN KEY ("cvId") REFERENCES "CV"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Offer" ADD CONSTRAINT "Offer_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "RecruiterProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Offer" ADD CONSTRAINT "Offer_recruiterProfileId_fkey" FOREIGN KEY ("recruiterProfileId") REFERENCES "RecruiterProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Application" ADD CONSTRAINT "Application_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Offer" ADD CONSTRAINT "Offer_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Application" ADD CONSTRAINT "Application_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Application" ADD CONSTRAINT "Application_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Application" ADD CONSTRAINT "Application_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SkillAssignment" ADD CONSTRAINT "SkillAssignment_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SkillAssignment" ADD CONSTRAINT "SkillAssignment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "SkillAssignment" ADD CONSTRAINT "SkillAssignment_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SkillAssignment" ADD CONSTRAINT "SkillAssignment_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "SkillAssignment" ADD CONSTRAINT "SkillAssignment_studentProfileId_fkey" FOREIGN KEY ("studentProfileId") REFERENCES "StudentProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Recommendation" ADD CONSTRAINT "Recommendation_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "TeacherProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Recommendation" ADD CONSTRAINT "Recommendation_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Interview" ADD CONSTRAINT "Interview_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "StudentProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Interview" ADD CONSTRAINT "Interview_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

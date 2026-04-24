@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import {AuthService} from "../../Application/Services/AuthService/AuthService";
+import { AuthService } from '../../Application/Services/AuthService/AuthService'
 
 @Injectable()
 export class JwtAuthService extends AuthService {
@@ -9,10 +9,16 @@ export class JwtAuthService extends AuthService {
         super()
     }
 
-    async createJwtToken(username: string, roles: string[]): Promise<string> {
+    async createJwtToken(
+        username: string,
+        roles: string[],
+        userId: string
+    ): Promise<string> {
+
         const payload = {
             username,
             roles,
+            userId,
         }
 
         return this.jwtService.sign(payload)

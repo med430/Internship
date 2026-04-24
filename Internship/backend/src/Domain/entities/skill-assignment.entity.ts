@@ -4,6 +4,7 @@ import { SkillLevel } from '../enums/skill-level.enum'
 export class SkillAssignment {
     constructor(
         public skill: Skill,
-        public level?: SkillLevel
+        public level: SkillLevel // 🔥 PAS optionnel
     ) {}
+  public id = () => this.skill.id;
 }
