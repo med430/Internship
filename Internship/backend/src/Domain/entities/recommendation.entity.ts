@@ -5,7 +5,7 @@ import {BaseEntity} from "./base.entity";
 export class Recommendation extends BaseEntity {
     constructor(
         public readonly id: string,
-        public readonly teacherId: string,
+        public readonly recruiterId: string,
         public readonly studentId: string,
         public readonly description: string,
         createdAt?: Date,

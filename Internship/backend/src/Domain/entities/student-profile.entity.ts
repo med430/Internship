@@ -8,7 +8,8 @@ export class StudentProfile {
         public readonly userId: string,
         public cvs: CV[] = [],
         public skills: SkillAssignment[],
-        public applications: Application[] = []
+        public applications: Application[] = [],
+        public bio?: string,
     ) {}
 
 }
