@@ -1,10 +1,10 @@
-import { QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetSkillsQuery } from '../get-skills.query';
 import { ISkillRepository } from '../../../../repositories/skill.repository';
 import { Skill } from '../../../../../Domain/entities/skill.entity';
 
 @QueryHandler(GetSkillsQuery)
-export class GetSkillsQueryHandler {
+export class GetSkillsQueryHandler implements IQueryHandler<GetSkillsQuery> {
   constructor(
     private readonly skillRepository: ISkillRepository,
   ) {
