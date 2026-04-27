@@ -10,6 +10,8 @@ export class User extends BaseEntity {
         public username: string,
         public passwordHash: string,
         public role: Role,
+        public phone?: string,
+        public avatarUrl?: string,
         createdAt?: Date,
         updatedAt?: Date,
         deletedAt?: Date,

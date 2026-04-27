@@ -13,6 +13,7 @@ export class Application extends BaseEntity {
         public status: ApplicationStatus,
         public cvUrl: string,
         public matchScore: number,
+        public coverLetterUrl?: string,
         createdAt?: Date,
         updatedAt?: Date,
         deletedAt?: Date,

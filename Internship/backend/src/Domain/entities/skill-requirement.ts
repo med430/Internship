@@ -1,5 +1,5 @@
 import { Skill } from './skill.entity';
-import { SkillLevel } from '@prisma/client';
+import {SkillLevel} from "../enums/skill-level.enum";
 
 export class SkillRequirement {
   constructor(

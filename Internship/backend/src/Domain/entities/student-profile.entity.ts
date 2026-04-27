@@ -1,11 +1,10 @@
 import { CV } from './cv.entity'
-import { Application } from './application.entity'
-import {Skill} from "./skill.entity";
 import {SkillAssignment} from "./skill-assignment.entity";
 import {Experience} from "./experience.entity";
 import {Project} from "./project.entity";
 import {Education} from "./education.entity";
 import {Certification} from "./certification.entity";
+import {Gender} from "../enums/gender";
 
 export class StudentProfile {
     constructor(
@@ -13,6 +12,12 @@ export class StudentProfile {
         public readonly userId: string,
 
         public bio?: string,
+
+        public birthDate?: Date,
+        public gender?: Gender,
+
+        public address?: string,
+        public city?: string,
 
         public skills: SkillAssignment[] = [],
         public experiences: Experience[] = [],

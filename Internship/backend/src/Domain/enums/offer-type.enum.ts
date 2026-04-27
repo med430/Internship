@@ -2,5 +2,6 @@ export enum OfferType {
     INTERNSHIP = 'INTERNSHIP',
     PFE = 'PFE',
     RESEARCH = 'RESEARCH',
-    PHD = 'PHD'
+    PHD = 'PHD',
+    ALTERNANCE='ALTERNANCE',
 }

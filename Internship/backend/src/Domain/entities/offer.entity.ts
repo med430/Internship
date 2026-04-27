@@ -2,6 +2,7 @@ import { SkillAssignment } from './skill-assignment.entity';
 import { OfferType } from "../enums/offer-type.enum";
 import { BaseEntity } from "./base.entity";
 import { SkillRequirement } from './skill-requirement';
+import {WorkMode} from "../enums/workMode";
 
 export class Offer extends BaseEntity {
     constructor(
@@ -15,7 +16,8 @@ export class Offer extends BaseEntity {
         public location: string,
 
         public domain: string,
-
+        public isPaid: boolean,
+        public workMode: WorkMode,
         public startDate: Date,
         public endDate: Date,
 

@@ -6,6 +6,8 @@ export class Project {
         public title: string,
         public description: string,
 
-        public technologies: string[]
+        public technologies: string[],
+        public githubUrl?: string,
+        public demoUrl?: string
     ) {}
 }
