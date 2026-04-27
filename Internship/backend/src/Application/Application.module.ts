@@ -19,15 +19,23 @@ import { GetOfferQueryHandler } from './Features/OfferFeature/Queries/handlers/g
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
 import { GetSkillQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skill-query.handler';
 import { GetSkillsQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skills-query.handler';
+import {
+  UpdateApplicationStatusHandler
+} from "./Features/ApplicationFeature/Commands/handlers/update-application-status.handler";
+import {DownloadCvHandler} from "./Features/ApplicationFeature/Commands/handlers/download-cv.handler";
+import {WithdrawApplicationHandler} from "./Features/ApplicationFeature/Commands/handlers/withdraw-application.handler";
 
 
 const CommandHandlers = [
   RegisterHandler,
   LoginHandler,
-  CreateOfferHandler, // 🔥 AJOUT
+  CreateOfferHandler,
   UpdateOfferHandler,
   DeleteOfferHandler,
   ApplyToOfferHandler,
+  UpdateApplicationStatusHandler,
+  DownloadCvHandler,
+  WithdrawApplicationHandler
 ];
 
 const QueryHandlers = [

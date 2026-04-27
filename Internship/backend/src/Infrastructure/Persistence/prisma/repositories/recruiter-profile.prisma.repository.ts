@@ -19,11 +19,20 @@ export class RecruiterProfileRepository implements IRecruiterProfileRepository {
             }
         })
     }
-    // 🔥 GraphQL (on garde)
-    async findByUserId(userId: string) {
-        return this.prisma.recruiterProfile.findUnique({
-            where: { userId }
-        })
+    async findByUserId(userId: string): Promise<RecruiterProfile | null> {
+
+        const res: RecruiterDB | null =
+            await this.prisma.recruiterProfile.findUnique({
+                where: { userId }
+            })
+
+        if (!res) return null
+
+        return new RecruiterProfile(
+            res.id,
+            res.userId,
+            res.company // ✔ maintenant reconnu
+        )
     }
 
     // 🔥 CQRS (propre)
