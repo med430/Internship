@@ -1,8 +1,10 @@
-import {StudentProfile} from "../../Domain/entities/student-profile.entity";
-import { IGenericRepository } from './generic.repository';
+// repositories/student-profile.repository.ts
+import { StudentProfile } from '../../Domain/entities/student-profile.entity'
+import { IGenericRepository } from './generic.repository'
 
-export abstract class IStudentProfileRepository extends IGenericRepository<StudentProfile> {
-    abstract create(data: { id: string; userId: string; bio?: string }): Promise<void>
-    abstract findByUserId(userId: string): Promise<StudentProfile | null>
-    abstract update(profile: StudentProfile): Promise<StudentProfile>
+export interface IStudentProfileRepository extends IGenericRepository<StudentProfile> {
+    findByUserId(userId: string): Promise<StudentProfile | null>
+    update(profile: StudentProfile): Promise<StudentProfile>
 }
+
+export const IStudentProfileRepository = Symbol('IStudentProfileRepository')

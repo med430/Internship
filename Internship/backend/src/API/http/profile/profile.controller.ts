@@ -1,31 +1,64 @@
-
-import { Controller, Patch, Delete, Body, UseGuards } from '@nestjs/common'
+// profile.controller.ts
+import { Body, Controller, Delete, Patch, Req, UseGuards } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
 
-import { JwtAuthGuard } from '../guards/jwt-auth.guard'
-import { CurrentUser } from '../decorators/current-user.decorator'
-
+import { UpdateStudentProfileDto } from './dto/update-student-profile.dto'
+import { UpdateRecruiterProfileDto } from './dto/update-recruiter-profile.dto'
+import { UpdateStudentProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-student-profile.command'
+import { UpdateRecruiterProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-recruiter-profile.command'
 import { SoftDeleteUserCommand } from '../../../Application/Features/ProfileFeature/Commands/soft-delete-user.command'
-import {UpdateProfileDto} from "./dto/update-profile.dto";
-import {UpdateUserCommand} from "../../../Application/Features/ProfileFeature/Commands/update-user.command";
+import { Role } from '../../../Domain/enums/role.enum'
+import {JwtAuthGuard} from "../guards/jwt-auth.guard";
 
-@Controller()
+@Controller('me')
+@UseGuards(JwtAuthGuard)
 export class ProfileController {
-    constructor(private readonly commandBus: CommandBus) {}
+    constructor(private commandBus: CommandBus) {}
 
-    @Patch('me')
-    @UseGuards(JwtAuthGuard)
-    updateMe(@Body() dto: UpdateProfileDto, @CurrentUser() user) {
+    @Patch()
+    update(@Req() req, @Body() dto: UpdateStudentProfileDto | UpdateRecruiterProfileDto) {
+        const userId = req.user.id
+        const role   = req.user.role
+
+        if (role === Role.STUDENT) {
+            const studentDto = dto as UpdateStudentProfileDto
+            return this.commandBus.execute(
+                new UpdateStudentProfileCommand(
+                    userId,
+                    studentDto.name,
+                    studentDto.lastname,
+                    studentDto.username,
+                    studentDto.phone,
+                    studentDto.avatarUrl,
+                    studentDto.bio,
+                    studentDto.birthDate,
+                    studentDto.gender,
+                    studentDto.address,
+                    studentDto.city,
+                )
+            )
+        }
+
+        const recruiterDto = dto as UpdateRecruiterProfileDto
         return this.commandBus.execute(
-            new UpdateUserCommand(user.id, dto)
+            new UpdateRecruiterProfileCommand(
+                userId,
+                recruiterDto.name,
+                recruiterDto.lastname,
+                recruiterDto.username,
+                recruiterDto.phone,
+                recruiterDto.avatarUrl,
+                recruiterDto.company,
+                recruiterDto.companyDescription,
+                recruiterDto.website,
+            )
         )
     }
 
-    @Delete('me')
-    @UseGuards(JwtAuthGuard)
-    deleteMe(@CurrentUser() user) {
+    @Delete()
+    softDelete(@Req() req) {
         return this.commandBus.execute(
-            new SoftDeleteUserCommand(user.id)
+            new SoftDeleteUserCommand(req.user.id)
         )
     }
 }

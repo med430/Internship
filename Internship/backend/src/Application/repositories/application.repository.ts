@@ -19,12 +19,12 @@ export abstract class IApplicationRepository
     ): Promise<void>
 
     // 🔥 CHECK usage CV (pour delete sécurité)
-    abstract existsByCvIdInApplications(
+    abstract existsByCvId(
         cvId: string
     ): Promise<boolean>
 
     // 🔥 CHECK usage Letter
-    abstract existsByCoverLetterIdInApplications(
+    abstract existsByCoverLetterId(
         coverLetterId: string
     ): Promise<boolean>
 }

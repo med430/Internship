@@ -52,8 +52,8 @@ export class DownloadApplicationFileHandler
 
         const fileUrl =
             type === 'cv'
-                ? application.cvUrl
-                : application.coverLetterUrl
+                ? application.cvId
+                : application.coverLetterId
 
         if (!fileUrl) throw new NotFoundException()
 

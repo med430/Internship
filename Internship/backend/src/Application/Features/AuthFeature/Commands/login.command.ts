@@ -1,3 +1,4 @@
+// Commands/login.command.ts
 export class LoginCommand {
     constructor(
         public readonly email: string,

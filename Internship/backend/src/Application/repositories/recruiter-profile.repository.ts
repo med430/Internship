@@ -1,21 +1,10 @@
-import { RecruiterProfile } from "../../Domain/entities/recruiter-profile.entity";
+// repositories/recruiter-profile.repository.ts
+import { RecruiterProfile } from '../../Domain/entities/recruiter-profile.entity'
+import { IGenericRepository } from './generic.repository'
 
-export abstract class IRecruiterProfileRepository {
-
-    abstract create(data: {
-        id: string
-        userId: string
-        company: string // 🔥 AJOUT
-    }): Promise<void>
-
-    // 🔥 GraphQL (NE PAS TOUCHER)
-    abstract findByUserId(userId: string): Promise<{
-        id: string
-        userId: string
-    } | null>
-
-    // 🔥 CQRS (NOUVEAU)
-    abstract findDomainByUserId(userId: string): Promise<RecruiterProfile | null>
-
-    abstract update(profile: RecruiterProfile): Promise<RecruiterProfile>
+export interface IRecruiterProfileRepository extends IGenericRepository<RecruiterProfile> {
+    findByUserId(userId: string): Promise<RecruiterProfile | null>
+    update(profile: RecruiterProfile): Promise<RecruiterProfile>
 }
+
+export const IRecruiterProfileRepository = Symbol('IRecruiterProfileRepository')

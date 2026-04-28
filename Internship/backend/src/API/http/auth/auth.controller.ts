@@ -1,34 +1,50 @@
-import { Controller, Post, Body } from '@nestjs/common'
+// auth.controller.ts
+import { Body, Controller, Post } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
-import {RegisterDTO} from "./dto/register.dto";
-import {RegisterCommand} from "../../../Application/Features/AuthFeature/Commands/register.command";
-import {LoginDTO} from "./dto/login.dto";
-import {LoginCommand} from "../../../Application/Features/AuthFeature/Commands/login.command";
+import { LoginDto } from './dto/login.dto'
+import { RegisterStudentDto } from './dto/register-student.dto'
+import { RegisterRecruiterDto } from './dto/register-recruiter.dto'
+import { LoginCommand } from '../../../Application/Features/AuthFeature/Commands/login.command'
+import { RegisterStudentCommand } from '../../../Application/Features/AuthFeature/Commands/register-student.command'
+import { RegisterRecruiterCommand } from '../../../Application/Features/AuthFeature/Commands/register-recruiter.command'
 
 @Controller('auth')
 export class AuthController {
-
     constructor(private commandBus: CommandBus) {}
 
-    @Post('register')
-    register(@Body() dto: RegisterDTO) {
+    @Post('login')
+    login(@Body() dto: LoginDto) {
         return this.commandBus.execute(
-            new RegisterCommand(
+            new LoginCommand(dto.email, dto.password)
+        )
+    }
+
+    @Post('register/student')
+    registerStudent(@Body() dto: RegisterStudentDto) {
+        return this.commandBus.execute(
+            new RegisterStudentCommand(
                 dto.email,
-                dto.username,
-                dto.password,
                 dto.name,
                 dto.lastname,
-                dto.role,
-                dto.company
+                dto.username,
+                dto.password
             )
         )
     }
 
-    @Post('login')
-    login(@Body() dto: LoginDTO) {
+    @Post('register/recruiter')
+    registerRecruiter(@Body() dto: RegisterRecruiterDto) {
         return this.commandBus.execute(
-            new LoginCommand(dto.email, dto.password)
+            new RegisterRecruiterCommand(
+                dto.email,
+                dto.name,
+                dto.lastname,
+                dto.username,
+                dto.password,
+                dto.company,
+                dto.companyDescription,
+                dto.website
+            )
         )
     }
 }

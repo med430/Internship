@@ -1,8 +1,12 @@
+// repositories/user.repository.ts
+import { User } from '../../Domain/entities/user.entity'
 import { IGenericRepository } from './generic.repository'
-import {User} from "../../Domain/entities/user.entity";
 
-export abstract class IUserRepository extends IGenericRepository<User> {
-    abstract findByEmail(email: string): Promise<User | null>;
-    abstract findByUsername(username: string): Promise<User | null>;
-    abstract update(user: User): Promise<User>
+export interface IUserRepository extends IGenericRepository<User, string> {
+    findByEmail(email: string): Promise<User | null>
+    findByUsername(username: string): Promise<User | null>
+    softDelete(id: string): Promise<void>
+    update(user: User): Promise<User>
 }
+
+export const IUserRepository = Symbol('IUserRepository')
