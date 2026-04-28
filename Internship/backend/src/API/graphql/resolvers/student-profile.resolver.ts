@@ -11,7 +11,7 @@ import {
 } from '../../../Application/Features/StudentProfileFeature/Queries/get-student-profiles.query';
 
 @Resolver(StudentProfile)
-export class SkillAssignmentResolver {
+export class StudentProfileResolver {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Query('studentProfile')

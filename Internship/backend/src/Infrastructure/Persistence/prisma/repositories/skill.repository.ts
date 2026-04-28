@@ -4,14 +4,17 @@ import { Skill } from '../../../../Domain/entities/skill.entity'
 import { Skill as SkillDB } from '@prisma/client'
 import { SkillMapper } from '../mappers/skill.mapper'
 import { ISkillRepository } from '../../../../Application/repositories/skill.repository'
+import { GenericRepository } from './generic.repositories';
 
 @Injectable()
-export class SkillRepositoryImpl implements ISkillRepository {
+export class SkillRepositoryImpl extends GenericRepository<Skill, any, number> implements ISkillRepository {
 
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly mapper: SkillMapper
-    ) {}
+        protected readonly prisma: PrismaService,
+        protected readonly mapper: SkillMapper
+    ) {
+      super(prisma, 'skill', mapper);
+    }
 
     async findByIds(ids: number[]): Promise<Skill[]> {
         const results = await this.prisma.skill.findMany({

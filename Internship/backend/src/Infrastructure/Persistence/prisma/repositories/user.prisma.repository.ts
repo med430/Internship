@@ -15,7 +15,7 @@ export class UserRepositoryImpl
       prisma: PrismaService,
       mapper: UserMapper
   ) {
-    super(prisma, 'user', mapper)
+    super(prisma, 'user', mapper);
   }
 
   async findByEmail(email: string): Promise<User | null> {

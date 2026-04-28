@@ -70,6 +70,12 @@ type Skill {
 
 type SkillAssignment {
     skill: Skill!
+    studentProfile: StudentProfile!
+    level: SkillLevel
+}
+
+type SkillRequirement {
+    skill: Skill!
     level: SkillLevel
 }
 
@@ -128,7 +134,7 @@ type Offer implements BaseEntity {
     startDate: Date!
     endDate: Date!
 
-    requiredSkills: [SkillAssignment!]!
+    requiredSkills: [SkillRequirement!]!
     type: OfferType!
 
     createdAt: Date
