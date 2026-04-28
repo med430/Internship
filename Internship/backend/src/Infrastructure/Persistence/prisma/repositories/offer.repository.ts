@@ -29,13 +29,18 @@ export class OfferRepositoryImpl
 
     // ← surcharge save pour gérer create ET update
     async save(entity: Offer): Promise<Offer> {
-        const { skillRequirements, ...data } = this.mapper.toPersistence(entity)
+        const { skillRequirements, id, recruiterProfileId, ...updateData } = this.mapper.toPersistence(entity)
 
         const result = await this.prisma.offer.upsert({
             where:  { id: entity.id },
-            create: { ...data, skillRequirements },
+            create: {
+                id,
+                recruiterProfileId,
+                ...updateData,
+                skillRequirements
+            },
             update: {
-                ...data,
+                ...updateData,                           // ← sans id ni recruiterProfileId
                 skillRequirements: {
                     deleteMany: { offerId: entity.id },
                     create:     skillRequirements.create,

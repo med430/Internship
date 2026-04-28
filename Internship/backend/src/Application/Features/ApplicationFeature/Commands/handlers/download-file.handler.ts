@@ -12,6 +12,9 @@ import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-
 import {IApplicationRepository} from "../../../../repositories/application.repository";
 import {DownloadApplicationFileCommand} from "../download-file.command";
 import {FileStorageService} from "../../../../Services/FileStorageService/FileStorageService";
+import {ICVRepository} from "../../../../repositories/cv.repository";
+import { ICoverLetterRepository } from '../../../../repositories/coverletter.repository'
+
 @CommandHandler(DownloadApplicationFileCommand)
 export class DownloadApplicationFileHandler
     implements ICommandHandler<DownloadApplicationFileCommand> {
@@ -26,36 +29,40 @@ export class DownloadApplicationFileHandler
         @Inject(IRecruiterProfileRepository)
         private readonly recruiterRepo: IRecruiterProfileRepository,
 
+        @Inject(ICVRepository)
+        private readonly cvRepo: ICVRepository,
+
+        @Inject(ICoverLetterRepository)                              // ← ajouter
+        private readonly coverLetterRepo: ICoverLetterRepository,   // ← ajouter
+
         @Inject(FileStorageService)
         private readonly fileService: FileStorageService
     ) {}
 
     async execute(command: DownloadApplicationFileCommand): Promise<string> {
-
         const { applicationId, userId, type } = command
 
         const application = await this.appRepo.findById(applicationId)
         if (!application) throw new NotFoundException()
 
         const offer = await this.offerRepo.findById(application.offerId)
-        if (!offer || offer.deletedAt) {
-            throw new NotFoundException()
-        }
+        if (!offer || offer.deletedAt) throw new NotFoundException()
 
         const recruiter = await this.recruiterRepo.findByUserId(userId)
         if (!recruiter) throw new ForbiddenException()
 
-        if (offer.recruiterProfileId !== recruiter.id) {
-            throw new ForbiddenException()
+        if (offer.recruiterProfileId !== recruiter.id) throw new ForbiddenException()
+
+        if (type === 'cv') {
+            const cv = await this.cvRepo.findById(application.cvId)
+            if (!cv || cv.deletedAt) throw new NotFoundException()
+            return this.fileService.getFilePath(cv.fileUrl)
         }
 
-        const fileUrl =
-            type === 'cv'
-                ? application.cvId
-                : application.coverLetterId
-
-        if (!fileUrl) throw new NotFoundException()
-
-        return this.fileService.getFilePath(fileUrl)
+        // coverLetter
+        if (!application.coverLetterId) throw new NotFoundException('No cover letter')
+        const letter = await this.coverLetterRepo.findById(application.coverLetterId)  // ← ajouter
+        if (!letter || letter.deletedAt) throw new NotFoundException()
+        return this.fileService.getFilePath(letter.fileUrl)                            // ← ajouter
     }
 }

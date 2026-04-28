@@ -50,7 +50,7 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
 
   toPersistence(domain: Offer) {
     return {
-      id:                 domain.id,
+      id:                 domain.id,        // ← garde id ici pour upsert where
       recruiterProfileId: domain.recruiterProfileId,
       title:              domain.title,
       description:        domain.description,
@@ -63,8 +63,6 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
       endDate:            domain.endDate,
       type:               domain.type as unknown as PrismaOfferType,
       deletedAt:          domain.deletedAt ?? null,
-
-      // ← ajouter
       skillRequirements: {
         create: domain.skillRequirements.map(sr => ({
           id:      sr.id,
