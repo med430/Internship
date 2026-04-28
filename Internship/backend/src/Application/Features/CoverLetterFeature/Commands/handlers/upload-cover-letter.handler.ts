@@ -8,28 +8,31 @@ import {ICoverLetterRepository} from "../../../../repositories/coverletter.repos
 import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 import {CoverLetter} from "../../../../../Domain/entities/coverletter.entity";
 import {randomUUID} from "crypto";
-
+import {FileStorageService} from "../../../../Services/FileStorageService/FileStorageService";
 @CommandHandler(UploadCoverLetterCommand)
-export class UploadCoverLetterHandler
-    implements ICommandHandler<UploadCoverLetterCommand> {
+export class UploadCoverLetterHandler implements ICommandHandler<UploadCoverLetterCommand> {
 
     constructor(
         @Inject(ICoverLetterRepository)
         private readonly letterRepo: ICoverLetterRepository,
 
         @Inject(IStudentProfileRepository)
-        private readonly studentRepo: IStudentProfileRepository
+        private readonly studentRepo: IStudentProfileRepository,
+
+        @Inject(FileStorageService)                          // ← ajouter
+        private readonly fileService: FileStorageService    // ← ajouter
     ) {}
 
     async execute(command: UploadCoverLetterCommand) {
-
         const profile = await this.studentRepo.findByUserId(command.userId)
         if (!profile) throw new NotFoundException('Profile not found')
+
+        const fileUrl = await this.fileService.upload(command.file, 'letters')  // ← ajouter
 
         const letter = new CoverLetter(
             randomUUID(),
             profile.id,
-            command.fileUrl
+            fileUrl           // ← était command.fileUrl
         )
 
         return this.letterRepo.save(letter)

@@ -2,7 +2,7 @@ import { Skill as SkillDB } from '@prisma/client'
 import { Skill } from '../../../../Domain/entities/skill.entity'
 import { IGenericMapper } from './generic.mapper'
 
-export class SkillPrismaMapper implements IGenericMapper<Skill, SkillDB> {
+export class SkillMapper implements IGenericMapper<Skill, SkillDB> {
 
     // 🔥 DB → Domain
     toDomain(entity: SkillDB): Skill {

@@ -5,19 +5,14 @@ import {
     Param,
     Body,
     UseGuards,
-    UseInterceptors,
-    BadRequestException,
     Get,
     Res,
-    UploadedFiles,
     Inject
 } from '@nestjs/common'
 
 import type { Response } from 'express'
 import { CommandBus } from '@nestjs/cqrs'
-import { FileFieldsInterceptor } from '@nestjs/platform-express'
-import { diskStorage } from 'multer'
-import { randomUUID } from 'crypto'
+
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
@@ -29,7 +24,6 @@ import { DownloadApplicationFileCommand } from '../../../Application/Features/Ap
 
 import { ApplicationStatus } from '../../../Domain/enums/application-status.enum'
 
-import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 @Controller('applications')
 export class ApplicationController {
@@ -37,8 +31,6 @@ export class ApplicationController {
     constructor(
         private readonly commandBus: CommandBus,
 
-        @Inject(FileStorageService)
-        private readonly fileStorage: FileStorageService
     ) {}
 
     @Post()

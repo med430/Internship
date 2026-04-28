@@ -1,23 +1,23 @@
+// auth.module.ts
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { CqrsModule } from '@nestjs/cqrs'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 
-
-// 🔥 IMPORT ICI
 import { PersistenceModule } from '../Persistence/persistence.module'
-import {LoginHandler} from "../../Application/Features/AuthFeature/Commands/handlers/login.handler";
-import {JwtStrategy} from "../../API/http/guards/jwt.strategy";
-import {RegisterHandler} from "../../Application/Features/AuthFeature/Commands/handlers/register.handler";
-import {AuthController} from "../../API/http/auth/auth.controller";
-import {AuthService} from "../../Application/Services/AuthService/AuthService";
-import {JwtAuthService} from "./jwt-auth.service";
+import { AuthController } from '../../API/http/auth/auth.controller'
+import { AuthService } from '../../Application/Services/AuthService/AuthService'
+import { JwtAuthService } from './jwt-auth.service'
+import { JwtStrategy } from '../../API/http/guards/jwt.strategy'
+
+import { LoginHandler } from '../../Application/Features/AuthFeature/Commands/handlers/login.handler'
+import { RegisterStudentHandler } from '../../Application/Features/AuthFeature/Commands/handlers/register-student.handler'
+import { RegisterRecruiterHandler } from '../../Application/Features/AuthFeature/Commands/handlers/register-recruiter.handler'
 
 @Module({
     imports: [
         CqrsModule,
         ConfigModule,
-
         JwtModule.registerAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
@@ -25,17 +25,16 @@ import {JwtAuthService} from "./jwt-auth.service";
                 signOptions: { expiresIn: '1h' },
             }),
         }),
-
-        PersistenceModule, // 🔥
+        PersistenceModule,
     ],
 
     controllers: [AuthController],
 
     providers: [
-        RegisterHandler,
         LoginHandler,
+        RegisterStudentHandler,
+        RegisterRecruiterHandler,
         JwtStrategy,
-
         {
             provide: AuthService,
             useClass: JwtAuthService,

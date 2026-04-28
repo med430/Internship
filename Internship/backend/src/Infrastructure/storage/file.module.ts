@@ -1,9 +1,16 @@
-// file.module.ts
+// Infrastructure/file-storage/file-storage.module.ts
 import { Module } from '@nestjs/common'
-import {FileStorageProvider} from "./file-storage.provider";
+import { FileStorageService } from '../../Application/Services/FileStorageService/FileStorageService'
+import {LocalFileStorageService} from "./local-storage.service";
+
 
 @Module({
-    providers: [FileStorageProvider],
-    exports: [FileStorageProvider],
+    providers: [
+        {
+            provide: FileStorageService,
+            useClass: LocalFileStorageService,
+        },
+    ],
+    exports: [FileStorageService],
 })
-export class FileModule {}
+export class FileStorageModule {}

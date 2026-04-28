@@ -6,7 +6,7 @@ import { SkillPrismaMapper } from '../mappers/skill.mapper'
 import { ISkillRepository } from '../../../../Application/repositories/skill.repository'
 
 @Injectable()
-export class SkillRepository implements ISkillRepository {
+export class SkillRepositoryImpl implements ISkillRepository {
 
     constructor(
         private readonly prisma: PrismaService,

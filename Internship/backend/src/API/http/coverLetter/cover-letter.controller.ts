@@ -1,41 +1,26 @@
 // cover-letter.controller.ts
 import {
-    Controller,
-    Post,
-    Delete,
-    Param,
-    UseGuards,
-    UseInterceptors,
-    UploadedFile,
-    BadRequestException,
-    Inject, Patch
+    Controller, Post, Delete, Param,
+    UseGuards, UseInterceptors, UploadedFile,
+    BadRequestException, Patch
 } from '@nestjs/common'
-
 import { CommandBus } from '@nestjs/cqrs'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { randomUUID } from 'crypto'
-
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
-
 import { UploadCoverLetterCommand } from '../../../Application/Features/CoverLetterFeature/Commands/upload-cover-letter.command'
 import { DeleteCoverLetterCommand } from '../../../Application/Features/CoverLetterFeature/Commands/delete-cover-letter.command'
-
-import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 @Controller('cover-letters')
 @UseGuards(JwtAuthGuard)
 export class CoverLetterController {
 
     constructor(
-        private readonly commandBus: CommandBus,
-
-        @Inject(FileStorageService)
-        private readonly fileStorage: FileStorageService
+        private readonly commandBus: CommandBus  // ← seulement CommandBus
     ) {}
 
-    // ================= UPLOAD =================
     @Post()
     @UseInterceptors(
         FileInterceptor('letter', {
@@ -52,25 +37,16 @@ export class CoverLetterController {
             }
         })
     )
-    async upload(
-        @UploadedFile() file: Express.Multer.File,
-        @CurrentUser() user
-    ) {
+    async upload(@UploadedFile() file: Express.Multer.File, @CurrentUser() user) {
         if (!file) throw new BadRequestException('Letter required')
 
-        const fileUrl = await this.fileStorage.upload(file, 'letters')
-
         return this.commandBus.execute(
-            new UploadCoverLetterCommand(user.id, fileUrl)
+            new UploadCoverLetterCommand(user.id, file)  // ← passe le file directement
         )
     }
 
-    // ================= DELETE =================
     @Patch(':id/delete')
-    delete(
-        @Param('id') id: string,
-        @CurrentUser() user
-    ) {
+    delete(@Param('id') id: string, @CurrentUser() user) {
         return this.commandBus.execute(
             new DeleteCoverLetterCommand(user.id, id)
         )
