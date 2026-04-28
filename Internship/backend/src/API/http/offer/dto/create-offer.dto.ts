@@ -4,7 +4,7 @@ import {
     IsEnum,
     IsDateString,
     IsArray,
-    ValidateNested
+    ValidateNested, IsNumber
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -13,13 +13,12 @@ import { WorkMode } from '../../../../Domain/enums/workMode'
 import { SkillLevel } from '../../../../Domain/enums/skill-level.enum'
 
 class SkillRequirementDTO {
-    @IsString()
+    @IsNumber()
     skillId: number
 
     @IsEnum(SkillLevel)
     level: SkillLevel
 }
-
 export class CreateOfferDTO {
 
     @IsString()

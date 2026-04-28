@@ -18,7 +18,9 @@ import {OfferType} from "../../../../Domain/enums/offer-type.enum";
 type PrismaOfferFull = PrismaOffer & {
   skillRequirements: (PrismaSkillRequirement & { skill: PrismaSkill })[]
 }
-
+import {
+SkillLevel as PrismaSkillLevel,
+} from '@prisma/client'
 @Injectable()
 export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
   toDomain(raw: PrismaOfferFull): Offer {
@@ -56,11 +58,20 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
       location:           domain.location,
       domain:             domain.domain,
       isPaid:             domain.isPaid,
-      workMode:           domain.workMode as unknown as PrismaWorkMode,   // ← double cast
+      workMode:           domain.workMode as unknown as PrismaWorkMode,
       startDate:          domain.startDate,
       endDate:            domain.endDate,
-      type:               domain.type as unknown as PrismaOfferType,      // ← double cast
+      type:               domain.type as unknown as PrismaOfferType,
       deletedAt:          domain.deletedAt ?? null,
+
+      // ← ajouter
+      skillRequirements: {
+        create: domain.skillRequirements.map(sr => ({
+          id:      sr.id,
+          skillId: sr.skill.id,
+          level:   sr.level as unknown as PrismaSkillLevel,
+        }))
+      }
     }
   }
 }
