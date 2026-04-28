@@ -10,9 +10,9 @@ import { UpdateSkillCommand } from "src/Application/Features/SkillAssignmentFeat
 import {AssignSkillCommand} from "../../../Application/Features/SkillAssignmentFeature/Commands/assign-skill.command";
 import { UpdateSkillDTO } from "./dto/update-skill.dto"
 import {RemoveSkillCommand} from "../../../Application/Features/SkillAssignmentFeature/Commands/remove-skill.command";
-@Controller('skills')
+@Controller('skill-assignments')
 @UseGuards(JwtAuthGuard)
-class SkillController {
+export class SkillAssignmentController {
 
     constructor(private readonly commandBus: CommandBus) {}
 
@@ -22,7 +22,11 @@ class SkillController {
         @CurrentUser() user
     ) {
         return this.commandBus.execute(
-            new AssignSkillCommand(user.id, dto.skillId, dto.level)
+            new AssignSkillCommand(
+                user.id,
+                dto.skillId,
+                dto.level
+            )
         )
     }
 
@@ -33,7 +37,11 @@ class SkillController {
         @CurrentUser() user
     ) {
         return this.commandBus.execute(
-            new UpdateSkillCommand(user.id, id, dto.level)
+            new UpdateSkillCommand(
+                user.id,
+                id,
+                dto.level
+            )
         )
     }
 
@@ -47,5 +55,3 @@ class SkillController {
         )
     }
 }
-
-export default SkillController

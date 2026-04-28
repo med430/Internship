@@ -1,8 +1,10 @@
-import {CreateProjectDTO} from "../../../../API/http/project/dto/create-project.dto";
-
 export class CreateProjectCommand {
     constructor(
         public readonly userId: string,
-        public readonly dto: CreateProjectDTO
+        public readonly title: string,
+        public readonly description: string,
+        public readonly technologies: string[],
+        public readonly githubUrl?: string,
+        public readonly demoUrl?: string
     ) {}
 }

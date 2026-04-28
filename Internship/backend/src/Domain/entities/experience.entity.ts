@@ -1,4 +1,6 @@
-export class Experience {
+import {BaseEntity} from "./base.entity";
+
+export class Experience extends BaseEntity{
     constructor(
         public readonly id: string,
         public readonly studentProfileId: string,
@@ -9,6 +11,11 @@ export class Experience {
         public startDate: Date,
         public endDate?: Date,
 
-        public description?: string
-    ) {}
+        public description?: string,
+        createdAt?: Date,
+        updatedAt?: Date,
+        deletedAt?: Date,
+) {
+    super(createdAt, updatedAt, deletedAt);
+}
 }

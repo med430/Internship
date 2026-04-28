@@ -11,7 +11,6 @@ import {GenericCommandHandler} from "../../../GenericFeature/Commands/handlers/g
 import {IExperienceRepository} from "../../../../repositories/experience.repository";
 import {randomUUID} from "crypto";
 
-
 @CommandHandler(CreateExperienceCommand)
 export class CreateExperienceHandler extends GenericCommandHandler<
     CreateExperienceCommand,
@@ -20,24 +19,27 @@ export class CreateExperienceHandler extends GenericCommandHandler<
 > {
     constructor(
         @Inject(IStudentProfileRepository)
-        private studentRepo: IStudentProfileRepository,
+        private readonly studentRepo: IStudentProfileRepository,
 
         @Inject(IExperienceRepository)
-        private repo: IExperienceRepository
-    ) { super() }
+        private readonly repo: IExperienceRepository
+    ) {
+        super()
+    }
 
     protected async map(cmd: CreateExperienceCommand) {
+
         const profile = await this.studentRepo.findByUserId(cmd.userId)
-        if (!profile) throw new NotFoundException()
+        if (!profile) throw new NotFoundException('Student profile not found')
 
         return new Experience(
             randomUUID(),
             profile.id,
-            cmd.dto.company,
-            cmd.dto.role,
-            cmd.dto.startDate,
-            cmd.dto.endDate,
-            cmd.dto.description
+            cmd.company,
+            cmd.role,
+            cmd.startDate,
+            cmd.endDate,
+            cmd.description
         )
     }
 

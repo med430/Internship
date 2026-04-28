@@ -9,7 +9,6 @@ import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-
 import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { CreateOfferCommand } from "../create-offer.command"
 import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement';
-
 @CommandHandler(CreateOfferCommand)
 export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
 
@@ -24,55 +23,42 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
         private readonly recruiterRepo: IRecruiterProfileRepository
     ) {}
 
-    async execute(command: CreateOfferCommand) {
+    async execute(cmd: CreateOfferCommand) {
 
-        const { dto, creatorId } = command
+        const recruiter = await this.recruiterRepo.findByUserId(cmd.userId)
+        if (!recruiter) throw new NotFoundException()
 
-        // 🔥 récupérer recruiterProfile
-        const recruiterProfile = await this.recruiterRepo.findByUserId(creatorId)
-
-        if (!recruiterProfile) {
-            throw new NotFoundException('Recruiter profile not found')
-        }
-
-        // 🔥 validation dates
-        if (new Date(dto.startDate) >= new Date(dto.endDate)) {
+        if (cmd.startDate >= cmd.endDate) {
             throw new BadRequestException('Invalid date range')
         }
 
-        // 🔥 récupérer skills
         const skills = await this.skillRepo.findByIds(
-            dto.requiredSkills.map(s => s.skillId)
+            cmd.requiredSkills.map(s => s.skillId)
         )
 
-        if (skills.length !== dto.requiredSkills.length) {
-            throw new BadRequestException('Invalid skill IDs')
+        if (skills.length !== cmd.requiredSkills.length) {
+            throw new BadRequestException('Invalid skills')
         }
 
-        // 🔥 construire SkillAssignment
-        const skillRequirements = dto.requiredSkills.map(req => {
+        const skillRequirements = cmd.requiredSkills.map(req => {
             const skill = skills.find(s => s.id === req.skillId)!
-
-            return new SkillRequirement(
-                randomUUID(),
-                skill,
-                req.level
-            )
+            return new SkillRequirement(randomUUID(), skill, req.level)
         })
 
-        // 🔥 créer Offer avec recruiterProfileId
         const offer = new Offer(
             randomUUID(),
-            recruiterProfile.id, // 🔥 FIX CRITIQUE
-            dto.title,
-            dto.description,
-            dto.company,
-            dto.location,
-            dto.domain,
-            new Date(dto.startDate),
-            new Date(dto.endDate),
+            recruiter.id,
+            cmd.title,
+            cmd.description,
+            cmd.company,
+            cmd.location,
+            cmd.domain,
+            cmd.isPaid,
+            cmd.workMode,
+            cmd.startDate,
+            cmd.endDate,
             skillRequirements,
-            dto.type
+            cmd.type
         )
 
         return this.offerRepo.save(offer)

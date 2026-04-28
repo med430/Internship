@@ -8,16 +8,16 @@ import {
 
 import { UpdateApplicationStatusCommand } from '../update-application-status.command'
 
-import { IApplicationRepository } from '../../../../repositories/application.repository.'
+
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
 
 import { ApplicationStatus } from '../../../../../Domain/enums/application-status.enum'
-
+import {IApplicationRepository} from "../../../../repositories/application.repository";
 @CommandHandler(UpdateApplicationStatusCommand)
 export class UpdateApplicationStatusHandler
-    implements ICommandHandler<UpdateApplicationStatusCommand>
-{
+    implements ICommandHandler<UpdateApplicationStatusCommand> {
+
     constructor(
         @Inject(IApplicationRepository)
         private readonly appRepo: IApplicationRepository,
@@ -31,49 +31,51 @@ export class UpdateApplicationStatusHandler
 
     async execute(command: UpdateApplicationStatusCommand) {
 
-        const { applicationId, recruiterId, status } = command
+        const { applicationId, userId, status } = command
 
-        // 🔥 1. Vérifier application
         const application = await this.appRepo.findById(applicationId)
-        if (!application) {
-            throw new NotFoundException('Application not found')
-        }
+        if (!application) throw new NotFoundException('Application not found')
 
-        // 🔥 2. Vérifier offre associée
         const offer = await this.offerRepo.findById(application.offerId)
         if (!offer || offer.deletedAt) {
             throw new NotFoundException('Offer not found')
         }
 
-        // 🔥 3. Convertir USER → RecruiterProfile
-        const recruiterProfile = await this.recruiterRepo.findByUserId(recruiterId)
-
-        if (!recruiterProfile) {
+        const recruiter = await this.recruiterRepo.findByUserId(userId)
+        if (!recruiter) {
             throw new NotFoundException('Recruiter profile not found')
         }
 
-        // 🔥 4. Vérifier ownership CORRECT
-        if (offer.recruiterProfileId !== recruiterProfile.id) {
+        if (offer.recruiterProfileId !== recruiter.id) {
             throw new ForbiddenException('Not allowed')
         }
 
-        // 🔥 5. Empêcher double traitement
-        if (application.status !== ApplicationStatus.PENDING) {
-            throw new BadRequestException('Application already processed')
+        // 🔥 états finaux bloqués
+        if (
+            application.status === ApplicationStatus.ACCEPTED ||
+            application.status === ApplicationStatus.REJECTED
+        ) {
+            throw new BadRequestException('Application already finalized')
         }
 
-        // 🔥 6. Update status
-        application.status = status as ApplicationStatus
+        // 🔥 transitions autorisées STRICTES
+        if (
+            status !== ApplicationStatus.ACCEPTED &&
+            status !== ApplicationStatus.REJECTED
+        ) {
+            throw new BadRequestException('Invalid status transition')
+        }
 
-        // 🔥 7. Si ACCEPT → exclusivité
-        if (status === 'ACCEPTED') {
+        application.status = status
+
+        // 🔥 exclusivité si accepté
+        if (status === ApplicationStatus.ACCEPTED) {
             await this.appRepo.rejectAllExcept(
                 application.offerId,
                 application.id
             )
         }
 
-        // 🔥 8. Save
-        return await this.appRepo.update(application)
+        return this.appRepo.save(application)
     }
 }

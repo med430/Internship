@@ -1,9 +1,25 @@
-import {CreateOfferDTO} from "../../../../API/http/offer/dto/create-offer.dto";
-
 export class UpdateOfferCommand {
     constructor(
         public readonly offerId: string,
-        public readonly dto: Partial<CreateOfferDTO>,
-        public readonly userId: string
+        public readonly userId: string,
+
+        public readonly title?: string,
+        public readonly description?: string,
+        public readonly company?: string,
+        public readonly location?: string,
+        public readonly domain?: string,
+
+        public readonly isPaid?: boolean,
+        public readonly workMode?: any,
+
+        public readonly startDate?: Date,
+        public readonly endDate?: Date,
+
+        public readonly type?: any,
+
+        public readonly requiredSkills?: {
+            skillId: number
+            level: any
+        }[]
     ) {}
 }

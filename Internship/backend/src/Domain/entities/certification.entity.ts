@@ -1,5 +1,6 @@
+import {BaseEntity} from "./base.entity";
 
-export class Certification {
+export class Certification extends BaseEntity {
     constructor(
         public readonly id: string,
         public readonly studentProfileId: string,
@@ -11,6 +12,10 @@ export class Certification {
         public expirationDate?: Date,
 
         public credentialId?: string,
-        public credentialUrl?: string
-    ) {}
+        public credentialUrl?: string,
+        createdAt?: Date,
+        updatedAt?: Date,
+        deletedAt?: Date,
+    ) {
+        super(createdAt, updatedAt, deletedAt);}
 }

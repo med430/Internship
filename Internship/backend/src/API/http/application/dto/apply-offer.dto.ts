@@ -1,7 +1,14 @@
-import { IsString } from 'class-validator'
+import { IsString, IsOptional } from 'class-validator'
 
-export class ApplyOfferDTO {
+export class ApplyToOfferDTO {
+
     @IsString()
     offerId: string
 
+    @IsString()
+    cvUrl: string
+
+    @IsOptional()
+    @IsString()
+    coverLetterUrl?: string
 }

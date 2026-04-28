@@ -1,8 +1,11 @@
-import {CreateExperienceDTO} from "../../../../API/http/experience/dto/create-experience.dto";
 
 export class CreateExperienceCommand {
     constructor(
         public readonly userId: string,
-        public readonly dto: CreateExperienceDTO
+        public readonly company: string,
+        public readonly role: string,
+        public readonly startDate: Date,
+        public readonly endDate?: Date,
+        public readonly description?: string
     ) {}
 }

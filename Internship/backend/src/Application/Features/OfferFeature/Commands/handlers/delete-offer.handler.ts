@@ -4,7 +4,6 @@ import { NotFoundException, ForbiddenException, Inject } from '@nestjs/common'
 import { DeleteOfferCommand } from '../delete-offer.command'
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
-
 @CommandHandler(DeleteOfferCommand)
 export class DeleteOfferHandler implements ICommandHandler<DeleteOfferCommand> {
 
@@ -16,27 +15,21 @@ export class DeleteOfferHandler implements ICommandHandler<DeleteOfferCommand> {
         private readonly recruiterRepo: IRecruiterProfileRepository
     ) {}
 
-    async execute(command: DeleteOfferCommand) {
+    async execute(cmd: DeleteOfferCommand) {
 
-        const { offerId, userId } = command
+        const offer = await this.offerRepo.findById(cmd.offerId)
+        if (!offer || offer.deletedAt) throw new NotFoundException()
 
-        const offer = await this.offerRepo.findById(offerId)
-        if (!offer) throw new NotFoundException('Offer not found')
+        const recruiter = await this.recruiterRepo.findByUserId(cmd.userId)
+        if (!recruiter) throw new ForbiddenException()
 
-        // 🔐 récupérer recruiter profile
-        const recruiterProfile = await this.recruiterRepo.findByUserId(userId)
-
-        if (!recruiterProfile) {
-            throw new ForbiddenException('No recruiter profile')
+        if (offer.recruiterProfileId !== recruiter.id) {
+            throw new ForbiddenException()
         }
 
-        if (offer.recruiterProfileId !== recruiterProfile.id) {
-            throw new ForbiddenException('Not allowed')
-        }
+        offer.deletedAt = new Date()
+        offer.updatedAt = new Date()
 
-        // 🔥 soft delete
-        await this.offerRepo.softDelete(offerId)
-
-        return { success: true }
+        return this.offerRepo.save(offer)
     }
 }

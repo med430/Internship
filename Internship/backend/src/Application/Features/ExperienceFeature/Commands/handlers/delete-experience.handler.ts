@@ -1,24 +1,41 @@
 import {CommandHandler, ICommandHandler} from '@nestjs/cqrs'
 import {
-    Inject,
+    ForbiddenException,
+    Inject, NotFoundException,
 } from '@nestjs/common'
 import {IExperienceRepository} from "../../../../repositories/experience.repository";
 
 import {DeleteExperienceCommand} from "../delete-experience.command";
-
+import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 
 @CommandHandler(DeleteExperienceCommand)
-
 export class DeleteExperienceHandler
     implements ICommandHandler<DeleteExperienceCommand> {
 
     constructor(
         @Inject(IExperienceRepository)
-        private repo: IExperienceRepository
+        private readonly repo: IExperienceRepository,
+
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository
     ) {}
 
     async execute(cmd: DeleteExperienceCommand) {
-        await this.repo.delete(cmd.id)
-        return { message: 'Deleted' }
+
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (!profile) throw new NotFoundException()
+
+        const exp = await this.repo.findById(cmd.id)
+        if (!exp || exp.deletedAt) throw new NotFoundException()
+
+        if (exp.studentProfileId !== profile.id) {
+            throw new ForbiddenException()
+        }
+
+        exp.deletedAt = new Date()
+
+        await this.repo.save(exp)
+
+        return { message: 'Experience deleted' }
     }
 }

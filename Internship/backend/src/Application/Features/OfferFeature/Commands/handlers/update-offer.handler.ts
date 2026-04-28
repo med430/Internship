@@ -15,7 +15,6 @@ import { SkillAssignment } from '../../../../../Domain/entities/skill-assignment
 import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum'
 import { randomUUID } from 'crypto';
 import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement';
-
 @CommandHandler(UpdateOfferCommand)
 export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
 
@@ -30,63 +29,54 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
         private readonly recruiterRepo: IRecruiterProfileRepository
     ) {}
 
-    async execute(command: UpdateOfferCommand) {
+    async execute(cmd: UpdateOfferCommand) {
 
-        const { offerId, dto, userId } = command
+        const offer = await this.offerRepo.findById(cmd.offerId)
+        if (!offer || offer.deletedAt) throw new NotFoundException()
 
-        const offer = await this.offerRepo.findById(offerId)
-        if (!offer) throw new NotFoundException('Offer not found')
+        const recruiter = await this.recruiterRepo.findByUserId(cmd.userId)
+        if (!recruiter) throw new ForbiddenException()
 
-        // 🔐 récupérer recruiter profile
-        const recruiterProfile = await this.recruiterRepo.findByUserId(userId)
-
-        if (!recruiterProfile) {
-            throw new ForbiddenException('No recruiter profile')
+        if (offer.recruiterProfileId !== recruiter.id) {
+            throw new ForbiddenException()
         }
 
-        if (offer.recruiterProfileId !== recruiterProfile.id) {
-            throw new ForbiddenException('Not allowed')
-        }
+        // update fields
+        offer.title = cmd.title ?? offer.title
+        offer.description = cmd.description ?? offer.description
+        offer.company = cmd.company ?? offer.company
+        offer.location = cmd.location ?? offer.location
+        offer.domain = cmd.domain ?? offer.domain
+        offer.isPaid = cmd.isPaid ?? offer.isPaid
+        offer.workMode = cmd.workMode ?? offer.workMode
 
-        // 🔹 update champs simples
-        offer.title = dto.title ?? offer.title
-        offer.description = dto.description ?? offer.description
-        offer.company = dto.company ?? offer.company
-        offer.location = dto.location ?? offer.location
-        offer.domain = dto.domain ?? offer.domain
+        if (cmd.startDate) offer.startDate = cmd.startDate
+        if (cmd.endDate) offer.endDate = cmd.endDate
+        if (cmd.type) offer.type = cmd.type
 
-        if (dto.startDate) offer.startDate = new Date(dto.startDate)
-        if (dto.endDate) offer.endDate = new Date(dto.endDate)
-
-        if (dto.type) offer.type = dto.type
-
-        // 🔥 validation dates
         if (offer.startDate >= offer.endDate) {
             throw new BadRequestException('Invalid date range')
         }
 
-        // 🔹 update skills
-        if (dto.requiredSkills) {
+        // skills
+        if (cmd.requiredSkills) {
 
             const skills = await this.skillRepo.findByIds(
-                dto.requiredSkills.map(s => s.skillId)
+                cmd.requiredSkills.map(s => s.skillId)
             )
 
-            if (skills.length !== dto.requiredSkills.length) {
-                throw new BadRequestException('Invalid skill IDs')
+            if (skills.length !== cmd.requiredSkills.length) {
+                throw new BadRequestException('Invalid skills')
             }
 
-            offer.skillRequirements = dto.requiredSkills.map(req => {
+            offer.skillRequirements = cmd.requiredSkills.map(req => {
                 const skill = skills.find(s => s.id === req.skillId)!
-
-                return new SkillRequirement(
-                    randomUUID(),
-                    skill,
-                    req.level as SkillLevel
-                )
+                return new SkillRequirement(randomUUID(), skill, req.level)
             })
         }
 
-        return this.offerRepo.update(offer)
+        offer.updatedAt = new Date()
+
+        return this.offerRepo.save(offer)
     }
 }

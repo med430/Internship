@@ -1,10 +1,11 @@
 import {CommandHandler, ICommandHandler} from '@nestjs/cqrs'
 import {
-    Inject,
+    ForbiddenException,
+    Inject, NotFoundException,
 } from '@nestjs/common'
 import {DeleteEducationCommand} from "../delete-education.command";
 import {IEducationRepository} from "../../../../repositories/education.repository";
-
+import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 
 @CommandHandler(DeleteEducationCommand)
 export class DeleteEducationHandler
@@ -12,11 +13,28 @@ export class DeleteEducationHandler
 
     constructor(
         @Inject(IEducationRepository)
-        private repo: IEducationRepository
+        private readonly repo: IEducationRepository,
+
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository
     ) {}
 
     async execute(cmd: DeleteEducationCommand) {
-        await this.repo.delete(cmd.id)
-        return { message: 'Deleted' }
+
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (!profile) throw new NotFoundException()
+
+        const edu = await this.repo.findById(cmd.id)
+        if (!edu || edu.deletedAt) throw new NotFoundException()
+
+        if (edu.studentProfileId !== profile.id) {
+            throw new ForbiddenException()
+        }
+
+        edu.deletedAt = new Date()
+
+        await this.repo.save(edu)
+
+        return { message: 'Education deleted' }
     }
 }

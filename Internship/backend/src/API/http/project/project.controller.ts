@@ -17,17 +17,23 @@ import {UpdateProjectDTO} from "./dto/update-project.dto";
 import {UpdateProjectCommand} from "../../../Application/Features/ProjectFeature/Commands/update-project.command";
 import {DeleteProjectCommand} from "../../../Application/Features/ProjectFeature/Commands/delete-project.command";
 
-
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
 
-    constructor(private bus: CommandBus) {}
+    constructor(private readonly bus: CommandBus) {}
 
     @Post()
     create(@Body() dto: CreateProjectDTO, @CurrentUser() user) {
         return this.bus.execute(
-            new CreateProjectCommand(user.id, dto)
+            new CreateProjectCommand(
+                user.id,
+                dto.title,
+                dto.description,
+                dto.technologies,
+                dto.githubUrl,
+                dto.demoUrl
+            )
         )
     }
 
@@ -38,7 +44,15 @@ export class ProjectController {
         @CurrentUser() user
     ) {
         return this.bus.execute(
-            new UpdateProjectCommand(user.id, id, dto)
+            new UpdateProjectCommand(
+                user.id,
+                id,
+                dto.title,
+                dto.description,
+                dto.technologies,
+                dto.githubUrl,
+                dto.demoUrl
+            )
         )
     }
 

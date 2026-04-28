@@ -8,15 +8,14 @@ import {
 
 import { WithdrawApplicationCommand } from '../withdraw-application.command'
 
-import { IApplicationRepository } from '../../../../repositories/application.repository.'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
 
 import { ApplicationStatus } from '../../../../../Domain/enums/application-status.enum'
-
+import {IApplicationRepository} from "../../../../repositories/application.repository";
 @CommandHandler(WithdrawApplicationCommand)
 export class WithdrawApplicationHandler
-    implements ICommandHandler<WithdrawApplicationCommand>
-{
+    implements ICommandHandler<WithdrawApplicationCommand> {
+
     constructor(
         @Inject(IApplicationRepository)
         private readonly appRepo: IApplicationRepository,
@@ -29,31 +28,30 @@ export class WithdrawApplicationHandler
 
         const { applicationId, userId } = command
 
-        // 🔥 1. récupérer application
         const application = await this.appRepo.findById(applicationId)
         if (!application) {
             throw new NotFoundException('Application not found')
         }
 
-        // 🔥 2. récupérer student profile
         const student = await this.studentRepo.findByUserId(userId)
         if (!student) {
-            throw new ForbiddenException()
+            throw new ForbiddenException('Student not found')
         }
 
-        // 🔥 3. vérifier ownership
         if (application.studentId !== student.id) {
             throw new ForbiddenException('Not allowed')
         }
 
-        // 🔥 4. vérifier status
-        if (application.status !== ApplicationStatus.PENDING) {
-            throw new BadRequestException('Cannot withdraw this application')
+        // 🔥 bloquer si déjà finalisé
+        if (
+            application.status === ApplicationStatus.ACCEPTED ||
+            application.status === ApplicationStatus.REJECTED
+        ) {
+            throw new BadRequestException('Cannot withdraw finalized application')
         }
 
-        // 🔥 5. update status
         application.status = ApplicationStatus.WITHDRAWN
 
-        return this.appRepo.update(application)
+        return this.appRepo.save(application)
     }
 }

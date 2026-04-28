@@ -11,7 +11,6 @@ import {randomUUID} from "crypto";
 import {CreateCertificationCommand} from "../create-certification.command";
 import {Certification} from "../../../../../Domain/entities/certification.entity";
 import {ICertificationRepository} from "../../../../repositories/certification.repository";
-
 @CommandHandler(CreateCertificationCommand)
 export class CreateCertificationHandler extends GenericCommandHandler<
     CreateCertificationCommand,
@@ -20,25 +19,28 @@ export class CreateCertificationHandler extends GenericCommandHandler<
 > {
     constructor(
         @Inject(IStudentProfileRepository)
-        private studentRepo: IStudentProfileRepository,
+        private readonly studentRepo: IStudentProfileRepository,
 
         @Inject(ICertificationRepository)
-        private repo: ICertificationRepository
-    ) { super() }
+        private readonly repo: ICertificationRepository
+    ) {
+        super()
+    }
 
     protected async map(cmd: CreateCertificationCommand) {
+
         const profile = await this.studentRepo.findByUserId(cmd.userId)
-        if (!profile) throw new NotFoundException()
+        if (!profile) throw new NotFoundException('Student profile not found')
 
         return new Certification(
             randomUUID(),
             profile.id,
-            cmd.dto.name,
-            cmd.dto.organization,
-            cmd.dto.issueDate,
-            cmd.dto.expirationDate,
-            cmd.dto.credentialId,
-            cmd.dto.credentialUrl
+            cmd.name,
+            cmd.organization,
+            cmd.issueDate,
+            cmd.expirationDate,
+            cmd.credentialId,
+            cmd.credentialUrl
         )
     }
 

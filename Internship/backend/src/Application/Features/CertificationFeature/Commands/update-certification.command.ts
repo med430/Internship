@@ -1,9 +1,12 @@
-import {UpdateCertificationDTO} from "../../../../API/http/certification/dto/update-certification.dto";
-
 export class UpdateCertificationCommand {
     constructor(
         public readonly userId: string,
         public readonly id: string,
-        public readonly dto: UpdateCertificationDTO
+        public readonly name?: string,
+        public readonly organization?: string,
+        public readonly issueDate?: Date,
+        public readonly expirationDate?: Date,
+        public readonly credentialId?: string,
+        public readonly credentialUrl?: string
     ) {}
 }

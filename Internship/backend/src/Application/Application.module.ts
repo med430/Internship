@@ -22,7 +22,6 @@ import { GetSkillsQueryHandler } from './Features/SkillFeature/Queries/handlers/
 import {
   UpdateApplicationStatusHandler
 } from "./Features/ApplicationFeature/Commands/handlers/update-application-status.handler";
-import {DownloadCvHandler} from "./Features/ApplicationFeature/Commands/handlers/download-cv.handler";
 import {WithdrawApplicationHandler} from "./Features/ApplicationFeature/Commands/handlers/withdraw-application.handler";
 
 
@@ -34,7 +33,6 @@ const CommandHandlers = [
   DeleteOfferHandler,
   ApplyToOfferHandler,
   UpdateApplicationStatusHandler,
-  DownloadCvHandler,
   WithdrawApplicationHandler
 ];
 

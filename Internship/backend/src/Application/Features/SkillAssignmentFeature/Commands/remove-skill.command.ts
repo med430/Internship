@@ -1,4 +1,4 @@
-// remove-skill.command.ts
+// remove-skillAssignment.command.ts
 export class RemoveSkillCommand {
     constructor(
         public readonly userId: string,

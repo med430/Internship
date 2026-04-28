@@ -3,7 +3,6 @@ import {BadRequestException, ForbiddenException, Inject, NotFoundException} from
 import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 import {ISkillAssignmentRepository} from "../../../../repositories/skill-assignment.repository";
 import { UpdateSkillCommand } from "../update-skill.command";
-import { SkillLevel } from '../../../../../Domain/enums/skill-level.enum';
 @CommandHandler(UpdateSkillCommand)
 export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
 
@@ -23,14 +22,13 @@ export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
         const skill = await this.skillRepo.findById(command.assignmentId)
         if (!skill) throw new NotFoundException()
 
-        // 🔐 ownership check
         if (skill.studentProfileId !== profile.id) {
             throw new ForbiddenException()
         }
 
         return this.skillRepo.updateLevel(
             command.assignmentId,
-            command.level as SkillLevel
+            command.level
         )
     }
 }

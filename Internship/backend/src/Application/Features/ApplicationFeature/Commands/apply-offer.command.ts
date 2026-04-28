@@ -1,7 +1,8 @@
 export class ApplyToOfferCommand {
     constructor(
-        public readonly studentId: string,
+        public readonly userId: string,
         public readonly offerId: string,
-        public readonly cvUrl: string
+        public readonly cvId: string,
+        public readonly coverLetterId?: string
     ) {}
 }

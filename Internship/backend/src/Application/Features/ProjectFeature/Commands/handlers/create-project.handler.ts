@@ -11,7 +11,6 @@ import {randomUUID} from "crypto";
 import {CreateProjectCommand} from "../create-project.command";
 import {Project} from "../../../../../Domain/entities/project.entity";
 import {IProjectRepository} from "../../../../repositories/project.repository";
-
 @CommandHandler(CreateProjectCommand)
 export class CreateProjectHandler extends GenericCommandHandler<
     CreateProjectCommand,
@@ -20,24 +19,27 @@ export class CreateProjectHandler extends GenericCommandHandler<
 > {
     constructor(
         @Inject(IStudentProfileRepository)
-        private studentRepo: IStudentProfileRepository,
+        private readonly studentRepo: IStudentProfileRepository,
 
         @Inject(IProjectRepository)
-        private repo: IProjectRepository
-    ) { super() }
+        private readonly repo: IProjectRepository
+    ) {
+        super()
+    }
 
     protected async map(cmd: CreateProjectCommand) {
+
         const profile = await this.studentRepo.findByUserId(cmd.userId)
-        if (!profile) throw new NotFoundException()
+        if (!profile) throw new NotFoundException('Student profile not found')
 
         return new Project(
             randomUUID(),
             profile.id,
-            cmd.dto.title,
-            cmd.dto.description,
-            cmd.dto.technologies,
-            cmd.dto.githubUrl,
-            cmd.dto.demoUrl
+            cmd.title,
+            cmd.description,
+            cmd.technologies,
+            cmd.githubUrl,
+            cmd.demoUrl
         )
     }
 

@@ -1,7 +1,9 @@
+import {ApplicationStatus} from "../../../../Domain/enums/application-status.enum";
+
 export class UpdateApplicationStatusCommand {
     constructor(
         public readonly applicationId: string,
-        public readonly recruiterId: string,
-        public readonly status: 'ACCEPTED' | 'REJECTED'
+        public readonly userId: string,
+        public readonly status: ApplicationStatus
     ) {}
 }

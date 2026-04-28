@@ -22,17 +22,24 @@ import {
     DeleteCertificationCommand
 } from "../../../Application/Features/CertificationFeature/Commands/delete-certification.command";
 import {UpdateCertificationDTO} from "./dto/update-certification.dto";
-
 @Controller('certifications')
 @UseGuards(JwtAuthGuard)
 export class CertificationController {
 
-    constructor(private bus: CommandBus) {}
+    constructor(private readonly bus: CommandBus) {}
 
     @Post()
     create(@Body() dto: CreateCertificationDTO, @CurrentUser() user) {
         return this.bus.execute(
-            new CreateCertificationCommand(user.id, dto)
+            new CreateCertificationCommand(
+                user.id,
+                dto.name,
+                dto.organization,
+                dto.issueDate,
+                dto.expirationDate,
+                dto.credentialId,
+                dto.credentialUrl
+            )
         )
     }
 
@@ -43,11 +50,20 @@ export class CertificationController {
         @CurrentUser() user
     ) {
         return this.bus.execute(
-            new UpdateCertificationCommand(user.id, id, dto)
+            new UpdateCertificationCommand(
+                user.id,
+                id,
+                dto.name,
+                dto.organization,
+                dto.issueDate,
+                dto.expirationDate,
+                dto.credentialId,
+                dto.credentialUrl
+            )
         )
     }
 
-    @Delete(':id')
+    @Patch(':id')
     delete(@Param('id') id: string, @CurrentUser() user) {
         return this.bus.execute(
             new DeleteCertificationCommand(user.id, id)

@@ -6,79 +6,57 @@ import {
     Body,
     UseGuards,
     UseInterceptors,
-    UploadedFile,
     BadRequestException,
     Get,
-    Res
+    Res,
+    UploadedFiles,
+    Inject
 } from '@nestjs/common'
+
 import type { Response } from 'express'
 import { CommandBus } from '@nestjs/cqrs'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
+import { randomUUID } from 'crypto'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
-import { ApplyOfferDTO } from "./dto/apply-offer.dto"
-import { ApplyToOfferCommand } from "../../../Application/Features/ApplicationFeature/Commands/apply-offer.command"
-import { UpdateApplicationStatusCommand } from "../../../Application/Features/ApplicationFeature/Commands/update-application-status.command"
-import { DownloadCvCommand } from "../../../Application/Features/ApplicationFeature/Commands/download-cv.command"
-import {
-    WithdrawApplicationCommand
-} from "../../../Application/Features/ApplicationFeature/Commands/withdraw-application.command";
-import {randomUUID} from "crypto";
+import { ApplyToOfferCommand } from '../../../Application/Features/ApplicationFeature/Commands/apply-offer.command'
+import { UpdateApplicationStatusCommand } from '../../../Application/Features/ApplicationFeature/Commands/update-application-status.command'
+import { WithdrawApplicationCommand } from '../../../Application/Features/ApplicationFeature/Commands/withdraw-application.command'
+import { DownloadApplicationFileCommand } from '../../../Application/Features/ApplicationFeature/Commands/download-file.command'
+
+import { ApplicationStatus } from '../../../Domain/enums/application-status.enum'
+
+import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 @Controller('applications')
 export class ApplicationController {
 
-    constructor(private readonly commandBus: CommandBus) {}
+    constructor(
+        private readonly commandBus: CommandBus,
 
-    // ================= APPLY =================
-    @Post('apply')
+        @Inject(FileStorageService)
+        private readonly fileStorage: FileStorageService
+    ) {}
+
+    @Post()
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(
-        FileInterceptor('cv', {
-            storage: diskStorage({
-                destination: './uploads/cvs',
-                filename: (req, file, callback) => {
-                    const filename = `${randomUUID()}.pdf`
-                    callback(null, filename)
-                },
-            }),
-
-            limits: {
-                fileSize: 2 * 1024 * 1024, // 2MB
-            },
-
-            fileFilter: (req, file, callback) => {
-                if (file.mimetype !== 'application/pdf') {
-                    return callback(
-                        new BadRequestException('Only PDF allowed'),
-                        false
-                    )
-                }
-
-                callback(null, true)
-            },
-        }),
-    )
-    async apply(
-        @UploadedFile() file: Express.Multer.File,
-        @Body() dto: ApplyOfferDTO,
+    apply(
+        @Body() dto: {
+            offerId: string
+            cvId: string
+            coverLetterId?: string
+        },
         @CurrentUser() user
     ) {
-
-        if (!file) {
-            throw new BadRequestException('CV is required')
-        }
-
-        const cvUrl = `/uploads/cvs/${file.filename}`
-
         return this.commandBus.execute(
             new ApplyToOfferCommand(
                 user.id,
                 dto.offerId,
-                cvUrl
+                dto.cvId,
+                dto.coverLetterId
             )
         )
     }
@@ -94,7 +72,7 @@ export class ApplicationController {
             new UpdateApplicationStatusCommand(
                 id,
                 user.id,
-                'ACCEPTED'
+                ApplicationStatus.ACCEPTED
             )
         )
     }
@@ -110,7 +88,7 @@ export class ApplicationController {
             new UpdateApplicationStatusCommand(
                 id,
                 user.id,
-                'REJECTED'
+                ApplicationStatus.REJECTED
             )
         )
     }
@@ -119,17 +97,33 @@ export class ApplicationController {
     @Get(':id/cv')
     @UseGuards(JwtAuthGuard)
     async downloadCV(
-        @Param('id') applicationId: string,
+        @Param('id') id: string,
         @CurrentUser() user,
         @Res() res: Response
     ) {
-
         const filePath = await this.commandBus.execute(
-            new DownloadCvCommand(applicationId, user.id)
+            new DownloadApplicationFileCommand(id, user.id, 'cv')
         )
 
         return res.download(filePath)
     }
+
+    // ================= DOWNLOAD LETTER =================
+    @Get(':id/cover-letter')
+    @UseGuards(JwtAuthGuard)
+    async downloadCoverLetter(
+        @Param('id') id: string,
+        @CurrentUser() user,
+        @Res() res: Response
+    ) {
+        const filePath = await this.commandBus.execute(
+            new DownloadApplicationFileCommand(id, user.id, 'coverLetter')
+        )
+
+        return res.download(filePath)
+    }
+
+    // ================= WITHDRAW =================
     @Patch(':id/withdraw')
     @UseGuards(JwtAuthGuard)
     withdraw(
@@ -137,10 +131,7 @@ export class ApplicationController {
         @CurrentUser() user
     ) {
         return this.commandBus.execute(
-            new WithdrawApplicationCommand(
-                id,
-                user.id
-            )
+            new WithdrawApplicationCommand(id, user.id)
         )
     }
 }

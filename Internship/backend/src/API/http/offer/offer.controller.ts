@@ -1,66 +1,83 @@
 import {
-    Body,
     Controller,
     Post,
-    Put,
-    Delete,
+    Patch,
     Param,
+    Body,
     UseGuards
 } from '@nestjs/common'
+
 import { CommandBus } from '@nestjs/cqrs'
 
-
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
-import { RolesGuard } from '../guards/roles.guard'
-import {CreateOfferDTO} from "./dto/create-offer.dto";
-import {Roles} from "../guards/roles.decorator";
-import {CreateOfferCommand} from "../../../Application/Features/OfferFeature/Commands/create-offer.command";
-import {UpdateOfferCommand} from "../../../Application/Features/OfferFeature/Commands/update-offer.command";
-import {DeleteOfferCommand} from "../../../Application/Features/OfferFeature/Commands/delete-offer.command";
-import {User} from "../../../Domain/entities/user.entity";
-import {CurrentUser} from "../decorators/current-user.decorator";
+import { CurrentUser } from '../decorators/current-user.decorator'
 
+import { CreateOfferDTO } from './dto/create-offer.dto'
+import { UpdateOfferDTO } from './dto/update-offer.dto'
+
+import { CreateOfferCommand } from '../../../Application/Features/OfferFeature/Commands/create-offer.command'
+import { UpdateOfferCommand } from '../../../Application/Features/OfferFeature/Commands/update-offer.command'
+import { DeleteOfferCommand } from '../../../Application/Features/OfferFeature/Commands/delete-offer.command'
 @Controller('offers')
+@UseGuards(JwtAuthGuard)
 export class OfferController {
 
-    constructor(private readonly commandBus: CommandBus) {}
+    constructor(private readonly bus: CommandBus) {}
 
-    // 🔥 CREATE OFFER
     @Post()
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER')
-    createOffer(
+    create(
         @Body() dto: CreateOfferDTO,
-        @CurrentUser() user: User
+        @CurrentUser() user
     ) {
-        return this.commandBus.execute(
-            new CreateOfferCommand(dto, user.id)
+        return this.bus.execute(
+            new CreateOfferCommand(
+                user.id,
+                dto.title,
+                dto.description,
+                dto.company,
+                dto.location,
+                dto.domain,
+                dto.isPaid,
+                dto.workMode,
+                new Date(dto.startDate),
+                new Date(dto.endDate),
+                dto.type,
+                dto.requiredSkills
+            )
         )
     }
 
-    // 🔄 UPDATE OFFER
-    @Put(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER')
-    updateOffer(
+    @Patch(':id')
+    update(
         @Param('id') id: string,
-        @Body() dto: Partial<CreateOfferDTO>,
-        @CurrentUser() user: User
+        @Body() dto: UpdateOfferDTO,
+        @CurrentUser() user
     ) {
-        return this.commandBus.execute(
-            new UpdateOfferCommand(id, dto, user.id)
+        return this.bus.execute(
+            new UpdateOfferCommand(
+                id,
+                user.id,
+                dto.title,
+                dto.description,
+                dto.company,
+                dto.location,
+                dto.domain,
+                dto.isPaid,
+                dto.workMode,
+                dto.startDate ? new Date(dto.startDate) : undefined,
+                dto.endDate ? new Date(dto.endDate) : undefined,
+                dto.type,
+                dto.requiredSkills
+            )
         )
     }
 
-    // 🗑️ DELETE OFFER (SOFT DELETE)
-    @Delete(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('RECRUITER')
-    deleteOffer(
+    @Patch(':id/delete')
+    delete(
         @Param('id') id: string,
-        @CurrentUser() user: User
+        @CurrentUser() user
     ) {
-        return this.commandBus.execute(
+        return this.bus.execute(
             new DeleteOfferCommand(id, user.id)
         )
     }

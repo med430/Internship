@@ -1,5 +1,6 @@
 import { CommandHandler } from '@nestjs/cqrs'
 import {
+    ForbiddenException,
     Inject,
     NotFoundException
 } from '@nestjs/common'
@@ -9,7 +10,7 @@ import {GenericCommandHandler} from "../../../GenericFeature/Commands/handlers/g
 import {UpdateProjectCommand} from "../update-project.command";
 import {Project} from "../../../../../Domain/entities/project.entity";
 import {IProjectRepository} from "../../../../repositories/project.repository";
-
+import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 
 
 @CommandHandler(UpdateProjectCommand)
@@ -20,18 +21,32 @@ export class UpdateProjectHandler extends GenericCommandHandler<
 > {
     constructor(
         @Inject(IProjectRepository)
-        private repo: IProjectRepository
-    ) { super() }
+        private readonly repo: IProjectRepository,
+
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository
+    ) {
+        super()
+    }
 
     protected async map(cmd: UpdateProjectCommand) {
-        const p = await this.repo.findById(cmd.id)
-        if (!p) throw new NotFoundException()
 
-        p.title = cmd.dto.title ?? p.title
-        p.description = cmd.dto.description ?? p.description
-        p.technologies = cmd.dto.technologies ?? p.technologies
-        p.githubUrl = cmd.dto.githubUrl ?? p.githubUrl
-        p.demoUrl = cmd.dto.demoUrl ?? p.demoUrl
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (!profile) throw new NotFoundException('Student profile not found')
+
+        const p = await this.repo.findById(cmd.id)
+        if (!p) throw new NotFoundException('Project not found')
+
+        // 🔐 ownership check
+        if (p.studentProfileId !== profile.id) {
+            throw new ForbiddenException()
+        }
+
+        p.title = cmd.title ?? p.title
+        p.description = cmd.description ?? p.description
+        p.technologies = cmd.technologies ?? p.technologies
+        p.githubUrl = cmd.githubUrl ?? p.githubUrl
+        p.demoUrl = cmd.demoUrl ?? p.demoUrl
 
         return p
     }

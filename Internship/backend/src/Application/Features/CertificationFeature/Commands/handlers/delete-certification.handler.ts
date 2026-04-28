@@ -1,22 +1,39 @@
 import {CommandHandler, ICommandHandler} from '@nestjs/cqrs'
 import {
-    Inject,
-    NotFoundException
+    ForbiddenException,
+    Inject, NotFoundException,
 } from '@nestjs/common'
 import {DeleteCertificationCommand} from "../delete-certification.command";
 import {ICertificationRepository} from "../../../../repositories/certification.repository";
-
+import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
 @CommandHandler(DeleteCertificationCommand)
 export class DeleteCertificationHandler
     implements ICommandHandler<DeleteCertificationCommand> {
 
     constructor(
         @Inject(ICertificationRepository)
-        private repo: ICertificationRepository
+        private readonly repo: ICertificationRepository,
+
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository
     ) {}
 
     async execute(cmd: DeleteCertificationCommand) {
-        await this.repo.delete(cmd.id)
-        return { message: 'Deleted' }
+
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (!profile) throw new NotFoundException()
+
+        const cert = await this.repo.findById(cmd.id)
+        if (!cert || cert.deletedAt) throw new NotFoundException()
+
+        if (cert.studentProfileId !== profile.id) {
+            throw new ForbiddenException()
+        }
+
+        cert.deletedAt = new Date()
+
+        await this.repo.save(cert)
+
+        return { message: 'Certification deleted' }
     }
 }
