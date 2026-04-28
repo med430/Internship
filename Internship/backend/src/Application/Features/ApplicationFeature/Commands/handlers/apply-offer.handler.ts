@@ -87,7 +87,7 @@ export class ApplyToOfferHandler implements ICommandHandler<ApplyToOfferCommand>
             randomUUID(),
             studentProfile.id,
             offerId,
-            ApplicationStatus.PENDING,
+            ApplicationStatus.SUBMITTED,
             cvUrl,
             0
         )

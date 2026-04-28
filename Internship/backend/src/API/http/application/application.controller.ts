@@ -15,7 +15,6 @@ import type { Response } from 'express'
 import { CommandBus } from '@nestjs/cqrs'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
-import { extname } from 'path'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
