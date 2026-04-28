@@ -32,8 +32,20 @@ enum SkillLevel {
     EXPERT
 }
 
+enum WorkMode {
+    REMOTE
+    ONSITE
+    HYBRID
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
+}
+
 # =======================
-# BASE TYPE
+# BASE INTERFACE
 # =======================
 
 interface BaseEntity {
@@ -43,7 +55,7 @@ interface BaseEntity {
 }
 
 # =======================
-# CORE TYPES
+# USER
 # =======================
 
 type User implements BaseEntity {
@@ -53,6 +65,8 @@ type User implements BaseEntity {
     lastname: String!
     username: String!
     role: Role!
+    phone: String
+    avatarUrl: String
 
     createdAt: Date
     updatedAt: Date
@@ -64,56 +78,21 @@ type User implements BaseEntity {
 # =======================
 
 type Skill {
-    id: Int!
+    id: ID!
     name: String!
 }
 
 type SkillAssignment {
+    id: ID!
     skill: Skill!
     studentProfile: StudentProfile!
-    level: SkillLevel
+    level: SkillLevel!
 }
 
 type SkillRequirement {
+    id: ID!
     skill: Skill!
-    level: SkillLevel
-}
-
-# =======================
-# CV
-# =======================
-
-type Project {
-    id: ID!
-    cvId: ID!
-    title: String!
-    description: String!
-    technologies: [String!]!
-}
-
-type Experience {
-    id: ID!
-    cvId: ID!
-    company: String!
-    role: String!
-    duration: String!
-    description: String
-}
-
-type CV implements BaseEntity {
-    id: ID!
-    studentId: ID!
-
-    fileUrl: String!
-    parsedData: JSON
-
-    skills: [String!]!
-    projects: [Project!]!
-    experiences: [Experience!]!
-
-    createdAt: Date
-    updatedAt: Date
-    deletedAt: Date
+    level: SkillLevel!
 }
 
 # =======================
@@ -122,20 +101,45 @@ type CV implements BaseEntity {
 
 type Offer implements BaseEntity {
     id: ID!
-    creatorId: ID!
+    recruiterProfile: RecruiterProfile!
 
     title: String!
     description: String!
-
     company: String!
     location: String!
     domain: String!
 
+    isPaid: Boolean!
+    workMode: WorkMode!
     startDate: Date!
     endDate: Date!
-
-    requiredSkills: [SkillRequirement!]!
     type: OfferType!
+
+    skillRequirements: [SkillRequirement!]!
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
+}
+
+# =======================
+# CV & COVER LETTER
+# =======================
+
+type CV implements BaseEntity {
+    id: ID!
+    student: User!
+    fileUrl: String!
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
+}
+
+type CoverLetter implements BaseEntity {
+    id: ID!
+    student: User!
+    fileUrl: String!
 
     createdAt: Date
     updatedAt: Date
@@ -148,8 +152,10 @@ type Offer implements BaseEntity {
 
 type Application implements BaseEntity {
     id: ID!
-    studentId: ID!
-    offerId: ID!
+    student: User!
+    offer: Offer!
+    cv: CV!
+    coverLetter: CoverLetter
 
     status: ApplicationStatus!
     matchScore: Float!
@@ -165,8 +171,8 @@ type Application implements BaseEntity {
 
 type Interview {
     id: ID!
-    studentId: ID!
-    offerId: ID!
+    student: User!
+    offer: Offer!
 
     score: Float!
     feedback: String!
@@ -179,9 +185,67 @@ type Interview {
 
 type Recommendation implements BaseEntity {
     id: ID!
-    recruiterId: ID!
-    studentId: ID!
+    recruiter: User!
+    student: User!
     description: String!
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
+}
+
+# =======================
+# STUDENT PROFILE COMPONENTS
+# =======================
+
+type Project {
+    id: ID!
+    studentProfile: StudentProfile!
+    title: String!
+    description: String!
+    technologies: [String!]!
+    githubUrl: String
+    demoUrl: String
+}
+
+type Experience implements BaseEntity {
+    id: ID!
+    studentProfile: StudentProfile!
+    company: String!
+    role: String!
+    startDate: Date!
+    endDate: Date
+    description: String
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
+}
+
+type Education implements BaseEntity {
+    id: ID!
+    studentProfile: StudentProfile!
+    school: String!
+    degree: String!
+    field: String!
+    startDate: Date!
+    endDate: Date
+    description: String
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
+}
+
+type Certification implements BaseEntity {
+    id: ID!
+    studentProfile: StudentProfile!
+    name: String!
+    organization: String!
+    issueDate: Date!
+    expirationDate: Date
+    credentialId: String
+    credentialUrl: String
 
     createdAt: Date
     updatedAt: Date
@@ -193,53 +257,103 @@ type Recommendation implements BaseEntity {
 # =======================
 
 type StudentProfile {
-    userId: ID!
+    id: ID!
+    user: User!
 
-    cvs: [CV!]!
+    bio: String
+    birthDate: Date
+    gender: Gender
+    address: String
+    city: String
+
     skills: [SkillAssignment!]!
-    applications: [Application!]!
+    experiences: [Experience!]!
+    projects: [Project!]!
+    educations: [Education!]!
+    certifications: [Certification!]!
+    cvs: [CV!]!
 }
 
 type RecruiterProfile {
-    userId: ID!
+    id: ID!
+    user: User!
     company: String!
+    companyDescription: String
+    website: String
     offers: [Offer!]!
 }
 
-
 # =======================
-# ROOT TYPES
+# QUERIES
 # =======================
 
 type Query {
-    # Users
+    # ── Users ──────────────────────────────────────────────
     user(id: ID!): User
     users(pageNumber: Int, pageSize: Int): [User]!
 
-    # Offers
+    # ── Offers ─────────────────────────────────────────────
     offer(id: ID!): Offer
     offers(pageNumber: Int, pageSize: Int): [Offer]!
 
-    # Skills
+    # ── Skills ─────────────────────────────────────────────
     skill(id: ID!): Skill
     skills(pageNumber: Int, pageSize: Int): [Skill]!
 
-    # Applications
+    # ── Skill Assignments ──────────────────────────────────
+    skillAssignment(id: ID!): SkillAssignment
+    skillAssignments(pageNumber: Int, pageSize: Int): [SkillAssignment]!
+
+    # ── Applications ───────────────────────────────────────
     application(id: ID!): Application
-    applications: [Application]!
+    applications(pageNumber: Int, pageSize: Int): [Application]!
 
-    # Profiles
-    studentProfile(userId: ID!): StudentProfile
-    recruiterProfile(userId: ID!): RecruiterProfile
+    # ── Interviews ─────────────────────────────────────────
+    interview(id: ID!): Interview
+    interviews(pageNumber: Int, pageSize: Int): [Interview]!
 
-    # CV
+    # ── Recommendations ────────────────────────────────────
+    recommendation(id: ID!): Recommendation
+    recommendations(pageNumber: Int, pageSize: Int): [Recommendation]!
+
+    # ── Profiles ───────────────────────────────────────────
+    studentProfile(id: ID!): StudentProfile
+    studentProfiles(pageNumber: Int, pageSize: Int): [StudentProfile]!
+
+    recruiterProfile(id: ID!): RecruiterProfile
+    recruiterProfiles(pageNumber: Int, pageSize: Int): [RecruiterProfile]!
+
+    # ── CVs ────────────────────────────────────────────────
     cv(id: ID!): CV
-    cvsByStudent(studentId: ID!): [CV]!
+    cvs(pageNumber: Int, pageSize: Int): [CV]!
+    cvsByStudent(student: ID!): [CV]!
+
+    # ── Cover Letters ──────────────────────────────────────
+    coverLetter(id: ID!): CoverLetter
+    coverLetters(pageNumber: Int, pageSize: Int): [CoverLetter]!
+
+    # ── Projects ───────────────────────────────────────────
+    project(id: ID!): Project
+    projects(pageNumber: Int, pageSize: Int): [Project]!
+
+    # ── Experiences ────────────────────────────────────────
+    experience(id: ID!): Experience
+    experiences(pageNumber: Int, pageSize: Int): [Experience]!
+
+    # ── Educations ─────────────────────────────────────────
+    education(id: ID!): Education
+    educations(pageNumber: Int, pageSize: Int): [Education]!
+
+    # ── Certifications ─────────────────────────────────────
+    certification(id: ID!): Certification
+    certifications(pageNumber: Int, pageSize: Int): [Certification]!
 }
 
-type Mutation {
-    # Example mutations (à adapter avec tes Commands CQRS)
+# =======================
+# MUTATIONS
+# =======================
 
+type Mutation {
     createUser(
         email: String!
         name: String!
