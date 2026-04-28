@@ -2,7 +2,6 @@
 import { CommandHandler } from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
 import { randomUUID } from 'crypto'
-import { Inject } from '@nestjs/common'
 import { RegisterRecruiterCommand } from '../register-recruiter.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
@@ -11,6 +10,7 @@ import { Role } from '../../../../../Domain/enums/role.enum'
 import { RecruiterProfile } from '../../../../../Domain/entities/recruiter-profile.entity'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
 import { RegisterResponseDTO } from '../../../../../API/http/auth/dto/register-response.dto'
+import { Inject, ConflictException } from '@nestjs/common'  // ← ajouter ConflictException
 
 @CommandHandler(RegisterRecruiterCommand)
 export class RegisterRecruiterHandler extends GenericCommandHandler<
@@ -45,6 +45,10 @@ protected async map(command: RegisterRecruiterCommand): Promise<User> {
 }
 
 protected async persist(user: User): Promise<RegisterResponseDTO> {
+    // ← ajouter
+    const existing = await this.userRepo.findByEmail(user.email)
+    if (existing) throw new ConflictException('Email already in use')
+
     const savedUser = await this.userRepo.save(user)
 
     await this.recruiterProfileRepo.save(

@@ -20,11 +20,16 @@ const RECRUITER_PROFILE_INCLUDE = {
 export class RecruiterProfileRepositoryImpl
     extends GenericRepository<RecruiterProfile, any>
     implements IRecruiterProfileRepository {
-
-    constructor(
-        prisma: PrismaService,
-        mapper: RecruiterProfileMapper
-    ) {
+    protected readonly includeOptions = {
+        offers: {
+            include: {
+                skillRequirements: {
+                    include: { skill: true }
+                }
+            }
+        }
+    }
+    constructor(prisma: PrismaService, mapper: RecruiterProfileMapper) {
         super(prisma, 'recruiterProfile', mapper)
     }
 

@@ -15,23 +15,31 @@ const STUDENT_PROFILE_INCLUDE = {
   certifications: true,
   cvs:            true,
 } as const
-
 @Injectable()
 export class StudentProfileRepositoryImpl
     extends GenericRepository<StudentProfile, any>
     implements IStudentProfileRepository {
 
-  constructor(
-      prisma: PrismaService,
-      mapper: StudentProfileMapper
-  ) {
+  // ← ajouter
+  protected readonly includeOptions = {
+    skills:         true,
+    experiences:    true,
+    projects:       true,
+    educations:     true,
+    certifications: true,
+    cvs:            true,
+  }
+
+  constructor(prisma: PrismaService, mapper: StudentProfileMapper) {
     super(prisma, 'studentProfile', mapper)
   }
 
+  // findById, findByUserId, update — tu peux supprimer STUDENT_PROFILE_INCLUDE
+  // et simplifier puisque includeOptions est maintenant hérité
   async findById(id: string): Promise<StudentProfile | null> {
     const result = await this.prisma.studentProfile.findUnique({
       where: { id },
-      include: STUDENT_PROFILE_INCLUDE
+      include: this.includeOptions
     })
     return result ? this.mapper.toDomain(result) : null
   }
@@ -39,7 +47,7 @@ export class StudentProfileRepositoryImpl
   async findByUserId(userId: string): Promise<StudentProfile | null> {
     const result = await this.prisma.studentProfile.findUnique({
       where: { userId },
-      include: STUDENT_PROFILE_INCLUDE
+      include: this.includeOptions
     })
     return result ? this.mapper.toDomain(result) : null
   }
@@ -48,7 +56,7 @@ export class StudentProfileRepositoryImpl
     const result = await this.prisma.studentProfile.update({
       where: { id: profile.id },
       data: this.mapper.toPersistence(profile),
-      include: STUDENT_PROFILE_INCLUDE
+      include: this.includeOptions
     })
     return this.mapper.toDomain(result)
   }

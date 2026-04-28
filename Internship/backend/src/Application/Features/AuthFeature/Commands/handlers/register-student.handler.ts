@@ -2,7 +2,7 @@
 import { CommandHandler } from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
 import { randomUUID } from 'crypto'
-import { Inject } from '@nestjs/common'
+import {ConflictException, Inject} from '@nestjs/common'
 import { RegisterStudentCommand } from '../register-student.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
@@ -41,6 +41,9 @@ RegisterResponseDTO
     }
 
     protected async persist(user: User): Promise<RegisterResponseDTO> {
+        const existing = await this.userRepo.findByEmail(user.email)
+        if (existing) throw new ConflictException('Email already in use')
+
         const savedUser = await this.userRepo.save(user)
 
         await this.studentProfileRepo.save(
