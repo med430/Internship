@@ -2,6 +2,6 @@
 export class UploadCVCommand {
     constructor(
         public readonly userId: string,
-        public readonly fileUrl: string
+        public readonly file: Express.Multer.File
     ) {}
 }

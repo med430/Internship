@@ -1,6 +1,5 @@
 import {Global, Module} from "@nestjs/common";
 import {CqrsModule} from "@nestjs/cqrs";
-import {RegisterHandler} from "./Features/AuthFeature/Commands/handlers/register.handler";
 import {LoginHandler} from "./Features/AuthFeature/Commands/handlers/login.handler";
 import {AuthService} from "./Services/AuthService/AuthService";
 import {PersistenceModule} from "../Infrastructure/Persistence/persistence.module";
@@ -23,17 +22,76 @@ import {
   UpdateApplicationStatusHandler
 } from "./Features/ApplicationFeature/Commands/handlers/update-application-status.handler";
 import {WithdrawApplicationHandler} from "./Features/ApplicationFeature/Commands/handlers/withdraw-application.handler";
+import {DownloadApplicationFileHandler} from "./Features/ApplicationFeature/Commands/handlers/download-file.handler";
+import {RegisterRecruiterHandler} from "./Features/AuthFeature/Commands/handlers/register-recruiter.handler";
+import {RegisterStudentHandler} from "./Features/AuthFeature/Commands/handlers/register-student.handler";
+import {
+  CreateCertificationHandler
+} from "./Features/CertificationFeature/Commands/handlers/create-certification.handler";
+import {
+  DeleteCertificationHandler
+} from "./Features/CertificationFeature/Commands/handlers/delete-certification.handler";
+import {
+  UpdateCertificationHandler
+} from "./Features/CertificationFeature/Commands/handlers/update-certification.handler";
+import {DeleteCoverLetterHandler} from "./Features/CoverLetterFeature/Commands/handlers/delete-cover-letter.handler";
+import {UploadCoverLetterHandler} from "./Features/CoverLetterFeature/Commands/handlers/upload-cover-letter.handler";
+import {DeleteCVHandler} from "./Features/CvFeature/Commands/handlers/delete-cv.handler";
+import {UploadCVHandler} from "./Features/CvFeature/Commands/handlers/upload-cv.handler";
+import {CreateEducationHandler} from "./Features/EducationFeature/Commands/handlers/create-education.handler";
+import {UpdateEducationHandler} from "./Features/EducationFeature/Commands/handlers/update-education.handler";
+import {DeleteEducationHandler} from "./Features/EducationFeature/Commands/handlers/delete-education.handler";
+import {CreateExperienceCommand} from "./Features/ExperienceFeature/Commands/create-experience.command";
+import {UpdateExperienceHandler} from "./Features/ExperienceFeature/Commands/handlers/update-experience.handler";
+import {CreateExperienceHandler} from "./Features/ExperienceFeature/Commands/handlers/create-experience.handler";
+import {DeleteExperienceHandler} from "./Features/ExperienceFeature/Commands/handlers/delete-experience.handler";
+import {CreateProjectHandler} from "./Features/ProjectFeature/Commands/handlers/create-project.handler";
+import {UpdateProjectHandler} from "./Features/ProjectFeature/Commands/handlers/update-project.handler";
+import {DeleteProjectHandler} from "./Features/ProjectFeature/Commands/handlers/delete-project.handler";
+import {SoftDeleteUserHandler} from "./Features/ProfileFeature/Commands/handlers/soft-delete-user.handler";
+import {UpdateStudentProfileHandler} from "./Features/ProfileFeature/Commands/handlers/update-student-profile.handler";
+import {
+  UpdateRecruiterProfileHandler
+} from "./Features/ProfileFeature/Commands/handlers/update-recruiter-profile.handler";
+import {AssignSkillHandler} from "./Features/SkillAssignmentFeature/Commands/handlers/assign-skill.handler";
+import {RemoveSkillHandler} from "./Features/SkillAssignmentFeature/Commands/handlers/remove-skill.handler";
+import {UpdateSkillHandler} from "./Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler";
 
 
 const CommandHandlers = [
-  RegisterHandler,
   LoginHandler,
   CreateOfferHandler,
   UpdateOfferHandler,
   DeleteOfferHandler,
+  CreateEducationHandler,
+  UpdateEducationHandler,
+  DeleteEducationHandler,
+  CreateExperienceHandler,
+  UpdateExperienceHandler,
+  DeleteExperienceHandler,
+  CreateProjectHandler,
+  UpdateProjectHandler,
+  DeleteProjectHandler,
   ApplyToOfferHandler,
   UpdateApplicationStatusHandler,
-  WithdrawApplicationHandler
+  WithdrawApplicationHandler,
+  DownloadApplicationFileHandler,
+  RegisterRecruiterHandler,
+  RegisterStudentHandler,
+  CreateCertificationHandler,
+  DeleteCertificationHandler,
+  UpdateCertificationHandler,
+  DeleteCoverLetterHandler,
+  UploadCoverLetterHandler,
+  DeleteCVHandler,
+  UploadCVHandler,
+  SoftDeleteUserHandler,
+  UpdateRecruiterProfileHandler,
+  UpdateStudentProfileHandler,
+  AssignSkillHandler,
+  RemoveSkillHandler,
+  UpdateSkillHandler,
+
 ];
 
 const QueryHandlers = [

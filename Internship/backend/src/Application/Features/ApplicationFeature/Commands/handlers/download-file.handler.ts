@@ -5,8 +5,7 @@ import {
     ForbiddenException
 } from '@nestjs/common'
 
-import { join } from 'path'
-import { existsSync } from 'fs'
+
 
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'

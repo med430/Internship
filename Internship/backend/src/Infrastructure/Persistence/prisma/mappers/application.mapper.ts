@@ -1,36 +1,37 @@
-import { Injectable } from '@nestjs/common';
-import { Application as Domain } from '../../../../Domain/entities/application.entity';
-import { Application as DB } from '@prisma/client';
-import { ApplicationStatus } from '../../../../Domain/enums/application-status.enum';
+// infrastructure/mappers/application.mapper.ts
+import { Injectable } from '@nestjs/common'
+import { Application as PrismaApplication } from '@prisma/client'
+import { IGenericMapper } from './generic.mapper'
+import { Application } from '../../../../Domain/entities/application.entity'
+import { ApplicationStatus } from '../../../../Domain/enums/application-status.enum'
 
 @Injectable()
-export class ApplicationPrismaMapper {
-  toDomain(entity: DB): Domain {
-    return new Domain(
-      entity.id,
-      entity.studentId,
-      entity.offerId,
-      entity.status as ApplicationStatus,
-      entity.cvUrl,
-      entity.matchScore,
-      entity.createdAt,
-      entity.updatedAt,
-      entity.deletedAt ?? undefined,
-    );
+export class ApplicationMapper implements IGenericMapper<Application, PrismaApplication> {
+  toDomain(raw: PrismaApplication): Application {
+    return new Application(
+        raw.id,
+        raw.studentId,
+        raw.offerId,
+        raw.cvId,
+        raw.status as unknown as ApplicationStatus,
+        raw.matchScore ?? 0,
+        raw.coverLetterId ?? undefined,
+        raw.createdAt,
+        raw.updatedAt,
+        raw.deletedAt ?? undefined,
+    )
   }
 
-  toPersistence(domain: Domain): DB {
+  toPersistence(domain: Application) {
     return {
-      id: domain.id,
-      studentId: domain.studentId,
-      offerId: domain.offerId,
-      status: domain.status,
-      cvUrl: domain.cvUrl,
-      matchScore: domain.matchScore,
-
-      createdAt: domain.createdAt!,
-      updatedAt: domain.updatedAt!,
-      deletedAt: domain.deletedAt ?? null,
-    } as DB;
+      id:            domain.id,
+      studentId:     domain.studentId,
+      offerId:       domain.offerId,
+      cvId:          domain.cvId,
+      status:        domain.status,
+      matchScore:    domain.matchScore,
+      coverLetterId: domain.coverLetterId ?? null,
+      deletedAt:     domain.deletedAt     ?? null,
+    }
   }
 }

@@ -1,0 +1,27 @@
+// infrastructure/repositories/cover-letter.repository.impl.ts
+import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma.service'
+import { CoverLetterMapper } from '../mappers/cover-letter.mapper'
+import {ICoverLetterRepository} from "../../../../Application/repositories/coverletter.repository";
+import {CoverLetter} from "../../../../Domain/entities/coverletter.entity";
+import {GenericRepository} from "./generic.repositories";
+
+@Injectable()
+export class CoverLetterRepositoryImpl
+    extends GenericRepository<CoverLetter, any>
+    implements ICoverLetterRepository {
+
+    constructor(
+        prisma: PrismaService,
+        mapper: CoverLetterMapper
+    ) {
+        super(prisma, 'coverLetter', mapper)
+    }
+
+    async findByStudent(studentId: string): Promise<CoverLetter[]> {
+        const results = await this.prisma.coverLetter.findMany({
+            where: { studentId, deletedAt: null }
+        })
+        return results.map(r => this.mapper.toDomain(r))
+    }
+}

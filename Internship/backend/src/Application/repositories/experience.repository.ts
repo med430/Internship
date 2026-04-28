@@ -1,6 +1,6 @@
-
+// Application/repositories/experience.repository.ts
 import { Experience } from '../../Domain/entities/experience.entity'
-import {IGenericRepository} from "./generic.repository";
+import { IGenericRepository } from './generic.repository'
 
-export abstract class IExperienceRepository
-    extends IGenericRepository<Experience> {}
+export interface IExperienceRepository extends IGenericRepository<Experience> {}
+export const IExperienceRepository = Symbol('IExperienceRepository')

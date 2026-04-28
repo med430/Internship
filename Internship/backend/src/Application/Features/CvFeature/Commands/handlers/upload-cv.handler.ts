@@ -1,17 +1,15 @@
-import {CommandHandler, ICommandHandler} from '@nestjs/cqrs'
-import {
-    ForbiddenException,
-    Inject,
-    NotFoundException
-} from '@nestjs/common'
-import {DeleteCVCommand} from "../delete-cv.command";
-import {ICVRepository} from "../../../../repositories/cv.repository";
-import {IStudentProfileRepository} from "../../../../repositories/student-profile.repository";
-import {FileStorageService} from "../../../../Services/FileStorageService/FileStorageService";
+// upload-cv.handler.ts
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { Inject, NotFoundException } from '@nestjs/common'
+import { randomUUID } from 'crypto'
+import { UploadCVCommand } from '../upload-cv.command'
+import { ICVRepository } from '../../../../repositories/cv.repository'
+import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
+import { FileStorageService } from '../../../../Services/FileStorageService/FileStorageService'
+import { CV } from '../../../../../Domain/entities/cv.entity'
 
-@CommandHandler(DeleteCVCommand)
-export class DeleteCVHandler
-    implements ICommandHandler<DeleteCVCommand> {
+@CommandHandler(UploadCVCommand)
+export class UploadCVHandler implements ICommandHandler<UploadCVCommand> {
 
     constructor(
         @Inject(ICVRepository)
@@ -24,23 +22,17 @@ export class DeleteCVHandler
         private readonly fileService: FileStorageService
     ) {}
 
-    async execute(command: DeleteCVCommand) {
-
+    async execute(command: UploadCVCommand) {
         const profile = await this.studentRepo.findByUserId(command.userId)
         if (!profile) throw new NotFoundException()
 
-        const cv = await this.cvRepo.findById(command.cvId)
-        if (!cv || cv.deletedAt) throw new NotFoundException()
+        const fileUrl = await this.fileService.upload(command.file, 'cvs')
 
-        if (cv.studentId !== profile.id) {
-            throw new ForbiddenException()
-        }
-
-        // 🔥 supprimer fichier physique
-        await this.fileService.delete(cv.fileUrl)
-
-        // 🔥 SOFT DELETE
-        cv.deletedAt = new Date()
+        const cv = new CV(
+            randomUUID(),
+            profile.id,
+            fileUrl,
+        )
 
         return this.cvRepo.save(cv)
     }

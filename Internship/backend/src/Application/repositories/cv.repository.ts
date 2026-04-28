@@ -1,7 +1,9 @@
-// cv.repository.ts
+// Application/repositories/cv.repository.ts
+import { CV } from '../../Domain/entities/cv.entity'
 import { IGenericRepository } from './generic.repository'
-import {CV} from "../../Domain/entities/cv.entity";
 
-export abstract class ICVRepository extends IGenericRepository<CV> {
-    abstract findByStudent(studentId: string): Promise<CV[]>
+export interface ICVRepository extends IGenericRepository<CV> {
+    findByStudent(studentId: string): Promise<CV[]>
 }
+
+export const ICVRepository = Symbol('ICVRepository')

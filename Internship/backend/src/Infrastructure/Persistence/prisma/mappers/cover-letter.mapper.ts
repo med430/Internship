@@ -1,13 +1,13 @@
-// infrastructure/mappers/cv.mapper.ts
+// infrastructure/mappers/cover-letter.mapper.ts
 import { Injectable } from '@nestjs/common'
-import { CV as PrismaCV } from '@prisma/client'
+import { CoverLetter as PrismaCoverLetter } from '@prisma/client'
 import { IGenericMapper } from './generic.mapper'
-import { CV } from '../../../../Domain/entities/cv.entity'
+import {CoverLetter} from "../../../../Domain/entities/coverletter.entity";
 
 @Injectable()
-export class CVMapper implements IGenericMapper<CV, PrismaCV> {
-    toDomain(raw: PrismaCV): CV {
-        return new CV(
+export class CoverLetterMapper implements IGenericMapper<CoverLetter, PrismaCoverLetter> {
+    toDomain(raw: PrismaCoverLetter): CoverLetter {
+        return new CoverLetter(
             raw.id,
             raw.studentId,
             raw.fileUrl,
@@ -17,7 +17,7 @@ export class CVMapper implements IGenericMapper<CV, PrismaCV> {
         )
     }
 
-    toPersistence(domain: CV) {
+    toPersistence(domain: CoverLetter): Omit<PrismaCoverLetter, 'createdAt' | 'updatedAt'> {
         return {
             id:        domain.id,
             studentId: domain.studentId,

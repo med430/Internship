@@ -1,26 +1,41 @@
+// infrastructure/mappers/user.mapper.ts
+import { Injectable } from '@nestjs/common'
+import { User as PrismaUser } from '@prisma/client'
+import { IGenericMapper } from './generic.mapper'
 import {User} from "../../../../Domain/entities/user.entity";
-import { Role } from "@prisma/client";
-import { Role as UserRole } from "../../../../Domain/enums/role.enum";
-import { IGenericMapper } from './generic.mapper';
-import { User as UserDB } from "@prisma/client"
+import {Role} from "../../../../Domain/enums/role.enum";
 
-export class UserPrismaMapper implements IGenericMapper<User, UserDB> {
-    toDomain(user: UserDB): User {
-        return new User(user.id, user.name, user.lastname, user.username, user.email, user.passwordHash, user.role as UserRole);
+@Injectable()
+export class UserMapper implements IGenericMapper<User, PrismaUser> {
+    toDomain(raw: PrismaUser): User {
+        return new User(
+            raw.id,
+            raw.email,
+            raw.name,
+            raw.lastname,
+            raw.username,
+            raw.passwordHash,
+            raw.role as Role,
+            raw.phone      ?? undefined,
+            raw.avatarUrl  ?? undefined,
+            raw.createdAt,
+            raw.updatedAt,
+            raw.deletedAt  ?? undefined,
+        )
     }
 
-    toPersistence(user: User): UserDB {
+    toPersistence(domain: User): Omit<PrismaUser, 'createdAt' | 'updatedAt'> {
         return {
-            id: user.id,
-            name: user.name,
-            lastname: user.lastname,
-            username: user.username,
-            email: user.email,
-            passwordHash: user.passwordHash,
-            role: user.role as Role,
-            createdAt: user.createdAt as Date,
-            updatedAt: user.updatedAt as Date,
-            deletedAt: user.deletedAt as Date,
-        } as UserDB;
+            id:           domain.id,
+            email:        domain.email,
+            name:         domain.name,
+            lastname:     domain.lastname,
+            username:     domain.username,
+            passwordHash: domain.passwordHash,
+            role:         domain.role,
+            phone:        domain.phone      ?? null,
+            avatarUrl:    domain.avatarUrl  ?? null,
+            deletedAt:    domain.deletedAt  ?? null,
+        }
     }
 }

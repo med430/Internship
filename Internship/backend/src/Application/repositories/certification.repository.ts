@@ -1,5 +1,6 @@
-import {IGenericRepository} from "./generic.repository";
-import {Certification} from "../../Domain/entities/certification.entity";
+// Application/repositories/certification.repository.ts
+import { Certification } from '../../Domain/entities/certification.entity'
+import { IGenericRepository } from './generic.repository'
 
-export abstract class ICertificationRepository
-    extends IGenericRepository<Certification> {}
+export interface ICertificationRepository extends IGenericRepository<Certification> {}
+export const ICertificationRepository = Symbol('ICertificationRepository')

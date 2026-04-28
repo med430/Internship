@@ -1,10 +1,11 @@
+// generic-command.handler.ts
 import { ICommandHandler } from '@nestjs/cqrs';
 
 export abstract class GenericCommandHandler<
-  TCommand,
-  TEntity,
-  TResult,
-> implements ICommandHandler<TCommand> {
+TCommand,
+    TEntity,
+    TResult,
+> {
   async execute(command: TCommand): Promise<TResult> {
     await this.validate(command);
 
@@ -19,16 +20,13 @@ export abstract class GenericCommandHandler<
     return result;
   }
 
-  protected async validate(command: TCommand): Promise<void> {}
+protected async validate(command: TCommand): Promise<void> {}
 
-  protected async beforePersist(entity: TEntity): Promise<void> {}
+protected async beforePersist(entity: TEntity): Promise<void> {}
 
-  protected abstract map(command: TCommand): Promise<TEntity>;
+protected abstract map(command: TCommand): Promise<TEntity>;
 
-  protected abstract persist(entity: TEntity): Promise<TResult>;
+protected abstract persist(entity: TEntity): Promise<TResult>;
 
-  protected async afterPersist(
-    result: TResult,
-    command: TCommand,
-  ): Promise<void> {}
+protected async afterPersist(result: TResult, command: TCommand): Promise<void> {}
 }

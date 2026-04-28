@@ -1,30 +1,14 @@
+// Application/repositories/application.repository.ts
 import { Application } from '../../Domain/entities/application.entity'
 import { IGenericRepository } from './generic.repository'
 
-export abstract class IApplicationRepository
-    extends IGenericRepository<Application> {
-
-    abstract findByStudentAndOffer(
-        studentId: string,
-        offerId: string
-    ): Promise<Application | null>
-
-    abstract findByStudent(studentId: string): Promise<Application[]>
-
-    abstract findByOffer(offerId: string): Promise<Application[]>
-
-    abstract rejectAllExcept(
-        offerId: string,
-        acceptedId: string
-    ): Promise<void>
-
-    // 🔥 CHECK usage CV (pour delete sécurité)
-    abstract existsByCvId(
-        cvId: string
-    ): Promise<boolean>
-
-    // 🔥 CHECK usage Letter
-    abstract existsByCoverLetterId(
-        coverLetterId: string
-    ): Promise<boolean>
+export interface IApplicationRepository extends IGenericRepository<Application> {
+    findByStudentAndOffer(studentId: string, offerId: string): Promise<Application | null>
+    findByStudent(studentId: string): Promise<Application[]>
+    findByOffer(offerId: string): Promise<Application[]>
+    rejectAllExcept(offerId: string, acceptedId: string): Promise<void>
+    existsByCvId(cvId: string): Promise<boolean>
+    existsByCoverLetterId(coverLetterId: string): Promise<boolean>
 }
+
+export const IApplicationRepository = Symbol('IApplicationRepository')

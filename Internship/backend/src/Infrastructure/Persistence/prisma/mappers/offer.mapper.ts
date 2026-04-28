@@ -1,64 +1,66 @@
-import { Offer } from '../../../../Domain/entities/offer.entity'
-import { SkillAssignment } from '../../../../Domain/entities/skill-assignment.entity'
-import { SkillPrismaMapper } from './skill.mapper'
+// infrastructure/mappers/offer.mapper.ts
 import { Injectable } from '@nestjs/common'
-import { IGenericMapper } from './generic.mapper';
-import { Offer as Domain } from '../../../../Domain/entities/offer.entity';
-import { Offer as DB } from '@prisma/client';
+import {
+  Offer as PrismaOffer,
+  SkillRequirement as PrismaSkillRequirement,
+  Skill as PrismaSkill,
+  WorkMode as PrismaWorkMode,   // ← import depuis Prisma
+  OfferType as PrismaOfferType, // ← import depuis Prisma
+} from '@prisma/client'
+import { IGenericMapper } from './generic.mapper'
+import {Offer} from "../../../../Domain/entities/offer.entity";
+import {WorkMode} from "../../../../Domain/enums/workMode";
+import {SkillRequirement} from "../../../../Domain/entities/skill-requirement";
+import {SkillLevel} from "../../../../Domain/enums/skill-level.enum";
+import {Skill} from "../../../../Domain/entities/skill.entity";
+import {OfferType} from "../../../../Domain/enums/offer-type.enum";
+
+type PrismaOfferFull = PrismaOffer & {
+  skillRequirements: (PrismaSkillRequirement & { skill: PrismaSkill })[]
+}
 
 @Injectable()
-export class OfferPrismaMapper implements IGenericMapper<Domain, DB> {
-  constructor(private skillMapper: SkillPrismaMapper) {}
-
-  toDomain(entity: any): Offer {
-    const skillRequirements = entity.skillRequirements
-      ? entity.skillRequirements.map(
-          (rs) =>
-            this.skillMapper.toDomain(rs.skill),
-        )
-      : [];
-
+export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
+  toDomain(raw: PrismaOfferFull): Offer {
     return new Offer(
-      entity.id,
-      entity.recruiterProfileId, // 🔥 FIX
-
-      entity.title,
-      entity.description,
-
-      entity.company,
-      entity.location,
-      entity.domain,
-
-      entity.startDate,
-      entity.endDate,
-
-      skillRequirements,
-      entity.type,
-
-      entity.createdAt,
-      entity.updatedAt,
-      entity.deletedAt ?? undefined,
-    );
+        raw.id,
+        raw.recruiterProfileId,
+        raw.title,
+        raw.description,
+        raw.company,
+        raw.location,
+        raw.domain,
+        raw.isPaid,
+        raw.workMode as unknown as WorkMode,   // ← double cast
+        raw.startDate,
+        raw.endDate,
+        raw.skillRequirements.map(sr => new SkillRequirement(
+            sr.id,
+            new Skill(sr.skill.id, sr.skill.name),
+            sr.level as unknown as SkillLevel,
+        )),
+        raw.type as unknown as OfferType,      // ← double cast
+        raw.createdAt,
+        raw.updatedAt,
+        raw.deletedAt ?? undefined,
+    )
   }
-  toPersistence(entity: Offer) {
+
+  toPersistence(domain: Offer) {
     return {
-      id: entity.id,
-
-      recruiterProfileId: entity.recruiterProfileId, // 🔥 FIX
-
-      title: entity.title,
-      description: entity.description,
-      company: entity.company,
-      location: entity.location,
-      domain: entity.domain,
-      startDate: entity.startDate,
-      endDate: entity.endDate,
-      skillRequirements: entity.skillRequirements,
-      type: entity.type,
-
-      createdAt: entity.createdAt,
-      updatedAt: new Date(),
-      deletedAt: entity.deletedAt ?? null,
-    } as unknown as DB;
+      id:                 domain.id,
+      recruiterProfileId: domain.recruiterProfileId,
+      title:              domain.title,
+      description:        domain.description,
+      company:            domain.company,
+      location:           domain.location,
+      domain:             domain.domain,
+      isPaid:             domain.isPaid,
+      workMode:           domain.workMode as unknown as PrismaWorkMode,   // ← double cast
+      startDate:          domain.startDate,
+      endDate:            domain.endDate,
+      type:               domain.type as unknown as PrismaOfferType,      // ← double cast
+      deletedAt:          domain.deletedAt ?? null,
+    }
   }
 }

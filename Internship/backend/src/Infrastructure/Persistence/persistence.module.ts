@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common'
 
 import { UserRepository } from './prisma/repositories/user.prisma.repository'
-import { OfferRepository } from './prisma/repositories/offer.prisma.repository'
+import { OfferRepository } from './prisma/repositories/offer.repository'
 import { SkillRepository } from './prisma/repositories/skill.prisma.repository'
-import { StudentProfileRepository } from './prisma/repositories/student-profile.prisma.repository'
-import { RecruiterProfileRepository } from './prisma/repositories/recruiter-profile.prisma.repository'
+import { StudentProfileRepository } from './prisma/repositories/student-profile.repository'
+import { RecruiterProfileRepository } from './prisma/repositories/recruiter-profile.repository'
 import { ApplicationRepository } from './prisma/repositories/application.repository'
 
 import { IUserRepository } from '../../Application/repositories/user.repository'

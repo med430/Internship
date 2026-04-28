@@ -1,8 +1,9 @@
-// cover-letter.repository.ts
+// Application/repositories/cover-letter.repository.ts
+import { CoverLetter } from '../../Domain/entities/coverletter.entity'
 import { IGenericRepository } from './generic.repository'
-import {CoverLetter} from "../../Domain/entities/coverletter.entity";
-export abstract class ICoverLetterRepository
-    extends IGenericRepository<CoverLetter> {
 
-    abstract findByStudent(studentId: string): Promise<CoverLetter[]>
+export interface ICoverLetterRepository extends IGenericRepository<CoverLetter> {
+    findByStudent(studentId: string): Promise<CoverLetter[]>
 }
+
+export const ICoverLetterRepository = Symbol('ICoverLetterRepository')

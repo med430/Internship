@@ -6,12 +6,13 @@ datasource db {
   provider = "postgresql"
 }
 
-//
+// ─────────────────────────────────────────
 // ENUMS
-//
+// ─────────────────────────────────────────
 
 enum ApplicationStatus {
-  PENDING
+  SUBMITTED
+  IN_REVIEW
   ACCEPTED
   REJECTED
   WITHDRAWN
@@ -37,9 +38,21 @@ enum OfferType {
   PHD
 }
 
-//
+enum WorkMode {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// ─────────────────────────────────────────
 // USER
-//
+// ─────────────────────────────────────────
 
 model User {
   id           String @id @default(uuid())
@@ -50,183 +63,189 @@ model User {
   passwordHash String
   role         Role
 
+  phone     String?
+  avatarUrl String?
+
   studentProfile   StudentProfile?
   recruiterProfile RecruiterProfile?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-  offers    Offer[]   @relation("UserOffers")
 }
 
-//
+// ─────────────────────────────────────────
 // PROFILES
-//
+// ─────────────────────────────────────────
 
 model StudentProfile {
-  id String @id @default(uuid())
-
+  id     String @id @default(uuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
 
-  bio String?
+  bio       String?
+  birthDate DateTime?
+  gender    Gender?
+  address   String?
+  city      String?
 
-  cvs             CV[]
-  skills          SkillAssignment[]
-  applications    Application[]
-  recommendations Recommendation[]
-  interviews      Interview[]
-
+  skills         SkillAssignment[]
+  experiences    Experience[]
+  projects       Project[]
   educations     Education[]
   certifications Certification[]
-
-  experiences Experience[] // 🔥 AJOUT
-  projects    Project[] // 🔥 AJOUT
+  cvs            CV[]
+  applications   Application[]
 }
 
 model RecruiterProfile {
-  id String @id @default(uuid())
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 
-  userId          String           @unique
-  user            User             @relation(fields: [userId], references: [id])
-  company         String
-  offers          Offer[]
-  recommendations Recommendation[]
+  company            String
+  companyDescription String?
+  website            String?
+
+  offers Offer[]
 }
 
-//
-// RECOMMENDATION
-//
-
-model Recommendation {
-  id String @id @default(uuid())
-
-  recruiterId String
-  recruiter   RecruiterProfile @relation(fields: [recruiterId], references: [id]) // 🔥 FIX
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-
-  description String
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-//
+// ─────────────────────────────────────────
 // PROJECT
-//
+// ─────────────────────────────────────────
 
 model Project {
-  id String @id @default(uuid())
-
+  id               String         @id @default(uuid())
   studentProfileId String
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
 
   title        String
   description  String
   technologies String[]
+  githubUrl    String?
+  demoUrl      String?
 }
 
-//
+// ─────────────────────────────────────────
 // CV
-//
-
+// ─────────────────────────────────────────
 model CV {
-  id String @id @default(uuid())
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-
-  fileUrl    String
-  parsedData Json? // 🔥 pour OCR / AI
+  id           String         @id @default(uuid())
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id])
+  fileUrl      String
+  applications Application[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
-//
+model CoverLetter {
+  id           String        @id @default(uuid())
+  studentId    String
+  fileUrl      String
+  applications Application[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ─────────────────────────────────────────
 // EXPERIENCE
-//
+// ─────────────────────────────────────────
 
 model Experience {
-  id String @id @default(uuid())
-
+  id               String         @id @default(uuid())
   studentProfileId String
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
 
-  company String
-  role    String
-
-  startDate DateTime
-  endDate   DateTime?
-
+  company     String
+  role        String
+  startDate   DateTime
+  endDate     DateTime?
   description String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
-//
-// OFFER
-//
-model Offer {
-  id String @id @default(uuid())
+// ─────────────────────────────────────────
+// EDUCATION
+// ─────────────────────────────────────────
 
+model Education {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
+
+  school      String
+  degree      String
+  field       String
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ─────────────────────────────────────────
+// CERTIFICATION
+// ─────────────────────────────────────────
+
+model Certification {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
+
+  name           String
+  organization   String
+  issueDate      DateTime
+  expirationDate DateTime?
+  credentialId   String?
+  credentialUrl  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ─────────────────────────────────────────
+// OFFER
+// ─────────────────────────────────────────
+
+model Offer {
+  id                 String           @id @default(uuid())
   recruiterProfileId String
   recruiterProfile   RecruiterProfile @relation(fields: [recruiterProfileId], references: [id])
 
   title       String
   description String
+  company     String
+  location    String
+  domain      String
 
-  company  String
-  location String
-  domain   String
-
+  isPaid    Boolean
+  workMode  WorkMode
   startDate DateTime
   endDate   DateTime
-
-  type OfferType
+  type      OfferType
 
   skillRequirements SkillRequirement[]
   applications      Application[]
 
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  deletedAt        DateTime?
-  interviews       Interview[]
-  user             User?             @relation("UserOffers", fields: [userId], references: [id])
-  userId           String?
-  skillAssignments SkillAssignment[]
-}
-
-//
-// APPLICATION
-//
-model Application {
-  id String @id @default(uuid())
-
-  studentId String
-  offerId   String
-
-  status     ApplicationStatus
-  cvUrl      String
-  matchScore Float
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-
-  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  offer   Offer          @relation(fields: [offerId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, offerId])
-  @@index([studentId])
-  @@index([offerId])
 }
 
-//
-// SKILLS
-//
+// ─────────────────────────────────────────
+// SKILL
+// ─────────────────────────────────────────
 
 model Skill {
   id   Int    @id @default(autoincrement())
@@ -237,81 +256,47 @@ model Skill {
 }
 
 model SkillAssignment {
-  id String @id @default(uuid())
-
-  skillId Int
-  skill   Skill @relation(fields: [skillId], references: [id])
-
-  // 🔥 OPTIONNEL POUR OFFER
-  offerId String?
-  offer   Offer?  @relation(fields: [offerId], references: [id])
-
-  // 🔥 OPTIONNEL POUR STUDENT
-  studentProfileId String?
-  studentProfile   StudentProfile? @relation(fields: [studentProfileId], references: [id])
-
-  level SkillLevel
+  id               String         @id @default(uuid())
+  skillId          Int
+  skill            Skill          @relation(fields: [skillId], references: [id])
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
+  level            SkillLevel
 }
 
-///
-/// SKILLREQUIREMENT
-///
 model SkillRequirement {
-  id String @id @default(uuid())
-
+  id      String     @id @default(uuid())
   skillId Int
-  skill   Skill @relation(fields: [skillId], references: [id])
-
-  level   SkillLevel
-  offer   Offer?     @relation(fields: [offerId], references: [id])
-  offerId String?
-}
-
-//
-// INTERVIEW
-//
-model Interview {
-  id String @id @default(uuid())
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-
+  skill   Skill      @relation(fields: [skillId], references: [id])
   offerId String
-  offer   Offer  @relation(fields: [offerId], references: [id])
-
-  score    Float
-  feedback String
-  summary  String?
+  offer   Offer      @relation(fields: [offerId], references: [id])
+  level   SkillLevel
 }
 
-model Education {
-  id String @id @default(uuid())
+// ─────────────────────────────────────────
+// APPLICATION
+// ─────────────────────────────────────────
+model Application {
+  id        String @id @default(uuid())
+  studentId String
+  offerId   String
 
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
+  cvId          String
+  coverLetterId String?
 
-  school String
-  degree String
-  field  String
+  status     ApplicationStatus
+  matchScore Float             @default(0)
 
-  startDate DateTime
-  endDate   DateTime?
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  offer       Offer          @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  cv          CV             @relation(fields: [cvId], references: [id])
+  coverLetter CoverLetter?   @relation(fields: [coverLetterId], references: [id])
 
-  description String?
-}
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-model Certification {
-  id String @id @default(uuid())
-
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id])
-
-  name         String
-  organization String
-
-  issueDate      DateTime
-  expirationDate DateTime?
-
-  credentialId  String?
-  credentialUrl String?
+  @@unique([studentId, offerId])
+  @@index([studentId])
+  @@index([offerId])
 }

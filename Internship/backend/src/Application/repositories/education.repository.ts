@@ -1,5 +1,6 @@
-import {IGenericRepository} from "./generic.repository";
-import {Education} from "../../Domain/entities/education.entity";
+// Application/repositories/education.repository.ts
+import { Education } from '../../Domain/entities/education.entity'
+import { IGenericRepository } from './generic.repository'
 
-export abstract class IEducationRepository
-    extends IGenericRepository<Education> {}
+export interface IEducationRepository extends IGenericRepository<Education> {}
+export const IEducationRepository = Symbol('IEducationRepository')

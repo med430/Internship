@@ -1,4 +1,5 @@
-export interface IGenericMapper<T, P> {
-  toDomain(persistence: P): T;
-  toPersistence(domain: T): P;
+// infrastructure/mappers/generic.mapper.ts
+export interface IGenericMapper<TDomain, TPersistence> {
+  toDomain(raw: TPersistence): TDomain
+  toPersistence(domain: TDomain): any
 }
