@@ -3,8 +3,8 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
 import { StudentProfileMapper } from '../mappers/student-profile.mapper'
 import {GenericRepository} from "./generic.repositories";
-import {StudentProfile} from "@prisma/client";
 import {IStudentProfileRepository} from "../../../../Application/repositories/student-profile.repository";
+import {StudentProfile} from "../../../../Domain/entities/student-profile.entity";
 
 
 const STUDENT_PROFILE_INCLUDE = {

@@ -1,13 +1,17 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetUsersQuery } from '../get-users.query';
-import { User } from '../../../../../Domain/entities/user.entity';
-import { IUserRepository } from '../../../../repositories/user.repository';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
+import { Inject } from '@nestjs/common'                        // ← ajouter
+import { GetUsersQuery } from '../get-users.query'
+import { User } from '../../../../../Domain/entities/user.entity'
+import { IUserRepository } from '../../../../repositories/user.repository'
 
 @QueryHandler(GetUsersQuery)
 export class GetUsersQueryHandler implements IQueryHandler<GetUsersQuery> {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+      @Inject(IUserRepository)                                   // ← ajouter
+      private readonly userRepository: IUserRepository
+  ) {}
 
   async execute(query: GetUsersQuery): Promise<User[]> {
-    return this.userRepository.findPaginated(query.pageNumber, query.pageSize);
+    return this.userRepository.findPaginated(query.pageNumber, query.pageSize)
   }
 }

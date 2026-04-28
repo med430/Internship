@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
 import { Skill } from '../../../../Domain/entities/skill.entity'
 import { Skill as SkillDB } from '@prisma/client'
-import { SkillPrismaMapper } from '../mappers/skill.mapper'
+import { SkillMapper } from '../mappers/skill.mapper'
 import { ISkillRepository } from '../../../../Application/repositories/skill.repository'
 
 @Injectable()
@@ -10,7 +10,7 @@ export class SkillRepositoryImpl implements ISkillRepository {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly mapper: SkillPrismaMapper
+        private readonly mapper: SkillMapper
     ) {}
 
     async findByIds(ids: number[]): Promise<Skill[]> {
