@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { SoftDeleteUserCommand } from '../../../Application/Features/ProfileFeature/Commands/soft-delete-user.command'
-import {UpdateUserDTO} from "./dto/update-user.dto";
+import {UpdateProfileDto} from "./dto/update-profile.dto";
 import {UpdateUserCommand} from "../../../Application/Features/ProfileFeature/Commands/update-user.command";
 
 @Controller()
@@ -15,7 +15,7 @@ export class ProfileController {
 
     @Patch('me')
     @UseGuards(JwtAuthGuard)
-    updateMe(@Body() dto: UpdateUserDTO, @CurrentUser() user) {
+    updateMe(@Body() dto: UpdateProfileDto, @CurrentUser() user) {
         return this.commandBus.execute(
             new UpdateUserCommand(user.id, dto)
         )

@@ -1,14 +1,14 @@
-import { IsString, IsOptional } from 'class-validator'
+// apply-to-offer.dto.ts
+import { IsString, IsOptional, IsUrl } from 'class-validator'
 
 export class ApplyToOfferDTO {
-
     @IsString()
     offerId: string
 
-    @IsString()
+    @IsUrl()
     cvUrl: string
 
     @IsOptional()
-    @IsString()
+    @IsUrl()
     coverLetterUrl?: string
 }
