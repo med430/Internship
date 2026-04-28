@@ -7,7 +7,6 @@ import {
     UseGuards,
     Get,
     Res,
-    Inject
 } from '@nestjs/common'
 
 import type { Response } from 'express'

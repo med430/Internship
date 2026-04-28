@@ -41,7 +41,9 @@ ProfileResponseDTO
 
         // Update StudentProfile fields
         profile.bio       = command.bio       ?? profile.bio
-        profile.birthDate = command.birthDate ?? profile.birthDate
+        profile.birthDate = command.birthDate
+            ? new Date(command.birthDate)
+            : profile.birthDate
         profile.gender    = command.gender    ?? profile.gender
         profile.address   = command.address   ?? profile.address
         profile.city      = command.city      ?? profile.city

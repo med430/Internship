@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma.service';
 export abstract class GenericRepository<T, P, ID = string>
     implements IGenericRepository<T, ID> {
 
-  // ← ajouter : les sous-classes surchargent ceci
   protected readonly includeOptions: object = {}
 
   constructor(
@@ -13,17 +12,21 @@ export abstract class GenericRepository<T, P, ID = string>
       protected readonly mapper: IGenericMapper<T, P>,
   ) {}
 
+  private get include() {
+    return Object.keys(this.includeOptions).length ? this.includeOptions : undefined
+  }
+
   async findById(id: ID): Promise<T | null> {
     const result = await (this.prisma[this.modelName] as any).findUnique({
       where: { id },
-      include: Object.keys(this.includeOptions).length ? this.includeOptions : undefined,
+      include: this.include,
     })
     return result ? this.mapper.toDomain(result) : null
   }
 
   async findAll(): Promise<T[]> {
     const results = await (this.prisma[this.modelName] as any).findMany({
-      include: Object.keys(this.includeOptions).length ? this.includeOptions : undefined,
+      include: this.include,
     })
     return results.map((r: P) => this.mapper.toDomain(r))
   }
@@ -33,17 +36,30 @@ export abstract class GenericRepository<T, P, ID = string>
     const results = await (this.prisma[this.modelName] as any).findMany({
       skip,
       take: pageSize,
-      include: Object.keys(this.includeOptions).length ? this.includeOptions : undefined,
+      include: this.include,
     })
     return results.map((r: P) => this.mapper.toDomain(r))
   }
 
   async save(entity: T): Promise<T> {
     const persistence = this.mapper.toPersistence(entity)
-    const result = await (this.prisma[this.modelName] as any).create({
-      data: persistence,
-      include: Object.keys(this.includeOptions).length ? this.includeOptions : undefined,  // ← fix
+    const { id, ...data } = persistence as any
+
+    const existing = await (this.prisma[this.modelName] as any).findUnique({
+      where: { id }
     })
+
+    const result = existing
+        ? await (this.prisma[this.modelName] as any).update({
+          where:   { id },
+          data,
+          include: this.include,
+        })
+        : await (this.prisma[this.modelName] as any).create({
+          data: { id, ...data },
+          include: this.include,
+        })
+
     return this.mapper.toDomain(result)
   }
 
