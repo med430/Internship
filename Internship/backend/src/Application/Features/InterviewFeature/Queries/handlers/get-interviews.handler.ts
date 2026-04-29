@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetInterviewsQuery } from '../../../../Features/InterviewFeature/Queries/get-interviews.query';
+import { GetInterviewsQuery } from '../get-interviews.query';
 import { IInterviewRepository } from '../../../../repositories/interview.repository';
 import { Interview } from '../../../../../Domain/entities/interview.entity';
 

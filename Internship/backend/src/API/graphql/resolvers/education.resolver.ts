@@ -1,8 +1,13 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
 import { Education } from '../../../Domain/entities/education.entity';
 import { GetEducationQuery } from '../../../Application/Features/EducationFeature/Queries/get-education.query';
 import { GetEducationsQuery } from '../../../Application/Features/EducationFeature/Queries/get-educations.query';
+import {
+  GetStudentProfileQuery
+} from '../../../Application/Features/StudentProfileFeature/Queries/get-student-profile.query';
+import { StudentProfile } from '../../../Domain/entities/student-profile.entity';
+import { Project } from '../../../Domain/entities/project.entity';
 
 @Resolver('Education')
 export class EducationResolver {
@@ -19,5 +24,14 @@ export class EducationResolver {
     @Args('pageSize') pageSize: number,
   ): Promise<Education[]> {
     return this.queryBus.execute(new GetEducationsQuery(pageNumber, pageSize));
+  }
+
+  @ResolveField('studentProfile')
+  async studentProfile(
+    @Parent() project: Project,
+  ): Promise<StudentProfile | null> {
+    return this.queryBus.execute(
+      new GetStudentProfileQuery(project.studentProfileId),
+    );
   }
 }

@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject, NotFoundException } from '@nestjs/common';
-import { GetRecruiterProfileQuery } from '../../../../Features/RecruiterProfileFeature/Queries/get-recruiter-profile.query';
+import { GetRecruiterProfileQuery } from '../get-recruiter-profile.query';
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository';
 import { RecruiterProfile } from '../../../../../Domain/entities/recruiter-profile.entity';
 

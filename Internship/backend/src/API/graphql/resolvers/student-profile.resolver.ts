@@ -1,4 +1,4 @@
-import { Query, Args, Resolver } from '@nestjs/graphql';
+import { Query, Args, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetSkillAssignmentsQuery } from '../../../Application/Features/SkillAssignmentFeature/Queries/get-skill-assignments.query';
 import { GetSkillAssignmentQuery } from '../../../Application/Features/SkillAssignmentFeature/Queries/get-skill-assignment.query';
@@ -9,6 +9,8 @@ import {
 import {
   GetStudentProfilesQuery
 } from '../../../Application/Features/StudentProfileFeature/Queries/get-student-profiles.query';
+import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/get-user.query';
+import { User } from '../../../Domain/entities/user.entity';
 
 @Resolver(StudentProfile)
 export class StudentProfileResolver {
@@ -29,5 +31,10 @@ export class StudentProfileResolver {
     return this.queryBus.execute(
       new GetStudentProfilesQuery(pageNumber, pageSize),
     );
+  }
+
+  @ResolveField('user')
+  async user(@Parent() profile: StudentProfile): Promise<User | null> {
+    return this.queryBus.execute(new GetUserQuery(profile.userId));
   }
 }
