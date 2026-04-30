@@ -1,5 +1,6 @@
 import {Module} from "@nestjs/common";
 import {ApplicationModule} from "../../Application/Application.module";
+import { PersistenceModule } from "../../Infrastructure/Persistence/persistence.module";
 import {AuthController} from "./auth/auth.controller";
 import {OfferController} from "./offer/offer.controller";
 import {ApplicationController} from "./application/application.controller";
@@ -14,7 +15,7 @@ import {SkillAssignmentController} from "./skillAssignment/skill.controller";
 import { InterviewController } from "./interview/interview.controller";
 
 @Module({
-    imports: [ApplicationModule],
+    imports: [ApplicationModule, PersistenceModule],
     controllers: [AuthController, OfferController, ApplicationController,
         EducationController,
         ProjectController,

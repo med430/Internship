@@ -44,6 +44,29 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Local auth bypass
+
+For frontend-only local work, you can skip JWT auth on protected routes in development.
+
+Add these values to `backend/.env`:
+
+```bash
+NODE_ENV=development
+DEV_AUTH_BYPASS=true
+```
+
+Optional selectors:
+
+```bash
+DEV_AUTH_BYPASS_USER_ID=your-user-uuid
+# or
+DEV_AUTH_BYPASS_USER_EMAIL=you@example.com
+# or
+DEV_AUTH_BYPASS_USER_USERNAME=your.username
+```
+
+If no selector is set, the backend will use the first non-deleted user it finds in the local database.
+
 ## Run tests
 
 ```bash
