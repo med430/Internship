@@ -1,8 +1,12 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
 import { Interview } from '../../../Domain/entities/interview.entity';
 import { GetInterviewQuery } from '../../../Application/Features/InterviewFeature/Queries/get-interview.query';
 import { GetInterviewsQuery } from '../../../Application/Features/InterviewFeature/Queries/get-interviews.query';
+import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/get-user.query';
+import { GetOfferQuery } from '../../../Application/Features/OfferFeature/Queries/get-offer.query';
+import { User } from '../../../Domain/entities/user.entity';
+import { Offer } from '../../../Domain/entities/offer.entity';
 
 @Resolver('Interview')
 export class InterviewResolver {
@@ -19,5 +23,16 @@ export class InterviewResolver {
     @Args('pageSize') pageSize: number,
   ): Promise<Interview[]> {
     return this.queryBus.execute(new GetInterviewsQuery(pageNumber, pageSize));
+  }
+
+  @ResolveField('student')
+  async student(@Parent() interview: Interview): Promise<User | null> {
+    return this.queryBus.execute(new GetUserQuery(interview.studentId))
+  }
+
+  @ResolveField('offer')
+  async offer(@Parent() interview: Interview): Promise<Offer | null> {
+    if (!interview.offerId) return null
+    return this.queryBus.execute(new GetOfferQuery(interview.offerId))
   }
 }

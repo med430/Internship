@@ -44,6 +44,17 @@ enum Gender {
     OTHER
 }
 
+enum InterviewStatus {
+    IN_PROGRESS
+    COMPLETED
+}
+
+enum RecruiterMode {
+    EMPATHIC
+    TECHNICAL
+    DIRECT
+}
+
 # =======================
 # BASE INTERFACE
 # =======================
@@ -172,11 +183,22 @@ type Application implements BaseEntity {
 type Interview {
     id: ID!
     student: User!
-    offer: Offer!
+    offer: Offer
+
+    company: String
+    jobTitle: String
+    jobDescription: String
+
+    recruiterMode: RecruiterMode!
+    status: InterviewStatus!
 
     score: Float!
     feedback: String!
     summary: String
+
+    createdAt: Date
+    updatedAt: Date
+    deletedAt: Date
 }
 
 # =======================

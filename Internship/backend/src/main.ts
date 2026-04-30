@@ -9,6 +9,10 @@ console.log(process.env.DB_URL);
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: [/^http:\/\/localhost:\d+$/],
+    credentials: true,
+  });
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT ?? 3000);
 }

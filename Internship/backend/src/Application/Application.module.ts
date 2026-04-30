@@ -43,6 +43,8 @@ import { UpdateRecruiterProfileHandler } from './Features/ProfileFeature/Command
 import { AssignSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/assign-skill.handler';
 import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/remove-skill.handler';
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
+import { StartInterviewHandler } from './Features/InterviewFeature/Commands/handlers/start-interview.handler';
+import { AnswerInterviewHandler } from './Features/InterviewFeature/Commands/handlers/answer-interview.handler';
 
 // ── Query handlers ─────────────────────────────────────────
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
@@ -75,6 +77,7 @@ import { GetInterviewQueryHandler } from './Features/InterviewFeature/Queries/ha
 import { GetInterviewsQueryHandler } from './Features/InterviewFeature/Queries/handlers/get-interviews.handler';
 import { GetRecommendationQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendation.handler';
 import { GetRecommendationsQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendations.handler';
+import { InterviewAiService } from './Services/InterviewService/interview-ai.service';
 
 const CommandHandlers = [
   LoginHandler,
@@ -109,6 +112,8 @@ const CommandHandlers = [
   AssignSkillHandler,
   RemoveSkillHandler,
   UpdateSkillHandler,
+  StartInterviewHandler,
+  AnswerInterviewHandler,
 ];
 
 const QueryHandlers = [
@@ -150,6 +155,9 @@ const QueryHandlers = [
   // Certifications
   GetCertificationQueryHandler,
   GetCertificationsQueryHandler,
+  // Interviews
+  GetInterviewQueryHandler,
+  GetInterviewsQueryHandler,
 ];
 
 @Global()
@@ -175,6 +183,7 @@ const QueryHandlers = [
     ...CommandHandlers,
     ...QueryHandlers,
     JwtStrategy,
+    InterviewAiService,
     {
       provide: AuthService,
       useClass: JwtAuthService,

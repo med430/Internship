@@ -11,6 +11,7 @@ import {CVController} from "./cv/cv.controller";
 import {ExperienceController} from "./experience/experience.controller";
 import {ProfileController} from "./profile/profile.controller";
 import {SkillAssignmentController} from "./skillAssignment/skill.controller";
+import { InterviewController } from "./interview/interview.controller";
 
 @Module({
     imports: [ApplicationModule],
@@ -22,6 +23,7 @@ import {SkillAssignmentController} from "./skillAssignment/skill.controller";
         CVController,
         ExperienceController,
         ProfileController,
-        SkillAssignmentController]
+        SkillAssignmentController,
+        InterviewController]
 })
 export class HttpApiModule {}

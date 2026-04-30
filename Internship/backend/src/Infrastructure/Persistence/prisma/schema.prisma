@@ -50,6 +50,17 @@ enum Gender {
   OTHER
 }
 
+enum InterviewStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum RecruiterMode {
+  EMPATHIC
+  TECHNICAL
+  DIRECT
+}
+
 // ─────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────
@@ -68,6 +79,7 @@ model User {
 
   studentProfile   StudentProfile?
   recruiterProfile RecruiterProfile?
+  interviews       Interview[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -237,6 +249,7 @@ model Offer {
 
   skillRequirements SkillRequirement[]
   applications      Application[]
+  interviews        Interview[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -297,6 +310,38 @@ model Application {
   deletedAt DateTime?
 
   @@unique([studentId, offerId])
+  @@index([studentId])
+  @@index([offerId])
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW
+// ─────────────────────────────────────────
+model Interview {
+  id             String          @id @default(uuid())
+  studentId      String
+  offerId        String?
+
+  company        String?
+  jobTitle       String?
+  jobDescription String?
+
+  recruiterMode RecruiterMode   @default(EMPATHIC)
+  status        InterviewStatus @default(IN_PROGRESS)
+
+  score    Float  @default(0)
+  feedback String @default("")
+  summary  String?
+
+  data Json?
+
+  student User  @relation(fields: [studentId], references: [id])
+  offer   Offer? @relation(fields: [offerId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   @@index([studentId])
   @@index([offerId])
 }

@@ -17,6 +17,7 @@ import { ExperienceMapper } from './prisma/mappers/experience.mapper';
 import { EducationMapper } from './prisma/mappers/education.mapper';
 import { CertificationMapper } from './prisma/mappers/certification.mapper';
 import { ProjectMapper } from './prisma/mappers/project.mapper';
+import { InterviewMapper } from './prisma/mappers/interview.mapper';
 
 // Interfaces
 import { IUserRepository } from '../../Application/repositories/user.repository';
@@ -31,6 +32,7 @@ import { IExperienceRepository } from '../../Application/repositories/experience
 import { IEducationRepository } from '../../Application/repositories/education.repository';
 import { ICertificationRepository } from '../../Application/repositories/certification.repository';
 import { IProjectRepository } from '../../Application/repositories/project.repository';
+import { IInterviewRepository } from '../../Application/repositories/interview.repository';
 import { UserRepositoryImpl } from './prisma/repositories/user.prisma.repository';
 import { StudentProfileRepositoryImpl } from './prisma/repositories/student-profile.repository';
 import { RecruiterProfileRepositoryImpl } from './prisma/repositories/recruiter-profile.repository';
@@ -43,6 +45,7 @@ import { CoverLetterRepositoryImpl } from './prisma/repositories/cover-letter.re
 import { ApplicationRepositoryImpl } from './prisma/repositories/application.repository';
 import { SkillAssignmentRepositoryImpl } from './prisma/repositories/skill-assignment.repository';
 import { ProjectRepositoryImpl } from './prisma/repositories/project.repository';
+import { InterviewRepositoryImpl } from './prisma/repositories/interview.repository';
 import { ICoverLetterRepository } from '../../Application/repositories/coverletter.repository';
 import { SkillRepositoryImpl } from './prisma/repositories/skill.repository';
 
@@ -60,6 +63,7 @@ const repositories = [
     { provide: IEducationRepository,        useClass: EducationRepositoryImpl },
     { provide: ICertificationRepository,    useClass: CertificationRepositoryImpl },
     { provide: IProjectRepository,          useClass: ProjectRepositoryImpl },
+    { provide: IInterviewRepository,        useClass: InterviewRepositoryImpl },
 ]
 
 const mappers = [
@@ -76,6 +80,7 @@ const mappers = [
     EducationMapper,
     CertificationMapper,
     ProjectMapper,
+    InterviewMapper,
 ]
 
 @Module({
@@ -98,6 +103,7 @@ const mappers = [
         IEducationRepository,
         ICertificationRepository,
         IProjectRepository,
+        IInterviewRepository,
     ],
 })
 export class PersistenceModule {}
