@@ -1,296 +1,303 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import './App.css'
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Scores = {
-  relevance: number
-  depth: number
-  clarity: number
-  confidence: number
-  overall: number
-}
+  relevance: number;
+  depth: number;
+  clarity: number;
+  confidence: number;
+  overall: number;
+};
 
 type Turn = {
-  question: string
-  answer: string
-  scores?: Scores
-  feedback?: string
-}
+  question: string;
+  answer: string;
+  scores?: Scores;
+  feedback?: string;
+};
 
 type StartResponse = {
-  interviewId: string
-  question: string
-  audioBase64: string
-  audioMime: string
-  questionIndex: number
-  recruiterMode: string
-}
+  interviewId: string;
+  question: string;
+  audioBase64: string;
+  audioMime: string;
+  questionIndex: number;
+  recruiterMode: string;
+};
 
 type AnswerResponse = {
-  done: boolean
-  transcript: string
-  scores: Scores
-  feedback: string
-  nextQuestion?: string
-  audioBase64?: string
-  audioMime?: string
-  summary?: string
-  score?: number
-  questionIndex?: number
-}
+  done: boolean;
+  transcript: string;
+  scores: Scores;
+  feedback: string;
+  nextQuestion?: string;
+  audioBase64?: string;
+  audioMime?: string;
+  summary?: string;
+  score?: number;
+  questionIndex?: number;
+};
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
-function App() {
-  const [status, setStatus] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+export default function Home() {
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [lastname, setLastname] = useState('')
-  const [username, setUsername] = useState('')
-  const [token, setToken] = useState('')
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [username, setUsername] = useState("");
+  const [token, setToken] = useState("");
 
-  const [useOffer, setUseOffer] = useState(false)
-  const [offerId, setOfferId] = useState('')
-  const [company, setCompany] = useState('')
-  const [jobTitle, setJobTitle] = useState('')
-  const [jobDescription, setJobDescription] = useState('')
-  const [recruiterMode, setRecruiterMode] = useState('TECHNICAL')
-  const [questionCount, setQuestionCount] = useState(3)
+  const [useOffer, setUseOffer] = useState(false);
+  const [offerId, setOfferId] = useState("");
+  const [company, setCompany] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [recruiterMode, setRecruiterMode] = useState("TECHNICAL");
+  const [questionCount, setQuestionCount] = useState(3);
 
-  const [interviewId, setInterviewId] = useState('')
-  const [question, setQuestion] = useState('')
-  const [questionIndex, setQuestionIndex] = useState<number | null>(null)
-  const [questionAudio, setQuestionAudio] = useState('')
-  const [turns, setTurns] = useState<Turn[]>([])
-  const [finalScore, setFinalScore] = useState<number | null>(null)
-  const [finalSummary, setFinalSummary] = useState('')
-  const [finalFeedback, setFinalFeedback] = useState('')
+  const [interviewId, setInterviewId] = useState("");
+  const [question, setQuestion] = useState("");
+  const [questionIndex, setQuestionIndex] = useState<number | null>(null);
+  const [questionAudio, setQuestionAudio] = useState("");
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [finalScore, setFinalScore] = useState<number | null>(null);
+  const [finalSummary, setFinalSummary] = useState("");
+  const [finalFeedback, setFinalFeedback] = useState("");
 
-  const [recording, setRecording] = useState(false)
-  const recorderRef = useRef<MediaRecorder | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('interview_token')
-    if (saved) setToken(saved)
-  }, [])
+  const [recording, setRecording] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
-    if (token) localStorage.setItem('interview_token', token)
-  }, [token])
+    const saved = localStorage.getItem("interview_token");
+    if (saved) setToken(saved);
+  }, []);
 
-  const hasToken = Boolean(token)
+  useEffect(() => {
+    if (token) localStorage.setItem("interview_token", token);
+  }, [token]);
+
+  const hasToken = Boolean(token);
   const safeQuestionCount = useMemo(() => {
-    if (!Number.isFinite(questionCount)) return 3
-    return Math.min(10, Math.max(1, questionCount))
-  }, [questionCount])
+    if (!Number.isFinite(questionCount)) return 3;
+    return Math.min(10, Math.max(1, questionCount));
+  }, [questionCount]);
 
   const questionAudioSrc = useMemo(() => {
-    if (!questionAudio) return ''
-    return questionAudio
-  }, [questionAudio])
+    if (!questionAudio) return "";
+    return questionAudio;
+  }, [questionAudio]);
 
   const setQuestionAudioFromResponse = (audioBase64?: string, audioMime?: string) => {
     if (!audioBase64 || !audioMime) {
-      setQuestionAudio('')
-      return
+      setQuestionAudio("");
+      return;
     }
-    setQuestionAudio(`data:${audioMime};base64,${audioBase64}`)
-  }
+    setQuestionAudio(`data:${audioMime};base64,${audioBase64}`);
+  };
 
   const requestJson = async <T,>(path: string, options: RequestInit): Promise<T> => {
-    const response = await fetch(`${API_BASE}${path}`, options)
-    const text = await response.text()
-    const data = text ? JSON.parse(text) : null
+    const response = await fetch(`${API_BASE}${path}`, options);
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
     if (!response.ok) {
       const message = Array.isArray(data?.message)
-        ? data.message.join(', ')
-        : data?.message || 'Request failed'
-      throw new Error(message)
+        ? data.message.join(", ")
+        : data?.message || "Request failed";
+      throw new Error(message);
     }
-    return data as T
-  }
+    return data as T;
+  };
 
   const clearStatus = () => {
-    setStatus('')
-    setError('')
-  }
+    setStatus("");
+    setError("");
+  };
 
   const handleRegister = async () => {
-    clearStatus()
-    setLoading(true)
+    clearStatus();
+    setLoading(true);
     try {
-      setStatus('Registering and logging in...')
-      await requestJson('/auth/register/student', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      setStatus("Registering and logging in...");
+      await requestJson("/auth/register/student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, lastname, username, password }),
-      })
-      await handleLogin()
+      });
+      await handleLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogin = async () => {
-    clearStatus()
-    setLoading(true)
+    clearStatus();
+    setLoading(true);
     try {
-      setStatus('Logging in...')
-      const result = await requestJson<{ token: string }>('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      setStatus("Logging in...");
+      const result = await requestJson<{ token: string }>("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      })
-      setToken(result.token)
-      setStatus('Token ready')
+      });
+      setToken(result.token);
+      setStatus("Token ready");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogout = () => {
-    setToken('')
-    localStorage.removeItem('interview_token')
-  }
+    setToken("");
+    localStorage.removeItem("interview_token");
+  };
 
   const resetInterview = () => {
-    setInterviewId('')
-    setQuestion('')
-    setQuestionIndex(null)
-    setQuestionAudio('')
-    setTurns([])
-    setFinalScore(null)
-    setFinalSummary('')
-    setFinalFeedback('')
-  }
+    setInterviewId("");
+    setQuestion("");
+    setQuestionIndex(null);
+    setQuestionAudio("");
+    setTurns([]);
+    setFinalScore(null);
+    setFinalSummary("");
+    setFinalFeedback("");
+  };
 
   const handleStartInterview = async () => {
-    clearStatus()
-    setLoading(true)
+    clearStatus();
+    setLoading(true);
     try {
-      if (!hasToken) throw new Error('Login required')
+      if (!hasToken) throw new Error("Login required");
 
-      if (useOffer && !offerId.trim()) throw new Error('Offer ID is required')
+      if (useOffer && !offerId.trim()) throw new Error("Offer ID is required");
       if (!useOffer) {
         if (!company.trim() || !jobDescription.trim()) {
-          throw new Error('Company and job description are required')
+          throw new Error("Company and job description are required");
         }
       }
 
-      setStatus('Starting interview...')
+      setStatus("Starting interview...");
 
       const payload: Record<string, unknown> = {
         recruiterMode,
         questionCount: safeQuestionCount,
-      }
+      };
 
       if (useOffer) {
-        payload.offerId = offerId.trim()
+        payload.offerId = offerId.trim();
       } else {
-        payload.company = company.trim()
-        payload.jobTitle = jobTitle.trim()
-        payload.jobDescription = jobDescription.trim()
+        payload.company = company.trim();
+        payload.jobTitle = jobTitle.trim();
+        payload.jobDescription = jobDescription.trim();
       }
 
-      const result = await requestJson<StartResponse>('/interviews/start', {
-        method: 'POST',
+      const result = await requestJson<StartResponse>("/interviews/start", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
-      })
+      });
 
-      resetInterview()
-      setInterviewId(result.interviewId)
-      setQuestion(result.question)
-      setQuestionIndex(result.questionIndex)
-      setQuestionAudioFromResponse(result.audioBase64, result.audioMime)
-      setStatus('Interview live')
+      resetInterview();
+      setInterviewId(result.interviewId);
+      setQuestion(result.question);
+      setQuestionIndex(result.questionIndex);
+      setQuestionAudioFromResponse(result.audioBase64, result.audioMime);
+      setStatus("Interview live");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Start failed')
+      setError(err instanceof Error ? err.message : "Start failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const stopStream = () => {
-    if (!streamRef.current) return
-    streamRef.current.getTracks().forEach((track) => track.stop())
-    streamRef.current = null
-  }
+    if (!streamRef.current) return;
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
 
   const handleStartRecording = async () => {
-    clearStatus()
+    clearStatus();
     if (!interviewId) {
-      setError('Start an interview first')
-      return
+      setError("Start an interview first");
+      return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-      chunksRef.current = []
-      const recorder = new MediaRecorder(stream)
-      recorderRef.current = recorder
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data)
-      }
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
 
       recorder.onstop = async () => {
-        const blobType = recorder.mimeType || 'audio/webm'
-        const blob = new Blob(chunksRef.current, { type: blobType })
-        chunksRef.current = []
-        await handleSubmitAnswer(blob)
-        stopStream()
-      }
+        const blobType = recorder.mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: blobType });
+        chunksRef.current = [];
+        await handleSubmitAnswer(blob);
+        stopStream();
+      };
 
-      recorder.start()
-      setRecording(true)
+      recorder.start();
+      setRecording(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Microphone permission denied')
-      stopStream()
+      setError(err instanceof Error ? err.message : "Microphone permission denied");
+      stopStream();
     }
-  }
+  };
 
   const handleStopRecording = () => {
-    if (!recorderRef.current) return
-    recorderRef.current.stop()
-    setRecording(false)
-  }
+    if (!recorderRef.current) return;
+    recorderRef.current.stop();
+    setRecording(false);
+  };
 
   const handleSubmitAnswer = async (audioBlob: Blob) => {
-    clearStatus()
-    setLoading(true)
+    clearStatus();
+    setLoading(true);
     try {
-      setStatus('Scoring answer...')
-      const formData = new FormData()
-      const ext = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('ogg') ? 'ogg' : 'wav'
-      formData.append('audio', audioBlob, `answer.${ext}`)
+      setStatus("Scoring answer...");
+      const formData = new FormData();
+      const ext = audioBlob.type.includes("webm")
+        ? "webm"
+        : audioBlob.type.includes("ogg")
+          ? "ogg"
+          : "wav";
+      formData.append("audio", audioBlob, `answer.${ext}`);
 
       const response = await fetch(`${API_BASE}/interviews/${interviewId}/answer`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      })
+      });
 
-      const data: AnswerResponse = await response.json()
+      const data: AnswerResponse = await response.json();
       if (!response.ok) {
-        throw new Error(Array.isArray((data as any)?.message)
-          ? (data as any).message.join(', ')
-          : (data as any)?.message || 'Answer failed')
+        throw new Error(
+          Array.isArray((data as { message?: string[] }).message)
+            ? (data as { message: string[] }).message.join(", ")
+            : (data as { message?: string }).message || "Answer failed",
+        );
       }
 
       setTurns((prev) => [
@@ -301,28 +308,28 @@ function App() {
           scores: data.scores,
           feedback: data.feedback,
         },
-      ])
+      ]);
 
       if (data.done) {
-        setFinalScore(data.score ?? null)
-        setFinalSummary(data.summary ?? '')
-        setFinalFeedback(data.feedback ?? '')
-        setQuestion('')
-        setQuestionIndex(data.questionIndex ?? questionIndex)
-        setQuestionAudio('')
-        setStatus('Interview completed')
+        setFinalScore(data.score ?? null);
+        setFinalSummary(data.summary ?? "");
+        setFinalFeedback(data.feedback ?? "");
+        setQuestion("");
+        setQuestionIndex(data.questionIndex ?? questionIndex);
+        setQuestionAudio("");
+        setStatus("Interview completed");
       } else {
-        setQuestion(data.nextQuestion ?? '')
-        setQuestionIndex(data.questionIndex ?? null)
-        setQuestionAudioFromResponse(data.audioBase64, data.audioMime)
-        setStatus('Next question ready')
+        setQuestion(data.nextQuestion ?? "");
+        setQuestionIndex(data.questionIndex ?? null);
+        setQuestionAudioFromResponse(data.audioBase64, data.audioMime);
+        setStatus("Next question ready");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Answer failed')
+      setError(err instanceof Error ? err.message : "Answer failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="app">
@@ -330,20 +337,16 @@ function App() {
         <div className="brand">
           <p className="eyebrow">Voice Interview Studio</p>
           <h1>Recruiter-mode interviews, scored in real time.</h1>
-          <p className="subhead">
-            Pick a mode, speak your answers, get a clean $/100$ score and feedback.
-          </p>
+          <p className="subhead">Pick a mode, speak your answers, get a clean /100 score and feedback.</p>
         </div>
         <div className="status">
           <div className="chip">API: {API_BASE}</div>
-          <div className={`chip ${hasToken ? 'ok' : ''}`}>
-            {hasToken ? 'Token ready' : 'No token'}
-          </div>
+          <div className={`chip ${hasToken ? "ok" : ""}`}>{hasToken ? "Token ready" : "No token"}</div>
         </div>
       </header>
 
       <main className="layout">
-        <section className="card span-5" style={{ ['--delay' as any]: '40ms' }}>
+        <section className="card span-5" style={{ ["--delay" as any]: "40ms" }}>
           <h2>Access + Setup</h2>
 
           <div className="section">
@@ -355,7 +358,12 @@ function App() {
               </label>
               <label className="field">
                 <span>Password</span>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 chars" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 6 chars"
+                />
               </label>
               <label className="field">
                 <span>First name</span>
@@ -386,10 +394,10 @@ function App() {
           <div className="section">
             <h3>Interview config</h3>
             <div className="toggle">
-              <button className={useOffer ? 'active' : ''} onClick={() => setUseOffer(true)} type="button">
+              <button className={useOffer ? "active" : ""} onClick={() => setUseOffer(true)} type="button">
                 Use offer ID
               </button>
-              <button className={!useOffer ? 'active' : ''} onClick={() => setUseOffer(false)} type="button">
+              <button className={!useOffer ? "active" : ""} onClick={() => setUseOffer(false)} type="button">
                 Use company + job
               </button>
             </div>
@@ -412,7 +420,12 @@ function App() {
                   </label>
                   <label className="field span-2">
                     <span>Job description</span>
-                    <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows={4} placeholder="Paste the description" />
+                    <textarea
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      rows={4}
+                      placeholder="Paste the description"
+                    />
                   </label>
                 </div>
               </>
@@ -449,14 +462,10 @@ function App() {
             </div>
           </div>
 
-          {(status || error) && (
-            <div className={`notice ${error ? 'error' : ''}`}>
-              {error || status}
-            </div>
-          )}
+          {(status || error) && <div className={`notice ${error ? "error" : ""}`}>{error || status}</div>}
         </section>
 
-        <section className="card span-7" style={{ ['--delay' as any]: '120ms' }}>
+        <section className="card span-7" style={{ ["--delay" as any]: "120ms" }}>
           <h2>Live interview</h2>
 
           {!interviewId ? (
@@ -468,24 +477,20 @@ function App() {
               <div className="question-block">
                 <div>
                   <p className="eyebrow">Question {questionIndex ?? 0}</p>
-                  <h3>{question || 'Waiting for next question...'}</h3>
+                  <h3>{question || "Waiting for next question..."}</h3>
                 </div>
-                {questionAudioSrc && (
-                  <audio className="audio" controls src={questionAudioSrc} />
-                )}
+                {questionAudioSrc && <audio className="audio" controls src={questionAudioSrc} />}
               </div>
 
               <div className="record-row">
                 <button
-                  className={`btn record ${recording ? 'live' : ''}`}
+                  className={`btn record ${recording ? "live" : ""}`}
                   onClick={recording ? handleStopRecording : handleStartRecording}
                   disabled={loading}
                 >
-                  {recording ? 'Stop + submit answer' : 'Record answer'}
+                  {recording ? "Stop + submit answer" : "Record answer"}
                 </button>
-                <p className="hint">
-                  Mic input only. When you stop, your answer is scored automatically.
-                </p>
+                <p className="hint">Mic input only. When you stop, your answer is scored automatically.</p>
               </div>
 
               {finalScore !== null && (
@@ -505,7 +510,7 @@ function App() {
           )}
         </section>
 
-        <section className="card span-12" style={{ ['--delay' as any]: '200ms' }}>
+        <section className="card span-12" style={{ ["--delay" as any]: "200ms" }}>
           <h2>Conversation</h2>
           {turns.length === 0 ? (
             <p className="muted">No answers yet. Record your first response.</p>
@@ -538,7 +543,5 @@ function App() {
         </section>
       </main>
     </div>
-  )
+  );
 }
-
-export default App
