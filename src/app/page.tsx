@@ -295,7 +295,7 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(
           Array.isArray((data as { message?: string[] }).message)
-            ? (data as { message: string[] }).message.join(", ")
+            ? (data as unknown as { message: string[] }).message.join(", ")
             : (data as { message?: string }).message || "Answer failed",
         );
       }
