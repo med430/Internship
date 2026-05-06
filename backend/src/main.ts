@@ -4,7 +4,6 @@ import {ValidationPipe} from "@nestjs/common";
 import * as dotenv from "dotenv";
 import * as express from 'express'
 require("dotenv").config();
-console.log(process.env.DB_URL);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

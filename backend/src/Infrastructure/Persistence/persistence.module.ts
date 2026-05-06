@@ -90,6 +90,7 @@ const mappers = [
         ...repositories,
     ],
     exports: [
+        PrismaService,
         IUserRepository,
         IStudentProfileRepository,
         IRecruiterProfileRepository,

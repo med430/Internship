@@ -13,6 +13,8 @@ import {ExperienceController} from "./experience/experience.controller";
 import {ProfileController} from "./profile/profile.controller";
 import {SkillAssignmentController} from "./skillAssignment/skill.controller";
 import { InterviewController } from "./interview/interview.controller";
+import { OnboardController } from "./onboard/onboard.controller";
+import { OnboardService } from "./onboard/onboard.service";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -25,6 +27,8 @@ import { InterviewController } from "./interview/interview.controller";
         ExperienceController,
         ProfileController,
         SkillAssignmentController,
-        InterviewController]
+        InterviewController,
+        OnboardController],
+    providers: [OnboardService],
 })
 export class HttpApiModule {}

@@ -345,3 +345,127 @@ model Interview {
   @@index([studentId])
   @@index([offerId])
 }
+
+// ─────────────────────────────────────────
+// ONBOARD PUBLIC SESSION DATA
+// ─────────────────────────────────────────
+
+model PublicSessionProfile {
+  id           String   @id @default(uuid())
+  sessionKey   String   @unique
+  name         String
+  email        String?
+  location     String?
+  targetedRole String?
+  skills       String[]
+  education    String[]
+  experiences  String[]
+  achievements String[]
+  githubUrl    String?
+  linkedinUrl  String?
+  twitterUrl   String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PublicCvQuestionSession {
+  id            String   @id @default(uuid())
+  sessionKey    String
+  status        String   @default("OPEN")
+  questionsJson Json
+  metadata      Json
+  cvText        String   @db.Text
+  jobsText      String   @db.Text
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
+model PublicCv {
+  id               String   @id @default(uuid())
+  sessionKey       String
+  questionSessionId String?
+  pdfData          Bytes
+  originalScore    Float
+  finalScore       Float
+  jobTitle         String
+  jobsSummary      String   @db.Text
+  reviewImprovements String[]
+  anonymizedCvText String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
+model PublicCareerGuide {
+  id                    String   @id @default(uuid())
+  sessionKey            String
+  currentStrengths      String[]
+  readinessScore        Int
+  skillsToLearn         String[]
+  projectsToWorkOn      String[]
+  softSkillsToDevelop   String[]
+  careerRoadmap         String[]
+  domain                String
+  currentJob            String
+  targetJob             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
+model PublicPortfolioGeneration {
+  id         String   @id @default(uuid())
+  sessionKey String
+  wireframe  String
+  theme      String
+  html       String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
+model PublicInterview {
+  id                    String   @id @default(uuid())
+  sessionKey            String
+  status                String   @default("IN_PROGRESS")
+  personaKey            String
+  interviewerName       String
+  interviewerRole       String
+  interviewStyle        String
+  difficultyLevel       String
+  company               String?
+  jobTitle              String?
+  jobDescription        String?  @db.Text
+  recruiterMode         String   @default("TECHNICAL")
+  totalExchanges        Int      @default(0)
+  overallScore          Int      @default(0)
+  technicalCompetency   Int      @default(0)
+  communicationSkills   Int      @default(0)
+  problemSolving        Int      @default(0)
+  culturalFit           Int      @default(0)
+  acceptanceProbability Int      @default(0)
+  keyStrengths          String[]
+  areasForImprovement   String[]
+  recommendations       String[]
+  nextSteps             String[]
+  summary               String   @default("")
+  transcript            Json?
+  data                  Json?
+  pdfData               Bytes?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
