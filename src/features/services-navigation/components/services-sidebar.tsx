@@ -83,11 +83,11 @@ export function ServicesSidebar() {
 
   const logoSrc = isCollapsed
     ? isHydrated && resolvedTheme === "light"
-      ? "/onboard-1-black.png"
-      : "/onboard-1.png"
+      ? "/stagio_logo_1.png"
+      : "/stagio-logo-white.png"
     : isHydrated && resolvedTheme === "light"
-      ? "/onboard_logo-1-black.png"
-      : "/onboard_logo-1.png";
+      ? "/stagio_logo_1.png"
+      : "/stagio-logo-white.png";
 
   return (
     <Sidebar
@@ -106,7 +106,7 @@ export function ServicesSidebar() {
           >
             <Image
               src={logoSrc}
-              alt="OnBoard Logo"
+              alt="Stagio Logo"
               width={isCollapsed ? 48 : 180}
               height={isCollapsed ? 48 : 180}
               style={
@@ -117,7 +117,7 @@ export function ServicesSidebar() {
                       minWidth: "48px",
                       minHeight: "48px",
                     }
-                  : { height: "40px", width: "auto" }
+                  : { height: "44px", width: "auto" }
               }
               className="object-contain shrink-0"
             />

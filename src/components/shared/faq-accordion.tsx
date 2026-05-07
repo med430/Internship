@@ -9,9 +9,9 @@ import {
 
 const faqs = [
   {
-    question: "What is OnBoard and how does it help me?",
+    question: "What is Stagio and how does it help me?",
     answer:
-      "OnBoard is an AI-powered career toolkit designed to streamline your job search. It combines CV optimization, intelligent job matching from multiple sources, personalized career guidance, mock interview preparation, and portfolio building—all while keeping your data private through anonymization.",
+      "Stagio is an AI-powered career toolkit designed to streamline your job search. It combines CV optimization, intelligent job matching from multiple sources, personalized career guidance, mock interview preparation, and portfolio building—all while keeping your data private through anonymization.",
   },
   {
     question: "How does the CV optimizer work?",
@@ -21,12 +21,12 @@ const faqs = [
   {
     question: "Where do the job listings come from?",
     answer:
-      "OnBoard aggregates job listings from multiple premium sources including LinkedIn, Upwork, and specialized job APIs. Our semantic matching algorithm then ranks these opportunities based on how well they align with your skills and career goals.",
+      "Stagio aggregates job listings from multiple premium sources including LinkedIn, Upwork, and specialized job APIs. Our semantic matching algorithm then ranks these opportunities based on how well they align with your skills and career goals.",
   },
   {
     question: "Is my data secure and private?",
     answer:
-      "Absolutely. OnBoard uses anonymization techniques when processing your data through our AI systems. Your personal information is encrypted, and we follow industry best practices for data security. You maintain full control over your information.",
+      "Absolutely. Stagio uses anonymization techniques when processing your data through our AI systems. Your personal information is encrypted, and we follow industry best practices for data security. You maintain full control over your information.",
   },
   {
     question: "What makes the virtual interviewer different?",
@@ -34,7 +34,7 @@ const faqs = [
       "Our virtual interviewer uses advanced AI to conduct realistic mock interviews with voice interaction. It adapts questions based on your responses, provides detailed feedback on your answers, and helps you prepare for real interviews with confidence.",
   },
   {
-    question: "Can I use OnBoard for free?",
+    question: "Can I use Stagio for free?",
     answer:
       "Yes! We offer a free Starter plan with essential features including basic CV analysis and limited job matches. For advanced features like unlimited CV optimization, priority job matching, and the virtual interviewer, check out our Pro and Enterprise plans.",
   },
@@ -49,9 +49,9 @@ const faqs = [
       "The portfolio builder automatically generates a professional HTML portfolio website from your CV. It showcases your skills, projects, and experience in a modern, responsive format that you can share with potential employers or clients.",
   },
   {
-    question: "Do I need any technical knowledge to use OnBoard?",
+    question: "Do I need any technical knowledge to use Stagio?",
     answer:
-      "Not at all! OnBoard is designed to be user-friendly and intuitive. Simply upload your CV, set your preferences, and let our AI handle the complex processing. The interface is clean and straightforward for users of all technical backgrounds.",
+      "Not at all! Stagio is designed to be user-friendly and intuitive. Simply upload your CV, set your preferences, and let our AI handle the complex processing. The interface is clean and straightforward for users of all technical backgrounds.",
   },
   {
     question: "Can I cancel my subscription anytime?",

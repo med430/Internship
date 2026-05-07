@@ -1,4 +1,4 @@
-export const APP_NAME = "OnBoard";
+export const APP_NAME = "Stagio";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 

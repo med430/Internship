@@ -10,7 +10,7 @@ const pricingTiers = [
   {
     name: "Starter",
     price: { monthly: 0, annual: 0 },
-    description: "Perfect for exploring OnBoard",
+    description: "Perfect for exploring Stagio",
     features: [
       "Basic CV analysis",
       "Up to 5 job matches per week",

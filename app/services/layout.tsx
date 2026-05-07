@@ -40,7 +40,7 @@ export default async function ServicesLayout({
       <main className="flex-1 w-full">
         <div className="border-b h-16 px-4 flex items-center justify-between bg-slate-100 dark:bg-neutral-950 shadow-sm z-50 fixed top-0 left-0 right-0">
           <div className="flex items-center gap-3">
-            <LogoLink width={120} height={35} />
+            <LogoLink width={180} height={80} />
             <SidebarTrigger />
           </div>
           <div className="flex items-center gap-2">

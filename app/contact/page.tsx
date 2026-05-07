@@ -74,7 +74,7 @@ export default function ContactPage() {
         <div className="backdrop-blur-xl bg-background/60 border border-border/50 rounded-2xl shadow-2xl p-8">
           <h1 className="text-3xl font-bold mb-2 text-center">Get in Touch</h1>
           <p className="text-muted-foreground text-center mb-8">
-            Connect with the OnBoard team!
+            Connect with the Stagio team!
             <br />
             We&apos;d love to hear from you
           </p>

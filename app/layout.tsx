@@ -41,9 +41,9 @@ const neueMontreal = localFont({
 
 export const metadata: Metadata = {
   title:
-    "OnBoard - AI-Powered Career Platform | Land Your Dream Job 10x Faster",
+    "Stagio - AI-Powered Career Platform | Land Your Dream Job 10x Faster",
   description:
-    "Transform your job search with OnBoard's AI-powered CV optimization, intelligent job matching from LinkedIn & Upwork, personalized career guidance, virtual interviews, and portfolio builder. Start free today.",
+    "Transform your job search with Stagio's AI-powered CV optimization, intelligent job matching from LinkedIn & Upwork, personalized career guidance, virtual interviews, and portfolio builder. Start free today.",
   keywords: [
     "job search",
     "CV optimization",
@@ -54,18 +54,18 @@ export const metadata: Metadata = {
     "interview preparation",
     "portfolio builder",
   ],
-  authors: [{ name: "OnBoard" }],
+  authors: [{ name: "Stagio" }],
   openGraph: {
-    title: "OnBoard - AI-Powered Career Platform",
+    title: "Stagio - AI-Powered Career Platform",
     description:
       "Land your dream job 10x faster with AI-powered CV optimization, intelligent job matching, and personalized career guidance.",
     type: "website",
     locale: "en_US",
-    siteName: "OnBoard",
+    siteName: "Stagio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "OnBoard - AI-Powered Career Platform",
+    title: "Stagio - AI-Powered Career Platform",
     description:
       "Land your dream job 10x faster with AI-powered CV optimization and intelligent job matching.",
   },

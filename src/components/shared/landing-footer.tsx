@@ -37,7 +37,7 @@ export function LandingFooter() {
       <div className="container mx-auto max-w-7xl px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-8">
           <div className="col-span-2">
-            <LogoLink width={140} height={40} />
+            <LogoLink width={280} height={80} />
             <p className="mt-4 text-sm text-muted-foreground max-w-xs">
               AI-powered career toolkit helping job seekers land their dream
               roles faster.
@@ -125,7 +125,7 @@ export function LandingFooter() {
 
         <div className="pt-8 border-t border-border">
           <p className="text-sm text-muted-foreground text-center">
-            © {currentYear} OnBoard. All rights reserved.
+            © {currentYear} Stagio. All rights reserved.
           </p>
         </div>
       </div>

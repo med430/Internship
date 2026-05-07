@@ -16,8 +16,8 @@ const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function LogoLink({
-  width = 140,
-  height = 40,
+  width = 280,
+  height = 80,
   className,
 }: Props) {
   const { resolvedTheme } = useTheme();
@@ -29,14 +29,14 @@ export default function LogoLink({
 
   const logoSrc =
     isHydrated && resolvedTheme === "light"
-      ? "/onboard_logo-1-black.png"
-      : "/onboard_logo-1.png";
+      ? "/stagio_logo_1.png"
+      : "/stagio-logo-white.png";
 
   return (
     <Link href="/" className={`inline-flex items-center ${className ?? ""}`}>
       <Image
         src={logoSrc}
-        alt="OnBoard"
+        alt="Stagio"
         width={width}
         height={height}
         style={{ width: "auto", height: `${height}px` }}

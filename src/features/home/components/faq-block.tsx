@@ -9,7 +9,7 @@ export function FaqBlock() {
             Frequently asked questions
           </h2>
           <p className="text-lg text-muted-foreground">
-            Everything you need to know about OnBoard
+            Everything you need to know about Stagio
           </p>
         </div>
 

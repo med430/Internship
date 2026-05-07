@@ -43,7 +43,7 @@ export function LandingNav() {
     >
       <div className="container mx-auto max-w-7xl px-6">
         <div className="flex h-16 items-center justify-between">
-          <LogoLink width={120} height={36} />
+          <LogoLink width={280} height={80} />
 
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
