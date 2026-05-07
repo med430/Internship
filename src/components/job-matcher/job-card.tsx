@@ -43,7 +43,7 @@ const JobCard = ({
   onSave,
 }: JobCardProps) => {
   const getMatchLevel = (score: number) => {
-    if (score >= 0.9)
+    if (score >= 90)
       return {
         label: "Excellent Match",
         primaryColor: "rgb(16, 185, 129)",
@@ -51,7 +51,7 @@ const JobCard = ({
         badgeClass:
           "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20",
       };
-    if (score >= 0.75)
+    if (score >= 80)
       return {
         label: "Great Match",
         primaryColor: "rgb(59, 130, 246)",
@@ -59,7 +59,7 @@ const JobCard = ({
         badgeClass:
           "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border-blue-500/20",
       };
-    if (score >= 0.6)
+    if (score >= 70)
       return {
         label: "Good Match",
         primaryColor: "rgb(139, 92, 246)",
@@ -78,7 +78,7 @@ const JobCard = ({
 
   const matchLevel = getMatchLevel(matchScore);
   const formattedDate = dayjs(postedAt).fromNow();
-  const displayScore = Math.round(matchScore * 100); // Convert 0.85 -> 85
+  const displayScore = Math.round(matchScore);
 
   return (
     <div className="group flex flex-col h-[500px] w-full cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-card/80 backdrop-blur-md transition-all duration-300 hover:bg-card hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 dark:hover:shadow-primary/5">

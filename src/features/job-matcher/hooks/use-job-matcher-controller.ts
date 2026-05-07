@@ -90,7 +90,11 @@ export function useJobMatcherController() {
           );
           setResumeContent(text);
         } else {
-          setResumeContent(selectedCVSource.cv.pdf_url);
+          setResumeContent(
+            selectedCVSource.cv.anonymized_cv_text ||
+              selectedCVSource.cv.jobs_summary ||
+              "",
+          );
         }
       } catch {
         setResumeContent("");

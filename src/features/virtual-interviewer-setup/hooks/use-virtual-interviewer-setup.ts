@@ -19,6 +19,16 @@ export function useVirtualInterviewerSetup() {
         personaKey: selectedPersona,
       });
 
+      if (interview.audioBase64 && interview.audioMime) {
+        sessionStorage.setItem(
+          `interview-audio:${interview.interviewId}`,
+          JSON.stringify({
+            audioBase64: interview.audioBase64,
+            audioMime: interview.audioMime,
+          }),
+        );
+      }
+
       router.push(
         `/services/virtual-interviewer/room?persona=${selectedPersona}&interviewId=${encodeURIComponent(interview.interviewId)}&question=${encodeURIComponent(interview.questionText)}`,
       );

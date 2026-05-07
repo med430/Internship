@@ -27,6 +27,30 @@ export type InterviewContext = {
     jobDescription: string
 }
 
+export type InterviewVoiceSettings = {
+    stability?: number
+    useSpeakerBoost?: boolean
+    similarityBoost?: number
+    style?: number
+    speed?: number
+}
+
+export type InterviewVoiceProfile = {
+    voiceId?: string
+    settings?: InterviewVoiceSettings
+}
+
+type ResolvedInterviewVoiceProfile = {
+    voiceId: string
+    settings: {
+        stability: number
+        useSpeakerBoost: boolean
+        similarityBoost: number
+        style: number
+        speed: number
+    }
+}
+
 @Injectable()
 export class InterviewAiService {
     private readonly groqApiKey: string
@@ -34,7 +58,10 @@ export class InterviewAiService {
     private readonly groqChatModel: string
     private readonly elevenLabsApiKey: string
     private readonly elevenLabsModel: string
-    private readonly elevenVoiceIds: Record<RecruiterMode, string>
+    private readonly defaultVoiceProfiles: Record<
+        RecruiterMode,
+        ResolvedInterviewVoiceProfile
+    >
 
     private readonly groqBaseUrl = 'https://api.groq.com/openai/v1'
 
@@ -52,10 +79,43 @@ export class InterviewAiService {
         this.groqChatModel = this.config.get<string>('GROQ_LLM_MODEL') || 'llama-3.1-70b-versatile'
         this.elevenLabsModel = this.config.get<string>('ELEVEN_LABS_TTS_MODEL') || 'eleven_multilingual_v2'
 
-        this.elevenVoiceIds = {
-            [RecruiterMode.EMPATHIC]: this.config.get<string>('ELEVEN_LABS_VOICE_EMPATHIC') || '21m00Tcm4TlvDq8ikWAM',
-            [RecruiterMode.TECHNICAL]: this.config.get<string>('ELEVEN_LABS_VOICE_TECHNICAL') || 'pNInz6obpgDQGcFmaJgB',
-            [RecruiterMode.DIRECT]: this.config.get<string>('ELEVEN_LABS_VOICE_DIRECT') || 'ErXwobaYiN019PkySvjV',
+        this.defaultVoiceProfiles = {
+            [RecruiterMode.EMPATHIC]: {
+                voiceId:
+                    this.config.get<string>('ELEVEN_LABS_VOICE_EMPATHIC') ||
+                    'hpp4J3VqNfWAUOO0d1Us',
+                settings: {
+                    stability: 0.44,
+                    useSpeakerBoost: true,
+                    similarityBoost: 0.82,
+                    style: 0.03,
+                    speed: 0.97,
+                },
+            },
+            [RecruiterMode.TECHNICAL]: {
+                voiceId:
+                    this.config.get<string>('ELEVEN_LABS_VOICE_TECHNICAL') ||
+                    'cjVigY5qzO86Huf0OWal',
+                settings: {
+                    stability: 0.5,
+                    useSpeakerBoost: true,
+                    similarityBoost: 0.84,
+                    style: 0.02,
+                    speed: 0.98,
+                },
+            },
+            [RecruiterMode.DIRECT]: {
+                voiceId:
+                    this.config.get<string>('ELEVEN_LABS_VOICE_DIRECT') ||
+                    'CwhRBWXzGAHq8TQ4Fs17',
+                settings: {
+                    stability: 0.52,
+                    useSpeakerBoost: true,
+                    similarityBoost: 0.8,
+                    style: 0.02,
+                    speed: 1,
+                },
+            },
         }
     }
 
@@ -221,11 +281,14 @@ export class InterviewAiService {
         }
     }
 
-    async textToSpeech(text: string, mode: RecruiterMode): Promise<{ audioBase64: string; audioMime: string }> {
-        const voiceId = this.elevenVoiceIds[mode]
-        if (!voiceId) throw new Error('Invalid voice configuration')
+    async textToSpeech(
+        text: string,
+        mode: RecruiterMode,
+        voiceProfile?: InterviewVoiceProfile,
+    ): Promise<{ audioBase64: string; audioMime: string }> {
+        const resolvedProfile = this.resolveVoiceProfile(mode, voiceProfile)
 
-        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${resolvedProfile.voiceId}`, {
             method: 'POST',
             headers: {
                 Accept: 'audio/mpeg',
@@ -236,8 +299,11 @@ export class InterviewAiService {
                 text,
                 model_id: this.elevenLabsModel,
                 voice_settings: {
-                    stability: mode === RecruiterMode.DIRECT ? 0.35 : 0.5,
-                    similarity_boost: mode === RecruiterMode.TECHNICAL ? 0.75 : 0.6,
+                    stability: resolvedProfile.settings.stability,
+                    use_speaker_boost: resolvedProfile.settings.useSpeakerBoost,
+                    similarity_boost: resolvedProfile.settings.similarityBoost,
+                    style: resolvedProfile.settings.style,
+                    speed: resolvedProfile.settings.speed,
                 },
             }),
         })
@@ -251,6 +317,32 @@ export class InterviewAiService {
         return {
             audioBase64: buffer.toString('base64'),
             audioMime: 'audio/mpeg',
+        }
+    }
+
+    private resolveVoiceProfile(
+        mode: RecruiterMode,
+        voiceProfile?: InterviewVoiceProfile,
+    ): ResolvedInterviewVoiceProfile {
+        const baseProfile = this.defaultVoiceProfiles[mode]
+        if (!baseProfile) {
+            throw new Error('Invalid voice configuration')
+        }
+
+        return {
+            voiceId: voiceProfile?.voiceId?.trim() || baseProfile.voiceId,
+            settings: {
+                stability:
+                    voiceProfile?.settings?.stability ?? baseProfile.settings.stability,
+                useSpeakerBoost:
+                    voiceProfile?.settings?.useSpeakerBoost ??
+                    baseProfile.settings.useSpeakerBoost,
+                similarityBoost:
+                    voiceProfile?.settings?.similarityBoost ??
+                    baseProfile.settings.similarityBoost,
+                style: voiceProfile?.settings?.style ?? baseProfile.settings.style,
+                speed: voiceProfile?.settings?.speed ?? baseProfile.settings.speed,
+            },
         }
     }
 

@@ -26,6 +26,7 @@ export function convertJobToCardProps(job: JobDocument): JobCardProps {
     seniorityLevel: job.seniority_level,
     jobFunction: job.job_function,
     industries: job.industries,
+    salary: job.salary,
     postedAt: new Date(job.posted_date),
     matchScore,
     matchReasons: {

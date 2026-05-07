@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../../Infrastructure/Persistence/prisma/prisma.service'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import pdfParse from 'pdf-parse'
+import {
+    InterviewAiService,
+    InterviewContext,
+    InterviewVoiceProfile,
+} from '../../../Application/Services/InterviewService/interview-ai.service'
+import { RecruiterMode } from '../../../Domain/enums/recruiter-mode.enum'
 
 type PersonaRecord = {
     name: string
@@ -12,6 +18,7 @@ type PersonaRecord = {
     difficulty: string
     tone: string
     position: string
+    voiceProfile: InterviewVoiceProfile
 }
 
 type InterviewTurn = {
@@ -34,10 +41,13 @@ type JobDocument = {
     company: string
     location: string
     description: string
+    work_model?: string
     employment_type: string
     seniority_level: string
     job_function: string
     industries: string
+    salary?: string
+    company_logo_url?: string
     source: string
     source_url: string
     posted_date: string
@@ -52,6 +62,35 @@ type JobSearchFilters = {
     locations?: string[]
     required_skills?: string[]
     posted_within_days?: number
+}
+
+type RemotiveJobRecord = {
+    id: number
+    url: string
+    title: string
+    company_name: string
+    company_logo?: string
+    company_logo_url?: string
+    category?: string
+    tags?: string[]
+    job_type?: string
+    publication_date?: string
+    candidate_required_location?: string
+    salary?: string
+    description?: string
+}
+
+type ArbeitnowJobRecord = {
+    slug: string
+    company_name: string
+    title: string
+    description?: string
+    remote?: boolean
+    url: string
+    tags?: string[]
+    job_types?: string[]
+    location?: string
+    created_at?: number
 }
 
 type AcceptedJobFeature = 'cv-rewriter' | 'career-guide' | 'portfolio-builder'
@@ -103,6 +142,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Intermediate',
         tone: 'Calm but exacting',
         position: 'Frontend Engineer',
+        voiceProfile: {
+            voiceId: 'iP95p4xoKVk53GoZ742B',
+            settings: {
+                stability: 0.47,
+                similarityBoost: 0.84,
+                style: 0.03,
+                speed: 0.97,
+                useSpeakerBoost: true,
+            },
+        },
     },
     sarah_williams: {
         name: 'Sarah Williams',
@@ -113,6 +162,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Advanced',
         tone: 'Structured and thoughtful',
         position: 'Full Stack Engineer',
+        voiceProfile: {
+            voiceId: 'EXAVITQu4vr4xnSDxMaL',
+            settings: {
+                stability: 0.5,
+                similarityBoost: 0.86,
+                style: 0.02,
+                speed: 0.96,
+                useSpeakerBoost: true,
+            },
+        },
     },
     ali_mahmoud: {
         name: 'Ali Mahmoud',
@@ -123,6 +182,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Advanced',
         tone: 'Technical and direct',
         position: 'Backend Engineer',
+        voiceProfile: {
+            voiceId: 'cjVigY5qzO86Huf0OWal',
+            settings: {
+                stability: 0.52,
+                similarityBoost: 0.86,
+                style: 0.01,
+                speed: 0.99,
+                useSpeakerBoost: true,
+            },
+        },
     },
     aisha_obeid: {
         name: 'Aisha Obeid',
@@ -133,6 +202,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Intermediate',
         tone: 'Warm and practical',
         position: 'UI/UX Designer',
+        voiceProfile: {
+            voiceId: 'pFZP5JQG7iQjIQuC4Bku',
+            settings: {
+                stability: 0.43,
+                similarityBoost: 0.82,
+                style: 0.05,
+                speed: 0.97,
+                useSpeakerBoost: true,
+            },
+        },
     },
     jordan_lee: {
         name: 'Jordan Lee',
@@ -143,6 +222,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Intermediate',
         tone: 'Analytical',
         position: 'Data Engineer',
+        voiceProfile: {
+            voiceId: 'SAz9YHcvj6GT2YYXdXww',
+            settings: {
+                stability: 0.5,
+                similarityBoost: 0.8,
+                style: 0.01,
+                speed: 0.98,
+                useSpeakerBoost: true,
+            },
+        },
     },
     harvey_specter: {
         name: 'Harvey Specter',
@@ -153,6 +242,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Advanced',
         tone: 'Sharp and challenging',
         position: 'Product Manager',
+        voiceProfile: {
+            voiceId: 'JBFqnCBsd6RMkjVDRZzb',
+            settings: {
+                stability: 0.56,
+                similarityBoost: 0.84,
+                style: 0.04,
+                speed: 1.01,
+                useSpeakerBoost: true,
+            },
+        },
     },
     emma_wilson: {
         name: 'Emma Wilson',
@@ -163,6 +262,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Entry-level',
         tone: 'Supportive',
         position: 'Software Engineer',
+        voiceProfile: {
+            voiceId: 'hpp4J3VqNfWAUOO0d1Us',
+            settings: {
+                stability: 0.42,
+                similarityBoost: 0.83,
+                style: 0.04,
+                speed: 0.96,
+                useSpeakerBoost: true,
+            },
+        },
     },
     lisa_anderson: {
         name: 'Lisa Anderson',
@@ -173,6 +282,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Intermediate',
         tone: 'Friendly and candid',
         position: 'Frontend Engineer',
+        voiceProfile: {
+            voiceId: 'XrExE9yKIg1WjnnlVkGX',
+            settings: {
+                stability: 0.45,
+                similarityBoost: 0.82,
+                style: 0.04,
+                speed: 0.98,
+                useSpeakerBoost: true,
+            },
+        },
     },
     michael_rodriguez: {
         name: 'Michael Rodriguez',
@@ -183,6 +302,16 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Advanced',
         tone: 'Practical and fast-paced',
         position: 'DevOps Engineer',
+        voiceProfile: {
+            voiceId: 'nPczCjzI2devNBz1zQrb',
+            settings: {
+                stability: 0.53,
+                similarityBoost: 0.84,
+                style: 0.02,
+                speed: 1,
+                useSpeakerBoost: true,
+            },
+        },
     },
     james_thompson: {
         name: 'James Thompson',
@@ -193,8 +322,74 @@ const PERSONAS: Record<string, PersonaRecord> = {
         difficulty: 'Advanced',
         tone: 'Curious and rigorous',
         position: 'ML Engineer',
+        voiceProfile: {
+            voiceId: 'onwK4e9ZLuTAKqWW03F9',
+            settings: {
+                stability: 0.5,
+                similarityBoost: 0.85,
+                style: 0.02,
+                speed: 0.97,
+                useSpeakerBoost: true,
+            },
+        },
     },
 }
+
+const LIVE_JOB_CACHE_TTL_MS = 30 * 60 * 1000
+const LIVE_JOB_FETCH_TIMEOUT_MS = 12000
+const DEFAULT_JOB_SEARCH_TERMS = [
+    'software engineer',
+    'frontend engineer',
+    'backend engineer',
+]
+const TECH_JOB_KEYWORDS = [
+    'software engineer',
+    'frontend',
+    'backend',
+    'full stack',
+    'fullstack',
+    'developer',
+    'devops',
+    'site reliability',
+    'platform engineer',
+    'cloud engineer',
+    'data engineer',
+    'data scientist',
+    'machine learning',
+    'ml engineer',
+    'ai engineer',
+    'product manager',
+    'product designer',
+    'ux designer',
+    'ui designer',
+    'qa engineer',
+    'automation',
+    'security engineer',
+    'mobile developer',
+    'react',
+    'typescript',
+    'javascript',
+    'node',
+    'python',
+    'aws',
+    'docker',
+    'kubernetes',
+    'n8n',
+    'api',
+    'supabase',
+    'postgres',
+]
+const EXCLUDED_JOB_KEYWORDS = [
+    'academy',
+    'bootcamp',
+    'course',
+    'certification',
+    'training program',
+    'weiterbildung',
+    'ausbildung',
+    'kurs',
+    'qualification program',
+]
 
 const SAMPLE_JOBS: JobDocument[] = [
     {
@@ -369,7 +564,15 @@ const SAMPLE_JOBS: JobDocument[] = [
 
 @Injectable()
 export class OnboardService {
-    constructor(private readonly prisma: PrismaService) {}
+    private readonly liveJobsCache = new Map<
+        string,
+        { expiresAt: number; jobs: JobDocument[] }
+    >()
+
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly interviewAiService: InterviewAiService,
+    ) {}
 
     async health() {
         return {
@@ -445,7 +648,8 @@ export class OnboardService {
     }
 
     async filterJobs(filters: JobSearchFilters, resumeContent?: string, limit = 200) {
-        const filtered = SAMPLE_JOBS.filter((job) => this.matchesFilters(job, filters))
+        const liveJobs = await this.loadLiveJobs(filters, resumeContent, limit)
+        const filtered = liveJobs.filter((job) => this.matchesFilters(job, filters))
         const withScores = filtered
             .map((job) => ({
                 ...job,
@@ -463,12 +667,16 @@ export class OnboardService {
                 used_resume_matching: Boolean(resumeContent?.trim()),
                 filters_applied: filters,
             },
-            message: `Found ${withScores.length} jobs matching your criteria`,
+            message:
+                withScores.length > 0
+                    ? `Found ${withScores.length} live jobs matching your criteria.`
+                    : this.buildNoJobsMessage(Boolean(resumeContent?.trim())),
         }
     }
 
     async matchJobs(resumeContent: string, limit = 200) {
-        const matches = SAMPLE_JOBS
+        const liveJobs = await this.loadLiveJobs({}, resumeContent, limit)
+        const matches = liveJobs
             .map((job) => ({
                 ...job,
                 match_score: this.scoreJob(job, resumeContent),
@@ -480,7 +688,10 @@ export class OnboardService {
             success: true,
             matches,
             total_found: matches.length,
-            message: `Found ${matches.length} matches.`,
+            message:
+                matches.length > 0
+                    ? `Found ${matches.length} live matches.`
+                    : this.buildNoJobsMessage(true),
             profile_summary: {
                 primary_titles: this.extractRoleKeywords(resumeContent).slice(0, 3),
                 key_skills: this.extractSkillKeywords(resumeContent).slice(0, 5),
@@ -903,7 +1114,25 @@ export class OnboardService {
             : 'alex_chen'
         const persona = PERSONAS[personaKey]
         const maxQuestions = Math.max(2, Math.min(5, input.questionCount ?? 3))
-        const question = this.buildInterviewQuestion(persona, 1, maxQuestions, input.jobTitle ?? persona.position)
+        const recruiterMode = this.mapPersonaToRecruiterMode(persona)
+        const context: InterviewContext = {
+            company: input.company ?? persona.company,
+            jobTitle: input.jobTitle ?? persona.position,
+            jobDescription:
+                input.jobDescription ??
+                `Interview practice for a ${input.jobTitle ?? persona.position} role.`,
+        }
+        const question = await this.generateOpeningQuestion(
+            context,
+            recruiterMode,
+            persona,
+            maxQuestions,
+        )
+        const openingAudio = await this.maybeGenerateInterviewAudio(
+            question,
+            recruiterMode,
+            persona.voiceProfile,
+        )
 
         const created = await this.prisma.publicInterview.create({
             data: {
@@ -914,10 +1143,10 @@ export class OnboardService {
                 interviewerRole: persona.role,
                 interviewStyle: persona.style,
                 difficultyLevel: persona.difficulty,
-                company: input.company ?? persona.company,
-                jobTitle: input.jobTitle ?? persona.position,
-                jobDescription: input.jobDescription ?? `Interview practice for a ${persona.position} role.`,
-                recruiterMode: persona.tone,
+                company: context.company,
+                jobTitle: context.jobTitle,
+                jobDescription: context.jobDescription,
+                recruiterMode: recruiterMode,
                 data: {
                     maxQuestions,
                     questions: [question],
@@ -933,6 +1162,8 @@ export class OnboardService {
             questionIndex: 1,
             interviewerName: persona.name,
             personaKey,
+            audioBase64: openingAudio?.audioBase64,
+            audioMime: openingAudio?.audioMime,
         }
     }
 
@@ -961,15 +1192,30 @@ export class OnboardService {
             turns: [],
         }) as InterviewState
         const currentQuestion = data.questions[data.questions.length - 1]
-        const transcript = input.text?.trim()
-            ? input.text.trim()
-            : input.audio
-              ? `Voice response received (${input.audio.originalname || 'recording'})`
-              : 'Voice response received.'
-        const score = this.computeInterviewAnswerScore(transcript, persona)
-        const feedback = this.buildInterviewFeedback(score, persona)
+        const questionAsked = currentQuestion || this.buildInterviewQuestion(
+            persona,
+            data.answers.length + 1,
+            data.maxQuestions,
+            interview.jobTitle ?? persona.position,
+        )
+        const recruiterMode = this.parseRecruiterMode(
+            interview.recruiterMode,
+            persona,
+        )
+        const context = this.buildInterviewContext(interview, persona)
+        const transcript = await this.resolveInterviewTranscript(input)
+        const evaluation = await this.evaluateInterviewAnswer(
+            context,
+            recruiterMode,
+            persona,
+            questionAsked,
+            transcript,
+            data,
+        )
+        const score = evaluation.score
+        const feedback = evaluation.feedback
         const turn: InterviewTurn = {
-            question: currentQuestion,
+            question: questionAsked,
             answer: transcript,
             score,
             feedback,
@@ -978,15 +1224,21 @@ export class OnboardService {
         data.answers.push(transcript)
         data.turns.push(turn)
 
-        const done = data.turns.length >= data.maxQuestions
+        const done =
+            data.turns.length >= data.maxQuestions || !evaluation.nextQuestion
         if (!done) {
-            const nextQuestion = this.buildInterviewQuestion(
+            const nextQuestion = evaluation.nextQuestion ?? this.buildInterviewQuestion(
                 persona,
                 data.turns.length + 1,
                 data.maxQuestions,
                 interview.jobTitle ?? persona.position,
             )
             data.questions.push(nextQuestion)
+            const nextQuestionAudio = await this.maybeGenerateInterviewAudio(
+                nextQuestion,
+                recruiterMode,
+                persona.voiceProfile,
+            )
 
             await this.prisma.publicInterview.update({
                 where: { id: interview.id },
@@ -1003,6 +1255,8 @@ export class OnboardService {
                 feedback,
                 questionText: nextQuestion,
                 questionIndex: data.questions.length,
+                audioBase64: nextQuestionAudio?.audioBase64,
+                audioMime: nextQuestionAudio?.audioMime,
             }
         }
 
@@ -1737,6 +1991,403 @@ export class OnboardService {
 </html>`
     }
 
+    private async loadLiveJobs(
+        filters: JobSearchFilters,
+        resumeContent?: string,
+        limit = 200,
+    ) {
+        const searchTerms = this.buildJobSearchQueries(filters, resumeContent)
+        const remotiveLimit = Math.min(Math.max(limit, 24), 60)
+        const providerRequests = [
+            ...searchTerms.map((term) => this.fetchRemotiveJobs(term, remotiveLimit)),
+            this.fetchArbeitnowJobs(),
+        ]
+
+        const settled = await Promise.allSettled(providerRequests)
+        const liveJobs = settled.flatMap((result) =>
+            result.status === 'fulfilled' ? result.value : [],
+        )
+
+        return this.dedupeJobs(liveJobs).filter(
+            (job) =>
+                this.isTechRelevantJob(job) &&
+                !this.isExcludedJobListing(job),
+        )
+    }
+
+    private buildJobSearchQueries(
+        filters: JobSearchFilters,
+        resumeContent?: string,
+    ) {
+        const roleQueries = this.uniqueStrings([
+            ...(filters.job_functions ?? []),
+            ...(resumeContent ? this.extractRoleKeywords(resumeContent) : []),
+            ...(resumeContent?.trim() ? [this.detectRole(resumeContent)] : []),
+        ])
+        const skillQueries = this.uniqueStrings([
+            ...(filters.required_skills ?? []),
+            ...(resumeContent ? this.extractSkillKeywords(resumeContent) : []),
+        ])
+
+        const combined = [
+            ...roleQueries.slice(0, 2),
+            ...(skillQueries.length > 0 ? [skillQueries.slice(0, 3).join(' ')] : []),
+        ]
+
+        const queries = this.uniqueStrings(
+            combined.length > 0 ? combined : DEFAULT_JOB_SEARCH_TERMS,
+        )
+
+        return queries.slice(0, 3)
+    }
+
+    private async fetchRemotiveJobs(searchTerm: string, limit: number) {
+        const normalizedSearch = searchTerm.trim().toLowerCase()
+        const cacheKey = `remotive:${normalizedSearch}:${limit}`
+
+        return this.fetchJobFeedWithCache(cacheKey, async () => {
+            const url = new URL('https://remotive.com/api/remote-jobs')
+            url.searchParams.set('limit', String(limit))
+            url.searchParams.set('search', searchTerm)
+
+            const payload = await this.fetchJson<{ jobs?: RemotiveJobRecord[] }>(
+                url.toString(),
+            )
+
+            return (payload.jobs ?? [])
+                .map((job) => this.mapRemotiveJob(job))
+                .filter((job): job is JobDocument => Boolean(job))
+        })
+    }
+
+    private async fetchArbeitnowJobs() {
+        return this.fetchJobFeedWithCache('arbeitnow:page:1', async () => {
+            const url = new URL('https://www.arbeitnow.com/api/job-board-api')
+            url.searchParams.set('page', '1')
+            url.searchParams.set('limit', '100')
+
+            const payload = await this.fetchJson<{ data?: ArbeitnowJobRecord[] }>(
+                url.toString(),
+            )
+
+            return (payload.data ?? [])
+                .map((job) => this.mapArbeitnowJob(job))
+                .filter((job): job is JobDocument => Boolean(job))
+        })
+    }
+
+    private async fetchJobFeedWithCache(
+        cacheKey: string,
+        loader: () => Promise<JobDocument[]>,
+    ) {
+        const cached = this.liveJobsCache.get(cacheKey)
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.jobs
+        }
+
+        const jobs = await loader()
+        this.liveJobsCache.set(cacheKey, {
+            expiresAt: Date.now() + LIVE_JOB_CACHE_TTL_MS,
+            jobs,
+        })
+
+        return jobs
+    }
+
+    private async fetchJson<T>(url: string): Promise<T> {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(
+            () => controller.abort(),
+            LIVE_JOB_FETCH_TIMEOUT_MS,
+        )
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                },
+                signal: controller.signal,
+            })
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}`)
+            }
+
+            return (await response.json()) as T
+        } finally {
+            clearTimeout(timeoutId)
+        }
+    }
+
+    private mapRemotiveJob(job: RemotiveJobRecord): JobDocument | null {
+        if (!job.id || !job.url || !job.title || !job.company_name) {
+            return null
+        }
+
+        const description = this.stripHtml(job.description || '')
+        const location = job.candidate_required_location?.trim()
+            ? `Remote - ${job.candidate_required_location.trim()}`
+            : 'Remote'
+
+        return {
+            job_id: `remotive-${job.id}`,
+            title: job.title,
+            company: job.company_name,
+            location,
+            work_model: 'remote',
+            description,
+            employment_type: this.normalizeEmploymentType(job.job_type),
+            seniority_level: this.detectSeniorityLevel(
+                `${job.title} ${description}`,
+            ),
+            job_function:
+                this.inferJobFunction(`${job.title} ${description}`) || 'Technology',
+            industries: job.category || 'Remote',
+            salary: job.salary?.trim() || undefined,
+            company_logo_url:
+                job.company_logo_url?.trim() || job.company_logo?.trim() || undefined,
+            source: 'Remotive',
+            source_url: job.url,
+            posted_date: job.publication_date
+                ? new Date(job.publication_date).toISOString()
+                : new Date().toISOString(),
+        }
+    }
+
+    private mapArbeitnowJob(job: ArbeitnowJobRecord): JobDocument | null {
+        if (!job.slug || !job.url || !job.title || !job.company_name) {
+            return null
+        }
+
+        const description = this.stripHtml(job.description || '')
+        const rawTypes = job.job_types ?? []
+        const workModel = this.detectWorkModel(
+            job.remote === true,
+            `${job.title} ${description} ${rawTypes.join(' ')}`,
+        )
+        const location =
+            workModel === 'remote'
+                ? job.location?.trim()
+                    ? `${job.location.trim()} / Remote`
+                    : 'Remote'
+                : job.location?.trim() || 'On-site'
+
+        return {
+            job_id: `arbeitnow-${job.slug}`,
+            title: job.title,
+            company: job.company_name,
+            location,
+            work_model: workModel,
+            description,
+            employment_type: this.normalizeEmploymentType(rawTypes),
+            seniority_level: this.detectSeniorityLevel(
+                `${job.title} ${description} ${rawTypes.join(' ')}`,
+            ),
+            job_function:
+                this.inferJobFunction(`${job.title} ${description}`) || 'Technology',
+            industries:
+                (job.tags ?? []).find((tag) => tag.toLowerCase() !== 'remote') ||
+                'Technology',
+            source: 'Arbeitnow',
+            source_url: job.url,
+            posted_date: job.created_at
+                ? new Date(job.created_at * 1000).toISOString()
+                : new Date().toISOString(),
+        }
+    }
+
+    private normalizeEmploymentType(value: string | string[] | undefined) {
+        const normalized = Array.isArray(value) ? value.join(' ') : value || ''
+        const text = normalized.toLowerCase()
+
+        if (
+            text.includes('intern') ||
+            text.includes('graduate') ||
+            text.includes('working student')
+        ) {
+            return 'internship'
+        }
+
+        if (text.includes('part') || text.includes('teilzeit')) {
+            return 'part_time'
+        }
+
+        if (
+            text.includes('contract') ||
+            text.includes('freelance') ||
+            text.includes('consult')
+        ) {
+            return text.includes('freelance') ? 'freelance' : 'contract'
+        }
+
+        return 'full_time'
+    }
+
+    private detectWorkModel(isRemote: boolean, text: string) {
+        if (isRemote) {
+            return 'remote'
+        }
+
+        const normalized = text.toLowerCase()
+        if (normalized.includes('hybrid')) {
+            return 'hybrid'
+        }
+
+        return 'onsite'
+    }
+
+    private detectSeniorityLevel(text: string) {
+        const normalized = text.toLowerCase()
+        if (
+            normalized.includes('senior') ||
+            normalized.includes('lead') ||
+            normalized.includes('principal') ||
+            normalized.includes('staff') ||
+            normalized.includes('manager') ||
+            normalized.includes('director') ||
+            normalized.includes('head of')
+        ) {
+            return 'senior'
+        }
+
+        if (
+            normalized.includes('intern') ||
+            normalized.includes('junior') ||
+            normalized.includes('entry') ||
+            normalized.includes('graduate') ||
+            normalized.includes('working student')
+        ) {
+            return 'entry'
+        }
+
+        return 'mid'
+    }
+
+    private inferJobFunction(text: string) {
+        const normalized = text.toLowerCase()
+        const exactRole = this.extractRoleKeywords(normalized)[0]
+
+        if (exactRole) {
+            return this.toTitle(exactRole)
+        }
+
+        if (normalized.includes('qa engineer') || normalized.includes('quality assurance')) {
+            return 'QA Engineer'
+        }
+
+        if (
+            normalized.includes('devops') ||
+            normalized.includes('site reliability') ||
+            normalized.includes('sre')
+        ) {
+            return 'Devops Engineer'
+        }
+
+        if (
+            normalized.includes('frontend') ||
+            normalized.includes('front end')
+        ) {
+            return 'Frontend Engineer'
+        }
+
+        if (
+            normalized.includes('backend') ||
+            normalized.includes('back end')
+        ) {
+            return 'Backend Engineer'
+        }
+
+        if (
+            normalized.includes('fullstack') ||
+            normalized.includes('full stack')
+        ) {
+            return 'Full Stack Engineer'
+        }
+
+        if (
+            normalized.includes('designer') &&
+            (normalized.includes('ux') || normalized.includes('ui') || normalized.includes('product'))
+        ) {
+            return 'UI UX Designer'
+        }
+
+        if (normalized.includes('product manager')) {
+            return 'Product Manager'
+        }
+
+        if (
+            normalized.includes('data engineer') ||
+            normalized.includes('analytics engineer')
+        ) {
+            return 'Data Engineer'
+        }
+
+        if (normalized.includes('data scientist')) {
+            return 'Data Scientist'
+        }
+
+        if (
+            normalized.includes('machine learning') ||
+            normalized.includes('ml engineer')
+        ) {
+            return 'Ml Engineer'
+        }
+
+        if (
+            normalized.includes('software engineer') ||
+            normalized.includes('developer') ||
+            normalized.includes('programmer')
+        ) {
+            return 'Software Engineer'
+        }
+
+        return ''
+    }
+
+    private dedupeJobs(jobs: JobDocument[]) {
+        const seen = new Set<string>()
+
+        return jobs.filter((job) => {
+            const key = `${job.source_url}|${job.title.toLowerCase()}|${job.company.toLowerCase()}`
+            if (seen.has(key)) {
+                return false
+            }
+
+            seen.add(key)
+            return true
+        })
+    }
+
+    private isTechRelevantJob(job: JobDocument) {
+        const haystack = `${job.title} ${job.description} ${job.industries ?? ''}`.toLowerCase()
+        return TECH_JOB_KEYWORDS.some((keyword) => haystack.includes(keyword))
+    }
+
+    private isExcludedJobListing(job: JobDocument) {
+        const haystack = `${job.title} ${job.description} ${job.industries ?? ''}`.toLowerCase()
+        return EXCLUDED_JOB_KEYWORDS.some((keyword) =>
+            haystack.includes(keyword),
+        )
+    }
+
+    private stripHtml(value: string) {
+        return value
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&#x26;/gi, '&')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/\s+/g, ' ')
+            .trim()
+    }
+
+    private buildNoJobsMessage(hasResumeContext: boolean) {
+        return hasResumeContext
+            ? 'No jobs available right now for your current CV and filters. Try broadening the role or removing a filter.'
+            : 'No jobs available right now. Select a CV or adjust your filters to fetch live matches.'
+    }
+
     private matchesFilters(job: JobDocument, filters: JobSearchFilters) {
         const now = Date.now()
         const postedWithinMs = (filters.posted_within_days ?? 365) * 86400000
@@ -1749,25 +2400,41 @@ export class OnboardService {
             postedRecentlyEnough &&
             includesValue(filters.job_functions, job.job_function) &&
             includesValue(filters.job_types, job.employment_type) &&
-            includesValue(filters.work_models, job.location) &&
+            includesValue(filters.work_models, job.work_model || job.location) &&
             includesValue(filters.experience_levels, job.seniority_level) &&
             includesValue(filters.locations, job.location) &&
             (!filters.required_skills || filters.required_skills.length === 0 ||
                 filters.required_skills.some((skill) =>
-                    `${job.title} ${job.description}`.toLowerCase().includes(skill.toLowerCase()),
+                    `${job.title} ${job.description} ${job.industries || ''}`.toLowerCase().includes(skill.toLowerCase()),
                 ))
         )
     }
 
     private scoreJob(job: JobDocument, resumeContent: string) {
         if (!resumeContent.trim()) {
-            return 72
+            const daysOld = Math.max(
+                0,
+                Math.floor((Date.now() - new Date(job.posted_date).getTime()) / 86400000),
+            )
+            return Math.max(55, 92 - daysOld * 4)
         }
 
         const haystack = `${job.title} ${job.description} ${job.job_function} ${job.industries}`.toLowerCase()
         const tokens = this.tokenize(resumeContent).slice(0, 18)
         const matches = tokens.filter((token) => haystack.includes(token)).length
-        return Math.max(58, Math.min(99, 58 + matches * 6))
+        const preferredRole = this.extractRoleKeywords(resumeContent)[0]
+        const roleHits = this.extractRoleKeywords(resumeContent).filter((role) =>
+            haystack.includes(role.toLowerCase()),
+        ).length
+        const roleAlignmentBoost = preferredRole
+            ? haystack.includes(preferredRole.toLowerCase())
+                ? 12
+                : -8
+            : 0
+        return Math.max(
+            52,
+            Math.min(99, 54 + matches * 5 + roleHits * 7 + roleAlignmentBoost),
+        )
     }
 
     private extractRoleKeywords(text: string) {
@@ -1777,7 +2444,7 @@ export class OnboardService {
     }
 
     private extractSkillKeywords(text: string) {
-        const skills = ['React', 'TypeScript', 'Node.js', 'Next.js', 'Prisma', 'NestJS', 'PostgreSQL', 'Python', 'Docker', 'AWS', 'Figma', 'Machine Learning']
+        const skills = ['React', 'TypeScript', 'JavaScript', 'Node.js', 'Next.js', 'Prisma', 'NestJS', 'PostgreSQL', 'Python', 'Docker', 'AWS', 'Kubernetes', 'Figma', 'Machine Learning', 'Supabase', 'GraphQL', 'Tailwind']
         const normalized = text.toLowerCase()
         return skills.filter((skill) => normalized.includes(skill.toLowerCase()))
     }
@@ -1901,6 +2568,172 @@ export class OnboardService {
         ]
 
         return prompts[Math.min(index - 1, prompts.length - 1)] ?? prompts[0]
+    }
+
+    private mapPersonaToRecruiterMode(persona: PersonaRecord): RecruiterMode {
+        const tone = persona.tone.toLowerCase()
+        const style = persona.style.toLowerCase()
+
+        if (tone.includes('support') || tone.includes('warm')) {
+            return RecruiterMode.EMPATHIC
+        }
+
+        if (
+            tone.includes('direct') ||
+            tone.includes('sharp') ||
+            tone.includes('fast-paced')
+        ) {
+            return RecruiterMode.DIRECT
+        }
+
+        if (
+            style.includes('architecture') ||
+            style.includes('systems') ||
+            style.includes('technical') ||
+            style.includes('machine learning') ||
+            style.includes('data')
+        ) {
+            return RecruiterMode.TECHNICAL
+        }
+
+        return RecruiterMode.EMPATHIC
+    }
+
+    private parseRecruiterMode(
+        storedMode: string | null | undefined,
+        persona: PersonaRecord,
+    ): RecruiterMode {
+        if (storedMode === RecruiterMode.EMPATHIC) return RecruiterMode.EMPATHIC
+        if (storedMode === RecruiterMode.TECHNICAL) return RecruiterMode.TECHNICAL
+        if (storedMode === RecruiterMode.DIRECT) return RecruiterMode.DIRECT
+        return this.mapPersonaToRecruiterMode(persona)
+    }
+
+    private buildInterviewContext(
+        interview: {
+            company: string | null
+            jobTitle: string | null
+            jobDescription: string | null
+        },
+        persona: PersonaRecord,
+    ): InterviewContext {
+        return {
+            company: interview.company || persona.company,
+            jobTitle: interview.jobTitle || persona.position,
+            jobDescription:
+                interview.jobDescription ||
+                `Interview practice for a ${interview.jobTitle || persona.position} role.`,
+        }
+    }
+
+    private async generateOpeningQuestion(
+        context: InterviewContext,
+        recruiterMode: RecruiterMode,
+        persona: PersonaRecord,
+        maxQuestions: number,
+    ) {
+        try {
+            return await this.interviewAiService.generateQuestion(
+                context,
+                recruiterMode,
+                [],
+                1,
+                maxQuestions,
+            )
+        } catch {
+            return this.buildInterviewQuestion(
+                persona,
+                1,
+                maxQuestions,
+                context.jobTitle || persona.position,
+            )
+        }
+    }
+
+    private async maybeGenerateInterviewAudio(
+        text: string,
+        recruiterMode: RecruiterMode,
+        voiceProfile?: InterviewVoiceProfile,
+    ) {
+        try {
+            return await this.interviewAiService.textToSpeech(
+                text,
+                recruiterMode,
+                voiceProfile,
+            )
+        } catch {
+            return null
+        }
+    }
+
+    private async resolveInterviewTranscript(input: {
+        audio?: Express.Multer.File
+        text?: string
+    }) {
+        const typed = input.text?.trim()
+        if (typed) {
+            return typed
+        }
+
+        if (input.audio) {
+            try {
+                return await this.interviewAiService.transcribeAudio(input.audio)
+            } catch {
+                return `Voice response received (${input.audio.originalname || 'recording'})`
+            }
+        }
+
+        return 'Voice response received.'
+    }
+
+    private async evaluateInterviewAnswer(
+        context: InterviewContext,
+        recruiterMode: RecruiterMode,
+        persona: PersonaRecord,
+        currentQuestion: string,
+        transcript: string,
+        data: InterviewState,
+    ) {
+        try {
+            const evaluation = await this.interviewAiService.evaluateAnswer(
+                context,
+                recruiterMode,
+                currentQuestion,
+                transcript,
+                data.answers.length + 1,
+                data.maxQuestions,
+                data.turns.map((turn) => ({
+                    question: turn.question,
+                    answer: turn.answer,
+                })),
+            )
+
+            return {
+                score: Math.max(
+                    0,
+                    Math.min(100, Math.round(Number(evaluation.scores.overall) * 10)),
+                ),
+                feedback: evaluation.feedback,
+                nextQuestion: evaluation.nextQuestion,
+            }
+        } catch {
+            const score = this.computeInterviewAnswerScore(transcript, persona)
+            const nextQuestion =
+                data.answers.length + 1 >= data.maxQuestions
+                    ? null
+                    : this.buildInterviewQuestion(
+                          persona,
+                          data.answers.length + 2,
+                          data.maxQuestions,
+                          context.jobTitle || persona.position,
+                      )
+
+            return {
+                score,
+                feedback: this.buildInterviewFeedback(score, persona),
+                nextQuestion,
+            }
+        }
     }
 
     private computeInterviewAnswerScore(answer: string, persona: PersonaRecord) {

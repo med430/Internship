@@ -189,6 +189,12 @@ const QueryHandlers = [
       useClass: JwtAuthService,
     },
   ],
-  exports: [CqrsModule, JwtModule, PassportModule, FileStorageModule],
+  exports: [
+    CqrsModule,
+    JwtModule,
+    PassportModule,
+    FileStorageModule,
+    InterviewAiService,
+  ],
 })
 export class ApplicationModule {}

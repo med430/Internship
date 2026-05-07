@@ -1,10 +1,20 @@
+import { Volume2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { InterviewState } from "../types";
 
 interface InterviewOrbProps {
   state: InterviewState;
+  canReplayAudio: boolean;
+  replayDisabled: boolean;
+  onReplayAudio: () => void;
 }
 
-export function InterviewOrb({ state }: InterviewOrbProps) {
+export function InterviewOrb({
+  state,
+  canReplayAudio,
+  replayDisabled,
+  onReplayAudio,
+}: InterviewOrbProps) {
   return (
     <div className="relative h-80 bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center overflow-hidden">
       <div className="relative">
@@ -49,7 +59,7 @@ export function InterviewOrb({ state }: InterviewOrbProps) {
         />
       </div>
 
-      <div className="absolute bottom-8 text-center">
+      <div className="absolute bottom-6 flex flex-col items-center gap-3 text-center">
         <p className="text-sm font-medium text-foreground/80">
           {state === "connecting" && "Connecting to interviewer..."}
           {state === "ready" && "Ready"}
@@ -58,6 +68,20 @@ export function InterviewOrb({ state }: InterviewOrbProps) {
           {state === "speaking" && "Interviewer is speaking"}
           {state === "ended" && "Interview completed"}
         </p>
+
+        {canReplayAudio ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="gap-2"
+            disabled={replayDisabled}
+            onClick={onReplayAudio}
+          >
+            <Volume2 className="h-4 w-4" />
+            Replay question
+          </Button>
+        ) : null}
       </div>
     </div>
   );

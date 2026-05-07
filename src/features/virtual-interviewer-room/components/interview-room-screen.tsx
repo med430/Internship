@@ -11,21 +11,29 @@ export function InterviewRoomScreen() {
     messages,
     inputText,
     setInputText,
-    inputMode,
     isRecording,
     micSupported,
+    latestQuestionAudio,
     messagesEndRef,
     startRecording,
     stopRecording,
     sendMessage,
     handleKeyPress,
+    replayLatestAudio,
   } = useInterviewRoomController();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background px-6 py-10">
       <div className="container mx-auto max-w-5xl">
         <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
-          <InterviewOrb state={state} />
+          <InterviewOrb
+            state={state}
+            canReplayAudio={Boolean(latestQuestionAudio)}
+            replayDisabled={state !== "ready" && state !== "ended"}
+            onReplayAudio={() => {
+              void replayLatestAudio();
+            }}
+          />
 
           <InterviewChat
             state={state}
@@ -34,7 +42,6 @@ export function InterviewRoomScreen() {
           />
 
           <InterviewControls
-            inputMode={inputMode}
             state={state}
             inputText={inputText}
             isRecording={isRecording}

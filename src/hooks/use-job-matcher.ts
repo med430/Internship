@@ -32,10 +32,12 @@ export function useJobMatcher() {
       return {
         jobs: response.matches,
         request,
+        message: response.message,
       };
     },
-    onSuccess: ({ jobs, request }) => {
+    onSuccess: ({ jobs, request, message }) => {
       setAllJobs(jobs);
+      setBackendMessage(jobs.length === 0 ? message : null);
       queryClient.setQueryData(["lastMatchRequest"], request);
       setPage(1);
     },
@@ -55,10 +57,12 @@ export function useJobMatcher() {
       return {
         jobs: response.jobs,
         request,
+        message: response.message,
       };
     },
-    onSuccess: ({ jobs, request }) => {
+    onSuccess: ({ jobs, request, message }) => {
       setAllJobs(jobs);
+      setBackendMessage(jobs.length === 0 ? message : null);
       queryClient.setQueryData(["lastFilterRequest"], request);
       setPage(1);
     },

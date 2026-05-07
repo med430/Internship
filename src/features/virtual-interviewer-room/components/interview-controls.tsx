@@ -1,10 +1,9 @@
 import { Mic, MicOff, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { InputMode, InterviewState } from "../types";
+import type { InterviewState } from "../types";
 
 interface InterviewControlsProps {
-  inputMode: InputMode;
   state: InterviewState;
   inputText: string;
   isRecording: boolean;
@@ -17,7 +16,6 @@ interface InterviewControlsProps {
 }
 
 export function InterviewControls({
-  inputMode,
   state,
   inputText,
   isRecording,
@@ -30,34 +28,32 @@ export function InterviewControls({
 }: InterviewControlsProps) {
   return (
     <div className="p-6 border-t border-border/60 bg-card/40">
-      {inputMode === "text" ? (
-        <>
-          <div className="flex gap-3">
-            <Textarea
-              value={inputText}
-              onChange={(event) => onInputTextChange(event.target.value)}
-              onKeyDown={onKeyPress}
-              placeholder="Type your response..."
-              disabled={state !== "ready"}
-              className="flex-1 min-h-[60px] max-h-[120px] resize-none"
-            />
+      <div className="space-y-5">
+        <div className="flex gap-3">
+          <Textarea
+            value={inputText}
+            onChange={(event) => onInputTextChange(event.target.value)}
+            onKeyDown={onKeyPress}
+            placeholder="Type your response..."
+            disabled={state !== "ready"}
+            className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+          />
 
-            <Button
-              onClick={onSendMessage}
-              disabled={!inputText.trim() || state !== "ready"}
-              size="icon"
-              className="flex-shrink-0 h-[60px] w-[60px]"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
+          <Button
+            onClick={onSendMessage}
+            disabled={!inputText.trim() || state !== "ready"}
+            size="icon"
+            className="flex-shrink-0 h-[60px] w-[60px]"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </div>
 
-          <p className="mt-3 text-xs text-muted-foreground text-center">
-            Press Enter to send. Shift + Enter for new line.
-          </p>
-        </>
-      ) : (
-        <div className="space-y-4">
+        <p className="text-xs text-muted-foreground text-center">
+          Press Enter to send. Shift + Enter for new line.
+        </p>
+
+        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-5">
           <div className="flex gap-3 items-center justify-center">
             <Button
               onClick={isRecording ? onStopRecording : onStartRecording}
@@ -115,7 +111,7 @@ export function InterviewControls({
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

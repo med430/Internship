@@ -43,6 +43,8 @@ export interface InterviewStartResponse {
   questionIndex: number;
   interviewerName: string;
   personaKey: string;
+  audioBase64?: string;
+  audioMime?: string;
 }
 
 export interface AnswerInterviewInput {
@@ -60,4 +62,6 @@ export interface InterviewAnswerResponse {
   summary?: string;
   score?: number;
   reportId?: string;
+  audioBase64?: string;
+  audioMime?: string;
 }

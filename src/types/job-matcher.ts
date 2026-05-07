@@ -4,10 +4,13 @@ export interface JobDocument {
   company: string;
   location: string;
   description: string;
+  work_model?: string;
   employment_type?: string;
   seniority_level?: string;
   job_function?: string;
   industries?: string;
+  salary?: string;
+  company_logo_url?: string;
   source: string;
   source_url: string;
   posted_date: string;
