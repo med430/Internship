@@ -23,20 +23,24 @@ async function getAccessToken() {
 
 async function readResponseError(response: Response) {
   try {
-    const payload = (await response.json()) as { message?: string; error?: string };
+    const payload = (await response.json()) as {
+      message?: string | string[];
+      error?: string;
+    };
+
+    if (Array.isArray(payload.message)) {
+      return payload.message.join(", ");
+    }
+
     return payload.message || payload.error || "Request failed";
   } catch {
     return "Request failed";
   }
 }
 
-export async function getServerProfile(): Promise<Profile | null> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    return null;
-  }
-
+export async function getProfileWithAccessToken(
+  accessToken: string,
+): Promise<Profile | null> {
   const response = await fetch(`${API_BASE_URL}/onboard/profile`, {
     method: "GET",
     headers: {
@@ -50,6 +54,16 @@ export async function getServerProfile(): Promise<Profile | null> {
   }
 
   return (await response.json()) as Profile;
+}
+
+export async function getServerProfile(): Promise<Profile | null> {
+  const accessToken = await getAccessToken();
+
+  if (!accessToken) {
+    return null;
+  }
+
+  return getProfileWithAccessToken(accessToken);
 }
 
 export async function patchServerProfile(

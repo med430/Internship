@@ -351,22 +351,29 @@ model Interview {
 // ─────────────────────────────────────────
 
 model PublicSessionProfile {
-  id           String   @id @default(uuid())
-  sessionKey   String   @unique
-  name         String
-  email        String?
-  location     String?
-  targetedRole String?
-  skills       String[]
-  education    String[]
-  experiences  String[]
-  achievements String[]
-  githubUrl    String?
-  linkedinUrl  String?
-  twitterUrl   String?
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  sessionKey          String   @unique
+  name                String   @default("")
+  email               String?
+  location            String?
+  birthDate           DateTime?
+  targetedRole        String?
+  organization        String?
+  skills              String[]
+  education           String[]
+  experiences         String[]
+  achievements        String[]
+  githubUrl           String?
+  linkedinUrl         String?
+  twitterUrl          String?
+  avatarUrl           String?
+  profileCompleted    Boolean  @default(false)
+  isDeactivated       Boolean  @default(false)
+  deactivatedAt       DateTime?
+  subscription        String   @default("Starter")
+  subscriptionEndDate DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model PublicCvQuestionSession {

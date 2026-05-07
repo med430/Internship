@@ -4,6 +4,7 @@ import {
     Controller,
     Delete,
     Get,
+    Patch,
     Param,
     Post,
     Query,
@@ -18,6 +19,7 @@ import type { Request, Response } from 'express'
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { OnboardService } from './onboard.service'
+import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 
 @Controller()
 export class OnboardController {
@@ -42,6 +44,11 @@ export class OnboardController {
     @Get('onboard/profile')
     async profile(@Req() req: Request) {
         return this.onboardService.getProfile(this.getSessionKey(req))
+    }
+
+    @Patch('onboard/profile')
+    async updateProfile(@Req() req: Request, @Body() dto: UpdatePublicProfileDto) {
+        return this.onboardService.updateProfile(this.getSessionKey(req), dto)
     }
 
     @Post('jobs/filter')

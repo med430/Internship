@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { getProfileWithAccessToken } from "@/lib/profile/backend";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -48,17 +49,13 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (user) {
-      let profile = null;
-      try {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        profile = profileData;
-      } catch (profileError) {
-        console.error("Profile lookup error:", profileError);
-      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const profile = session?.access_token
+        ? await getProfileWithAccessToken(session.access_token)
+        : null;
 
       if (profile?.is_deactivated) {
         return NextResponse.redirect(

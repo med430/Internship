@@ -71,6 +71,28 @@ type AcceptedJob = {
     phase: string
 }
 
+type PublicProfileUpdateInput = {
+    name?: string | null
+    email?: string | null
+    location?: string | null
+    birthday?: string | null
+    targeted_role?: string | null
+    organization?: string | null
+    skills?: string[] | null
+    education?: string[] | null
+    experiences?: string[] | null
+    achievements?: string[] | null
+    github_url?: string | null
+    linkedin_url?: string | null
+    twitter_url?: string | null
+    avatar_url?: string | null
+    profile_completed?: boolean | null
+    is_deactivated?: boolean | null
+    deactivated_at?: string | null
+    subscription?: 'Starter' | 'Achiever' | 'Expert' | null
+    subscription_end_date?: string | null
+}
+
 const PERSONAS: Record<string, PersonaRecord> = {
     alex_chen: {
         name: 'Alex Chen',
@@ -378,7 +400,7 @@ export class OnboardService {
         })
 
         return {
-            userName: profile.name,
+            userName: profile.name || 'there',
             latestCV: latestCv
                 ? {
                     id: latestCv.id,
@@ -404,24 +426,18 @@ export class OnboardService {
     async getProfile(sessionKey: string) {
         const profile = await this.getOrCreateProfile(sessionKey)
 
-        return {
-            id: profile.id,
-            session_key: profile.sessionKey,
-            name: profile.name,
-            email: profile.email,
-            location: profile.location,
-            targeted_role: profile.targetedRole,
-            skills: profile.skills,
-            education: profile.education,
-            experiences: profile.experiences,
-            achievements: profile.achievements,
-            github_url: profile.githubUrl,
-            linkedin_url: profile.linkedinUrl,
-            twitter_url: profile.twitterUrl,
-            avatar_url: profile.avatarUrl,
-            created_at: profile.createdAt.toISOString(),
-            updated_at: profile.updatedAt.toISOString(),
-        }
+        return this.mapPublicProfile(profile)
+    }
+
+    async updateProfile(sessionKey: string, input: PublicProfileUpdateInput) {
+        await this.getOrCreateProfile(sessionKey)
+
+        const profile = await this.prisma.publicSessionProfile.update({
+            where: { sessionKey },
+            data: this.buildPublicProfileUpdateData(input),
+        })
+
+        return this.mapPublicProfile(profile)
     }
 
     async listPersonas() {
@@ -676,7 +692,7 @@ export class OnboardService {
 
     async getUserName(sessionKey: string) {
         const profile = await this.getOrCreateProfile(sessionKey)
-        return { name: profile.name }
+        return { name: profile.name || 'there' }
     }
 
     async generateCareerGuide(
@@ -1091,21 +1107,28 @@ export class OnboardService {
             return existing
         }
 
-        const shortId = sessionKey.slice(0, 8)
         return this.prisma.publicSessionProfile.create({
             data: {
                 sessionKey,
-                name: `Candidate ${shortId}`,
-                email: `candidate.${shortId}@internship.local`,
-                location: 'Remote',
-                targetedRole: 'Full Stack Engineer',
-                skills: ['React', 'TypeScript', 'Node.js', 'Problem Solving'],
-                education: ['B.Sc. in Computer Science'],
-                experiences: ['Built product features end to end', 'Collaborated with designers and recruiters'],
-                achievements: ['Improved delivery speed on team projects', 'Created polished portfolio work'],
-                githubUrl: 'https://github.com/example',
-                linkedinUrl: 'https://linkedin.com/in/example',
-                twitterUrl: 'https://x.com/example',
+                name: '',
+                email: null,
+                location: null,
+                birthDate: null,
+                targetedRole: null,
+                organization: null,
+                skills: [],
+                education: [],
+                experiences: [],
+                achievements: [],
+                githubUrl: null,
+                linkedinUrl: null,
+                twitterUrl: null,
+                avatarUrl: null,
+                profileCompleted: false,
+                isDeactivated: false,
+                deactivatedAt: null,
+                subscription: 'Starter',
+                subscriptionEndDate: null,
             },
         })
     }
@@ -1121,6 +1144,203 @@ export class OnboardService {
                 skills: skills.length ? skills : profile.skills,
             },
         })
+    }
+
+    private buildPublicProfileUpdateData(input: PublicProfileUpdateInput) {
+        return {
+            ...(input.name !== undefined
+                ? { name: this.normalizeProfileName(input.name) }
+                : {}),
+            ...(input.email !== undefined
+                ? { email: this.toNullableString(input.email) }
+                : {}),
+            ...(input.location !== undefined
+                ? { location: this.toNullableString(input.location) }
+                : {}),
+            ...(input.birthday !== undefined
+                ? { birthDate: this.toNullableDate(input.birthday) }
+                : {}),
+            ...(input.targeted_role !== undefined
+                ? { targetedRole: this.toNullableString(input.targeted_role) }
+                : {}),
+            ...(input.organization !== undefined
+                ? { organization: this.toNullableString(input.organization) }
+                : {}),
+            ...(input.skills !== undefined
+                ? { skills: this.toStringList(input.skills) }
+                : {}),
+            ...(input.education !== undefined
+                ? { education: this.toStringList(input.education) }
+                : {}),
+            ...(input.experiences !== undefined
+                ? { experiences: this.toStringList(input.experiences) }
+                : {}),
+            ...(input.achievements !== undefined
+                ? { achievements: this.toStringList(input.achievements) }
+                : {}),
+            ...(input.github_url !== undefined
+                ? { githubUrl: this.toNullableString(input.github_url) }
+                : {}),
+            ...(input.linkedin_url !== undefined
+                ? { linkedinUrl: this.toNullableString(input.linkedin_url) }
+                : {}),
+            ...(input.twitter_url !== undefined
+                ? { twitterUrl: this.toNullableString(input.twitter_url) }
+                : {}),
+            ...(input.avatar_url !== undefined
+                ? { avatarUrl: this.toNullableString(input.avatar_url) }
+                : {}),
+            ...(input.profile_completed !== undefined
+                ? { profileCompleted: Boolean(input.profile_completed) }
+                : {}),
+            ...(input.is_deactivated !== undefined
+                ? { isDeactivated: Boolean(input.is_deactivated) }
+                : {}),
+            ...(input.deactivated_at !== undefined
+                ? { deactivatedAt: this.toNullableDate(input.deactivated_at) }
+                : {}),
+            ...(input.subscription !== undefined
+                ? { subscription: input.subscription || 'Starter' }
+                : {}),
+            ...(input.subscription_end_date !== undefined
+                ? { subscriptionEndDate: this.toNullableDate(input.subscription_end_date) }
+                : {}),
+        }
+    }
+
+    private mapPublicProfile(profile: {
+        id: string
+        sessionKey: string
+        name: string
+        email: string | null
+        location: string | null
+        birthDate: Date | null
+        targetedRole: string | null
+        organization: string | null
+        skills: string[]
+        education: string[]
+        experiences: string[]
+        achievements: string[]
+        githubUrl: string | null
+        linkedinUrl: string | null
+        twitterUrl: string | null
+        avatarUrl: string | null
+        profileCompleted: boolean
+        isDeactivated: boolean
+        deactivatedAt: Date | null
+        subscription: string
+        subscriptionEndDate: Date | null
+        createdAt: Date
+        updatedAt: Date
+    }) {
+        return {
+            id: profile.sessionKey,
+            session_key: profile.sessionKey,
+            name: profile.name || null,
+            email: profile.email,
+            location: profile.location,
+            birthday: this.toDateOnlyString(profile.birthDate),
+            targeted_role: profile.targetedRole,
+            organization: profile.organization,
+            skills: profile.skills,
+            education: profile.education,
+            experiences: profile.experiences,
+            achievements: profile.achievements,
+            github_url: profile.githubUrl,
+            linkedin_url: profile.linkedinUrl,
+            twitter_url: profile.twitterUrl,
+            avatar_url: profile.avatarUrl,
+            profile_completed: profile.profileCompleted,
+            profile_completion: this.calculatePublicProfileCompletion(profile),
+            subscription: (profile.subscription || 'Starter') as 'Starter' | 'Achiever' | 'Expert',
+            subscription_end_date: profile.subscriptionEndDate?.toISOString() ?? null,
+            is_deactivated: profile.isDeactivated,
+            deactivated_at: profile.deactivatedAt?.toISOString() ?? null,
+            is_verified: true,
+            last_login: null,
+            created_at: profile.createdAt.toISOString(),
+            updated_at: profile.updatedAt.toISOString(),
+        }
+    }
+
+    private calculatePublicProfileCompletion(profile: {
+        name: string
+        location: string | null
+        birthDate: Date | null
+        githubUrl: string | null
+        linkedinUrl: string | null
+        twitterUrl: string | null
+        targetedRole: string | null
+        organization: string | null
+        skills: string[]
+        experiences: string[]
+        education: string[]
+        achievements: string[]
+    }) {
+        const fields = [
+            profile.name,
+            profile.location,
+            profile.birthDate,
+            profile.linkedinUrl,
+            profile.githubUrl,
+            profile.twitterUrl,
+            profile.targetedRole,
+            profile.organization,
+            profile.skills,
+            profile.experiences,
+            profile.education,
+            profile.achievements,
+        ]
+
+        const completed = fields.filter((value) => {
+            if (Array.isArray(value)) {
+                return value.length > 0
+            }
+
+            if (value instanceof Date) {
+                return true
+            }
+
+            return typeof value === 'string'
+                ? value.trim().length > 0
+                : Boolean(value)
+        }).length
+
+        return Math.round((completed / fields.length) * 100)
+    }
+
+    private normalizeProfileName(value: string | null | undefined) {
+        return this.toNullableString(value) ?? ''
+    }
+
+    private toNullableString(value: string | null | undefined) {
+        if (typeof value !== 'string') {
+            return null
+        }
+
+        const trimmed = value.trim()
+        return trimmed ? trimmed : null
+    }
+
+    private toStringList(value: string[] | null | undefined) {
+        if (!Array.isArray(value)) {
+            return []
+        }
+
+        return this.uniqueStrings(value.map((item) => String(item)))
+    }
+
+    private toNullableDate(value: string | null | undefined) {
+        if (!value) {
+            return null
+        }
+
+        const date = new Date(value)
+        return Number.isNaN(date.getTime()) ? null : date
+    }
+
+    private toDateOnlyString(value: Date | null) {
+        return value ? value.toISOString().slice(0, 10) : null
     }
 
     private mapQuestionSession(session: {

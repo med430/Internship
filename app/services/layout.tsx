@@ -7,6 +7,7 @@ import { UserNav } from "@/components/user-nav";
 import { NotificationBell } from "@/components/shared/notification-bell";
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
+import { getServerProfile } from "@/lib/profile/backend";
 
 export default async function ServicesLayout({
   children,
@@ -23,11 +24,7 @@ export default async function ServicesLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const profile = await getServerProfile();
 
   const userData = {
     name: profile?.name || user.user_metadata?.name || "User",
