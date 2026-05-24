@@ -56,13 +56,13 @@ export class DownloadApplicationFileHandler
         if (type === 'cv') {
             const cv = await this.cvRepo.findById(application.cvId)
             if (!cv || cv.deletedAt) throw new NotFoundException()
-            return this.fileService.getFilePath(cv.fileUrl)
+            return this.fileService.getFileUrl(cv.fileUrl)
         }
 
         // coverLetter
         if (!application.coverLetterId) throw new NotFoundException('No cover letter')
-        const letter = await this.coverLetterRepo.findById(application.coverLetterId)  // ← ajouter
+        const letter = await this.coverLetterRepo.findById(application.coverLetterId)
         if (!letter || letter.deletedAt) throw new NotFoundException()
-        return this.fileService.getFilePath(letter.fileUrl)                            // ← ajouter
+        return this.fileService.getFileUrl(letter.fileUrl)
     }
 }

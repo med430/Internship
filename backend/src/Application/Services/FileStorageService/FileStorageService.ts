@@ -1,10 +1,4 @@
-// file-storage.service.ts (Application layer)
-
-import { join } from 'path'
-
 export abstract class FileStorageService {
-
-    protected basePath = process.cwd()
 
     abstract upload(
         file: Express.Multer.File,
@@ -13,13 +7,9 @@ export abstract class FileStorageService {
 
     abstract delete(fileUrl: string): Promise<void>
 
-    // 🔥 logique commune + sécurité
-    getFilePath(fileUrl: string): string {
-
-        if (!fileUrl || !fileUrl.startsWith('/uploads/')) {
-            throw new Error('Invalid file path')
-        }
-
-        return join(this.basePath, fileUrl)
+    // Returns the URL used to access the file (Cloudinary secure_url)
+    getFileUrl(fileUrl: string): string {
+        if (!fileUrl) throw new Error('Invalid file URL')
+        return fileUrl
     }
 }

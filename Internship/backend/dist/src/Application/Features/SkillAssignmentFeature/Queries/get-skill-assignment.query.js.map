@@ -1,0 +1,1 @@
+{"version":3,"file":"get-skill-assignment.query.js","sourceRoot":"","sources":["../../../../../../src/Application/Features/SkillAssignmentFeature/Queries/get-skill-assignment.query.ts"],"names":[],"mappings":";;;AAAA,MAAa,uBAAuB;IAClC,YAAY,EAAU;QACpB,IAAI,CAAC,EAAE,GAAG,EAAE,CAAC;IACf,CAAC;IAED,EAAE,CAAS;CACZ;AAND,0DAMC"}

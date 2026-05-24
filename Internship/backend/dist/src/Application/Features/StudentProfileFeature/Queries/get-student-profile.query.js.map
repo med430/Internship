@@ -1,0 +1,1 @@
+{"version":3,"file":"get-student-profile.query.js","sourceRoot":"","sources":["../../../../../../src/Application/Features/StudentProfileFeature/Queries/get-student-profile.query.ts"],"names":[],"mappings":";;;AAAA,MAAa,sBAAsB;IACjC,YAAY,EAAU;QACpB,IAAI,CAAC,EAAE,GAAG,EAAE,CAAC;IACf,CAAC;IAED,EAAE,CAAS;CACZ;AAND,wDAMC"}
