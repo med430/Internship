@@ -1,1 +1,0 @@
-{"version":3,"file":"remove-skill.command.js","sourceRoot":"","sources":["../../../../../../src/Application/Features/SkillAssignmentFeature/Commands/remove-skill.command.ts"],"names":[],"mappings":";;;AACA,MAAa,kBAAkB;IAEP;IACA;IAFpB,YACoB,MAAc,EACd,YAAoB;QADpB,WAAM,GAAN,MAAM,CAAQ;QACd,iBAAY,GAAZ,YAAY,CAAQ;IACrC,CAAC;CACP;AALD,gDAKC"}

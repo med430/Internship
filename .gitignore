@@ -10,6 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 OnBoard-main
+/Internship
 # testing
 /coverage
 

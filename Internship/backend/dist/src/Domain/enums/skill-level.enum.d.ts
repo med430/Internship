@@ -1,6 +1,0 @@
-export declare enum SkillLevel {
-    BEGINNER = "BEGINNER",
-    INTERMEDIATE = "INTERMEDIATE",
-    ADVANCED = "ADVANCED",
-    EXPERT = "EXPERT"
-}
