@@ -40,34 +40,46 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
             sr.id,
             new Skill(sr.skill.id, sr.skill.name),
             sr.level as unknown as SkillLevel,
+            sr.mandatory,
         )),
         raw.type as unknown as OfferType,      // ← double cast
         raw.createdAt,
         raw.updatedAt,
         raw.deletedAt ?? undefined,
+        raw.applicationDeadline ?? undefined,
+        raw.positionsCount,
+        raw.stipendMin ?? undefined,
+        raw.stipendMax ?? undefined,
+        raw.languagesRequired ?? [],
     )
   }
 
   toPersistence(domain: Offer) {
     return {
-      id:                 domain.id,        // ← garde id ici pour upsert where
-      recruiterProfileId: domain.recruiterProfileId,
-      title:              domain.title,
-      description:        domain.description,
-      company:            domain.company,
-      location:           domain.location,
-      domain:             domain.domain,
-      isPaid:             domain.isPaid,
-      workMode:           domain.workMode as PrismaWorkMode,
-      startDate:          domain.startDate,
-      endDate:            domain.endDate,
-      type:               domain.type as unknown as PrismaOfferType,
-      deletedAt:          domain.deletedAt ?? null,
+      id:                  domain.id,        // ← garde id ici pour upsert where
+      recruiterProfileId:  domain.recruiterProfileId,
+      title:               domain.title,
+      description:         domain.description,
+      company:             domain.company,
+      location:            domain.location,
+      domain:              domain.domain,
+      isPaid:              domain.isPaid,
+      workMode:            domain.workMode as PrismaWorkMode,
+      startDate:           domain.startDate,
+      endDate:             domain.endDate,
+      type:                domain.type as unknown as PrismaOfferType,
+      deletedAt:           domain.deletedAt ?? null,
+      applicationDeadline: domain.applicationDeadline ?? null,
+      positionsCount:      domain.positionsCount,
+      stipendMin:          domain.stipendMin ?? null,
+      stipendMax:          domain.stipendMax ?? null,
+      languagesRequired:   domain.languagesRequired ?? [],
       skillRequirements: {
         create: domain.skillRequirements.map(sr => ({
-          id:      sr.id,
-          skillId: sr.skill.id,
-          level:   sr.level as unknown as PrismaSkillLevel,
+          id:        sr.id,
+          skillId:   sr.skill.id,
+          level:     sr.level as unknown as PrismaSkillLevel,
+          mandatory: sr.mandatory ?? true,
         }))
       }
     }

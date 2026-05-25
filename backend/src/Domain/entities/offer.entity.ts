@@ -1,4 +1,3 @@
-import { SkillAssignment } from './skill-assignment.entity';
 import { OfferType } from "../enums/offer-type.enum";
 import { BaseEntity } from "./base.entity";
 import { SkillRequirement } from './skill-requirement';
@@ -27,6 +26,13 @@ export class Offer extends BaseEntity {
         createdAt?: Date,
         updatedAt?: Date,
         deletedAt?: Date,
+
+        // Recommendation-critical fields (M0 schema additions)
+        public applicationDeadline?: Date,
+        public positionsCount: number = 1,
+        public stipendMin?: number,
+        public stipendMax?: number,
+        public languagesRequired: string[] = [],
     ) {
         super(createdAt, updatedAt, deletedAt);
     }

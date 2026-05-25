@@ -78,6 +78,11 @@ import { GetInterviewsQueryHandler } from './Features/InterviewFeature/Queries/h
 import { GetRecommendationQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendation.handler';
 import { GetRecommendationsQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendations.handler';
 import { InterviewAiService } from './Services/InterviewService/interview-ai.service';
+import { ContentScoringService } from './Services/RecommendationService/content-scoring.service';
+import { ScoringService } from './Services/RecommendationService/scoring.service';
+import { IMlClient } from './Services/RecommendationService/ml-client.interface';
+import { MlClientService } from './Services/RecommendationService/ml-client.service';
+import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
 
 const CommandHandlers = [
   LoginHandler,
@@ -184,6 +189,14 @@ const QueryHandlers = [
     ...QueryHandlers,
     JwtStrategy,
     InterviewAiService,
+    ContentScoringService,
+    ScoringService,
+    {
+      provide: IMlClient,
+      useFactory: (cfg: ConfigService) =>
+        cfg.get<string>('ML_MOCK') === 'true' ? new MlClientMock() : new MlClientService(cfg),
+      inject: [ConfigService],
+    },
     {
       provide: AuthService,
       useClass: JwtAuthService,
@@ -195,6 +208,9 @@ const QueryHandlers = [
     PassportModule,
     FileStorageModule,
     InterviewAiService,
+    ContentScoringService,
+    ScoringService,
+    IMlClient,
   ],
 })
 export class ApplicationModule {}
