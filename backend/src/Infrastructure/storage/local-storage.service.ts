@@ -16,6 +16,17 @@ export class LocalFileStorageService extends FileStorageService {
         return `/uploads/${folder}/${file.filename}`
     }
 
+    async uploadBuffer(_buffer: Buffer, _folder: 'pdfs', _filename: string): Promise<string> {
+        throw new Error('uploadBuffer not supported in local storage')
+    }
+
+    async downloadFileBuffer(fileUrl: string): Promise<Buffer> {
+        const { readFileSync } = await import('fs')
+        const { join } = await import('path')
+        const path = join(process.cwd(), fileUrl)
+        return readFileSync(path)
+    }
+
     async delete(fileUrl: string): Promise<void> {
         if (!fileUrl?.startsWith('/uploads/')) return
         const path = join(process.cwd(), fileUrl)

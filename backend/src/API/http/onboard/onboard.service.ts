@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../../Infrastructure/Persistence/prisma/prisma.service'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import pdfParse from 'pdf-parse'
@@ -8,6 +8,7 @@ import {
     InterviewVoiceProfile,
 } from '../../../Application/Services/InterviewService/interview-ai.service'
 import { RecruiterMode } from '../../../Domain/enums/recruiter-mode.enum'
+import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 type PersonaRecord = {
     name: string
@@ -572,6 +573,7 @@ export class OnboardService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly interviewAiService: InterviewAiService,
+        private readonly fileService: FileStorageService,
     ) {}
 
     async health() {
@@ -772,7 +774,6 @@ export class OnboardService {
         sessionKey: string,
         questionSessionId: string,
         answers: Array<{ question: string; answer: string }>,
-        baseUrl: string,
     ): Promise<AcceptedJob> {
         const session = await this.prisma.publicCvQuestionSession.findFirst({
             where: { id: questionSessionId, sessionKey },
@@ -806,17 +807,20 @@ export class OnboardService {
             ...improvementNotes.map((item, index) => `${index + 1}. ${item}`),
         ].join('\n')
 
-        const pdfData = await this.createPdfDocument(`${role} CV Booster`, [
+        const pdfBuffer = await this.createPdfDocument(`${role} CV Booster`, [
             { heading: 'Professional Summary', lines: [this.createProfessionalSummary(session.cvText, role)] },
             { heading: 'Answered Context', lines: answers.map((item) => `${item.question} ${item.answer}`) },
             { heading: 'Improvements Applied', lines: improvementNotes },
         ])
 
+        const filename = `cv-booster-${Date.now()}`
+        const pdfUrl = await this.fileService.uploadBuffer(pdfBuffer, 'pdfs', filename)
+
         const created = await this.prisma.publicCv.create({
             data: {
                 sessionKey,
                 questionSessionId,
-                pdfData,
+                pdfUrl,
                 originalScore,
                 finalScore,
                 jobTitle: role,
@@ -837,12 +841,12 @@ export class OnboardService {
             feature: 'cv-rewriter',
             operation: 'rewrite',
             resourceId: created.id,
-            resourceType: `${baseUrl}/download_cv/${created.id}`,
+            resourceType: created.pdfUrl,
             message: 'CV rewritten successfully.',
         })
     }
 
-    async listCvs(sessionKey: string, page: number, pageSize: number, baseUrl: string) {
+    async listCvs(sessionKey: string, page: number, pageSize: number) {
         const [total, cvs] = await Promise.all([
             this.prisma.publicCv.count({ where: { sessionKey } }),
             this.prisma.publicCv.findMany({
@@ -854,7 +858,7 @@ export class OnboardService {
         ])
 
         return {
-            cvs: cvs.map((cv) => this.mapCv(cv, baseUrl)),
+            cvs: cvs.map((cv) => this.mapCv(cv)),
             total,
             page,
             pageSize,
@@ -862,7 +866,7 @@ export class OnboardService {
         }
     }
 
-    async getCv(sessionKey: string, id: string, baseUrl: string) {
+    async getCv(sessionKey: string, id: string) {
         const cv = await this.prisma.publicCv.findFirst({
             where: { id, sessionKey },
         })
@@ -871,7 +875,7 @@ export class OnboardService {
             throw new Error('CV not found.')
         }
 
-        return this.mapCv(cv, baseUrl)
+        return this.mapCv(cv)
     }
 
     async deleteCv(sessionKey: string, id: string) {
@@ -882,23 +886,17 @@ export class OnboardService {
             throw new Error('CV not found.')
         }
 
+        if (cv.pdfUrl) await this.fileService.delete(cv.pdfUrl)
         await this.prisma.publicCv.delete({ where: { id } })
         return { success: true }
     }
 
-    async downloadCv(sessionKey: string, id: string) {
+    async downloadCv(sessionKey: string, id: string): Promise<Buffer> {
         const cv = await this.prisma.publicCv.findFirst({
             where: { id, sessionKey },
         })
-
-        if (!cv) {
-            throw new Error('CV not found.')
-        }
-
-        return {
-            filename: `${cv.jobTitle.replace(/\s+/g, '_')}_cv.pdf`,
-            data: Buffer.from(cv.pdfData),
-        }
+        if (!cv) throw new NotFoundException('CV not found')
+        return this.fileService.downloadFileBuffer(cv.pdfUrl)
     }
 
     async getUserName(sessionKey: string) {
@@ -1174,7 +1172,6 @@ export class OnboardService {
             audio?: Express.Multer.File
             text?: string
         },
-        baseUrl: string,
     ) {
         const interview = await this.prisma.publicInterview.findFirst({
             where: { id: interviewId, sessionKey },
@@ -1260,7 +1257,7 @@ export class OnboardService {
             }
         }
 
-        const report = await this.finalizeInterview(interview.id, data, persona, baseUrl)
+        const report = await this.finalizeInterview(interview.id, data, persona)
         return {
             done: true,
             transcript,
@@ -1271,7 +1268,7 @@ export class OnboardService {
         }
     }
 
-    async listInterviews(sessionKey: string, page: number, pageSize: number, baseUrl: string) {
+    async listInterviews(sessionKey: string, page: number, pageSize: number) {
         const [total, interviews] = await Promise.all([
             this.prisma.publicInterview.count({
                 where: { sessionKey, status: 'COMPLETED' },
@@ -1285,7 +1282,7 @@ export class OnboardService {
         ])
 
         return {
-            interviews: interviews.map((item) => this.mapInterview(item, baseUrl)),
+            interviews: interviews.map((item) => this.mapInterview(item)),
             total,
             page,
             pageSize,
@@ -1293,7 +1290,7 @@ export class OnboardService {
         }
     }
 
-    async getInterview(sessionKey: string, id: string, baseUrl: string) {
+    async getInterview(sessionKey: string, id: string) {
         const interview = await this.prisma.publicInterview.findFirst({
             where: { id, sessionKey, status: 'COMPLETED' },
         })
@@ -1301,7 +1298,7 @@ export class OnboardService {
             throw new Error('Interview not found.')
         }
 
-        return this.mapInterview(interview, baseUrl)
+        return this.mapInterview(interview)
     }
 
     async deleteInterview(sessionKey: string, id: string) {
@@ -1312,22 +1309,20 @@ export class OnboardService {
             throw new Error('Interview not found.')
         }
 
+        if (interview.pdfUrl) await this.fileService.delete(interview.pdfUrl)
         await this.prisma.publicInterview.delete({ where: { id } })
         return { success: true }
     }
 
-    async downloadInterviewPdf(sessionKey: string, id: string) {
+    async downloadInterviewPdf(sessionKey: string, id: string): Promise<string> {
         const interview = await this.prisma.publicInterview.findFirst({
             where: { id, sessionKey, status: 'COMPLETED' },
         })
-        if (!interview || !interview.pdfData) {
+        if (!interview || !interview.pdfUrl) {
             throw new Error('Interview PDF not found.')
         }
 
-        return {
-            filename: `interview-report-${id}.pdf`,
-            data: Buffer.from(interview.pdfData),
-        }
+        return interview.pdfUrl
     }
 
     private buildAcceptedJob(params: {
@@ -1623,6 +1618,7 @@ export class OnboardService {
         cv: {
             id: string
             sessionKey: string
+            pdfUrl: string
             originalScore: number
             finalScore: number
             jobTitle: string
@@ -1631,12 +1627,11 @@ export class OnboardService {
             anonymizedCvText: string | null
             createdAt: Date
         },
-        baseUrl: string,
     ) {
         return {
             id: cv.id,
             user_id: cv.sessionKey,
-            pdf_url: `${baseUrl}/download_cv/${cv.id}`,
+            pdf_url: cv.pdfUrl,
             original_score: cv.originalScore,
             final_score: cv.finalScore,
             job_title: cv.jobTitle,
@@ -1699,10 +1694,10 @@ export class OnboardService {
             recommendations: string[]
             nextSteps: string[]
             summary: string
+            pdfUrl: string | null
             createdAt: Date
             updatedAt: Date
         },
-        baseUrl: string,
     ) {
         return {
             id: interview.id,
@@ -1723,7 +1718,7 @@ export class OnboardService {
             recommendations: interview.recommendations,
             next_steps: interview.nextSteps,
             summary: interview.summary,
-            pdf_url: `${baseUrl}/onboard/interviews/${interview.id}/pdf`,
+            pdf_url: interview.pdfUrl ?? null,
             created_at: interview.createdAt.toISOString(),
             updated_at: interview.updatedAt.toISOString(),
         }
@@ -2753,7 +2748,7 @@ export class OnboardService {
         return `The answer needs more specifics. Add context, your actions, and the result so it feels interview-ready.`
     }
 
-    private async finalizeInterview(id: string, data: InterviewState, persona: PersonaRecord, baseUrl: string) {
+    private async finalizeInterview(id: string, data: InterviewState, persona: PersonaRecord) {
         const average = data.turns.reduce((sum, turn) => sum + turn.score, 0) / Math.max(1, data.turns.length)
         const overallScore = Math.round(average)
         const technical = Math.min(99, overallScore + 2)
@@ -2782,13 +2777,15 @@ export class OnboardService {
             'Refine one answer with stronger business impact',
             'Run another practice round with a different persona',
         ]
-        const pdfData = await this.createPdfDocument(`${persona.name} Interview Report`, [
+        const pdfBuffer = await this.createPdfDocument(`${persona.name} Interview Report`, [
             { heading: 'Summary', lines: [summary] },
             { heading: 'Key Strengths', lines: keyStrengths },
             { heading: 'Areas For Improvement', lines: areasForImprovement },
             { heading: 'Recommendations', lines: recommendations },
             { heading: 'Next Steps', lines: nextSteps },
         ])
+
+        const pdfUrl = await this.fileService.uploadBuffer(pdfBuffer, 'pdfs', `interview-report-${id}`)
 
         const updated = await this.prisma.publicInterview.update({
             where: { id },
@@ -2808,11 +2805,11 @@ export class OnboardService {
                 summary,
                 transcript: data.turns,
                 data,
-                pdfData,
+                pdfUrl,
             },
         })
 
-        return this.mapInterview(updated, baseUrl)
+        return this.mapInterview(updated)
     }
 
     private async extractTextFromFile(file: Express.Multer.File) {
@@ -2922,5 +2919,72 @@ export class OnboardService {
             .split(' ')
             .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
             .join(' ')
+    }
+
+    async uploadCoverLetter(sessionKey: string, file: Express.Multer.File) {
+        await this.getOrCreateProfile(sessionKey)
+        const filename = `cover-letter-${sessionKey}-${Date.now()}`
+        const fileUrl = await this.fileService.uploadBuffer(file.buffer, 'pdfs', filename)
+        const letter = await this.prisma.publicCoverLetter.create({
+            data: { sessionKey, fileUrl },
+        })
+        return this.mapCoverLetter(letter)
+    }
+
+    async listCoverLetters(sessionKey: string, page: number, pageSize: number) {
+        const [total, letters] = await Promise.all([
+            this.prisma.publicCoverLetter.count({ where: { sessionKey } }),
+            this.prisma.publicCoverLetter.findMany({
+                where: { sessionKey },
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+            }),
+        ])
+        const totalPages = Math.max(1, Math.ceil(total / pageSize))
+        return {
+            letters: letters.map(this.mapCoverLetter),
+            total,
+            page,
+            pageSize,
+            totalPages,
+        }
+    }
+
+    async getCoverLetterById(sessionKey: string, id: string) {
+        const letter = await this.prisma.publicCoverLetter.findFirst({
+            where: { id, sessionKey },
+        })
+        if (!letter) throw new Error('Cover letter not found')
+        return this.mapCoverLetter(letter)
+    }
+
+    async deleteCoverLetter(sessionKey: string, id: string) {
+        const letter = await this.prisma.publicCoverLetter.findFirst({
+            where: { id, sessionKey },
+        })
+        if (!letter) throw new Error('Cover letter not found')
+        if (letter.fileUrl) await this.fileService.delete(letter.fileUrl)
+        await this.prisma.publicCoverLetter.delete({ where: { id } })
+        return { success: true }
+    }
+
+    async downloadCoverLetter(sessionKey: string, id: string): Promise<Buffer> {
+        const letter = await this.prisma.publicCoverLetter.findFirst({
+            where: { id, sessionKey },
+        })
+        if (!letter) throw new NotFoundException('Cover letter not found')
+        console.log('[downloadCoverLetter] fileUrl from DB:', letter.fileUrl)
+        return this.fileService.downloadFileBuffer(letter.fileUrl)
+    }
+
+    private mapCoverLetter(letter: { id: string; sessionKey: string; fileUrl: string; createdAt: Date; updatedAt: Date }) {
+        return {
+            id: letter.id,
+            session_key: letter.sessionKey,
+            file_url: letter.fileUrl,
+            created_at: letter.createdAt,
+            updated_at: letter.updatedAt,
+        }
     }
 }

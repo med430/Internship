@@ -397,7 +397,7 @@ model PublicCv {
   id               String   @id @default(uuid())
   sessionKey       String
   questionSessionId String?
-  pdfData          Bytes
+  pdfUrl           String
   originalScore    Float
   finalScore       Float
   jobTitle         String
@@ -470,9 +470,20 @@ model PublicInterview {
   summary               String   @default("")
   transcript            Json?
   data                  Json?
-  pdfData               Bytes?
+  pdfUrl                String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
+model PublicCoverLetter {
+  id         String   @id @default(uuid())
+  sessionKey String
+  fileUrl    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([sessionKey])
   @@index([createdAt])

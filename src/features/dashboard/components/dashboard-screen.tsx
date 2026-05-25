@@ -16,7 +16,7 @@ import ServiceCard from "@/components/services/service-card";
 import { useDashboardController } from "../hooks/use-dashboard-controller";
 
 export function DashboardScreen() {
-  const { userName, greeting, latestCV, latestGuide, loading } =
+  const { userName, greeting, latestCV, latestGuide, latestLetter, loading } =
     useDashboardController();
 
   return (
@@ -45,8 +45,8 @@ export function DashboardScreen() {
       </section>
 
       <div className="container mx-auto max-w-7xl px-6 -mt-12 space-y-8 pb-12">
-        {!loading && (latestCV || latestGuide) && (
-          <div className="grid md:grid-cols-2 gap-4">
+        {!loading && (latestCV || latestGuide || latestLetter) && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {latestCV && (
               <Link href={`/services/cv-rewriter/database/${latestCV.id}`}>
                 <Card className="p-4 bg-card/80 backdrop-blur-xl border-border hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
@@ -109,11 +109,37 @@ export function DashboardScreen() {
                 </Card>
               </Link>
             )}
+            {latestLetter && (
+              <Link href={`/services/cover-letters/database/${latestLetter.id}`}>
+                <Card className="p-4 bg-card/80 backdrop-blur-xl border-border hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-primary/10">
+                        <FileText className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium text-muted-foreground font-label">
+                          Latest Cover Letter
+                        </p>
+                        <h3 className="text-xs font-semibold text-foreground font-body line-clamp-1">
+                          {new Date(latestLetter.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </h3>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </Card>
+              </Link>
+            )}
           </div>
         )}
 
         <div
-          className={`${!loading && !latestCV && !latestGuide ? "mt-12 md:mt-20" : ""}`}
+          className={`${!loading && !latestCV && !latestGuide && !latestLetter ? "mt-12 md:mt-20" : ""}`}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <ServiceCard

@@ -78,3 +78,11 @@ export const CAREER_GUIDE_ITEMS: SidebarMenuEntry[] = [
     icon: Database,
   },
 ];
+
+export const COVER_LETTER_ITEMS: SidebarMenuEntry[] = [
+  {
+    title: "My Letters",
+    url: "/services/cover-letters/database",
+    icon: Database,
+  },
+];

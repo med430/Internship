@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { fetchUserCoverLetters, type CoverLetter } from "@/lib/api/cover-letters";
 
 interface CV {
   id: string;
@@ -25,6 +26,7 @@ export function useDashboardController() {
   const [userName, setUserName] = useState("");
   const [latestCV, setLatestCV] = useState<CV | null>(null);
   const [latestGuide, setLatestGuide] = useState<CareerGuide | null>(null);
+  const [latestLetter, setLatestLetter] = useState<CoverLetter | null>(null);
   const [loading, setLoading] = useState(true);
 
   const greeting = (() => {
@@ -38,26 +40,26 @@ export function useDashboardController() {
     async function loadData() {
       try {
         setLoading(true);
-        const response = await fetchWithAuth(
-          `${getClientApiBaseUrl()}/onboard/dashboard`,
-          {
-            method: "GET",
-          },
-        );
 
-        if (!response.ok) {
-          throw new Error("Failed to load dashboard");
+        const [dashboardResponse, lettersResult] = await Promise.allSettled([
+          fetchWithAuth(`${getClientApiBaseUrl()}/onboard/dashboard`, { method: "GET" }),
+          fetchUserCoverLetters(1, 1),
+        ]);
+
+        if (dashboardResponse.status === "fulfilled" && dashboardResponse.value.ok) {
+          const payload = (await dashboardResponse.value.json()) as {
+            userName: string;
+            latestCV: CV | null;
+            latestGuide: CareerGuide | null;
+          };
+          setUserName(payload.userName || "there");
+          setLatestCV(payload.latestCV);
+          setLatestGuide(payload.latestGuide);
         }
 
-        const payload = (await response.json()) as {
-          userName: string;
-          latestCV: CV | null;
-          latestGuide: CareerGuide | null;
-        };
-
-        setUserName(payload.userName || "there");
-        setLatestCV(payload.latestCV);
-        setLatestGuide(payload.latestGuide);
+        if (lettersResult.status === "fulfilled" && lettersResult.value.letters.length > 0) {
+          setLatestLetter(lettersResult.value.letters[0]);
+        }
       } finally {
         setLoading(false);
       }
@@ -71,6 +73,7 @@ export function useDashboardController() {
     greeting,
     latestCV,
     latestGuide,
+    latestLetter,
     loading,
   };
 }

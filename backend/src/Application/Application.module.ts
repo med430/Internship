@@ -26,8 +26,10 @@ import { DeleteCertificationHandler } from './Features/CertificationFeature/Comm
 import { UpdateCertificationHandler } from './Features/CertificationFeature/Commands/handlers/update-certification.handler';
 import { DeleteCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/delete-cover-letter.handler';
 import { UploadCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/upload-cover-letter.handler';
+import { DownloadOwnCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/download-own-cover-letter.handler';
 import { DeleteCVHandler } from './Features/CvFeature/Commands/handlers/delete-cv.handler';
 import { UploadCVHandler } from './Features/CvFeature/Commands/handlers/upload-cv.handler';
+import { DownloadOwnCVHandler } from './Features/CvFeature/Commands/handlers/download-own-cv.handler';
 import { CreateEducationHandler } from './Features/EducationFeature/Commands/handlers/create-education.handler';
 import { UpdateEducationHandler } from './Features/EducationFeature/Commands/handlers/update-education.handler';
 import { DeleteEducationHandler } from './Features/EducationFeature/Commands/handlers/delete-education.handler';
@@ -61,6 +63,8 @@ import { GetCVQueryHandler } from './Features/CvFeature/Queries/handlers/get-cv.
 import { GetCVsQueryHandler } from './Features/CvFeature/Queries/handlers/get-cvs.handler';
 import { GetCoverLetterQueryHandler } from './Features/CoverLetterFeature/Queries/handlers/get-cover-letter.handler';
 import { GetCoverLettersQueryHandler } from './Features/CoverLetterFeature/Queries/handlers/get-cover-letters.handler';
+import { ListOwnCoverLettersHandler } from './Features/CoverLetterFeature/Queries/handlers/list-own-cover-letters.handler';
+import { GetOwnCoverLetterHandler } from './Features/CoverLetterFeature/Queries/handlers/get-own-cover-letter.handler';
 import { GetStudentProfileQueryHandler } from './Features/StudentProfileFeature/Queries/handlers/get-student-profile-query.handler';
 import { GetStudentProfilesQueryHandler } from './Features/StudentProfileFeature/Queries/handlers/get-student-profiles-query.handler';
 import { GetRecruiterProfileQueryHandler } from './Features/RecruiterProfileFeature/Queries/handlers/get-recruiter-profile.handler';
@@ -95,8 +99,10 @@ const CommandHandlers = [
   DeleteCertificationHandler,
   DeleteCoverLetterHandler,
   UploadCoverLetterHandler,
+  DownloadOwnCoverLetterHandler,
   DeleteCVHandler,
   UploadCVHandler,
+  DownloadOwnCVHandler,
   CreateEducationHandler,
   UpdateEducationHandler,
   DeleteEducationHandler,
@@ -138,6 +144,8 @@ const QueryHandlers = [
   // Cover letters
   GetCoverLetterQueryHandler,
   GetCoverLettersQueryHandler,
+  ListOwnCoverLettersHandler,
+  GetOwnCoverLetterHandler,
   // Profiles
   GetStudentProfileQueryHandler,
   GetStudentProfilesQueryHandler,

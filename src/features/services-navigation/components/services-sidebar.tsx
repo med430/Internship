@@ -29,6 +29,7 @@ import {
 import { useAsyncJobsStore } from "@/lib/stores/async-jobs-store";
 import {
   CAREER_GUIDE_ITEMS,
+  COVER_LETTER_ITEMS,
   CV_BOOSTER_ITEMS,
   PORTFOLIO_BUILDER_ITEMS,
   PRIMARY_ITEMS,
@@ -53,8 +54,8 @@ export function ServicesSidebar() {
   const [isCVBoosterOpen, setIsCVBoosterOpen] = useState(true);
   const [isCareerGuideOpen, setIsCareerGuideOpen] = useState(true);
   const [isPortfolioBuilderOpen, setIsPortfolioBuilderOpen] = useState(true);
-  const [isVirtualInterviewerOpen, setIsVirtualInterviewerOpen] =
-    useState(true);
+  const [isVirtualInterviewerOpen, setIsVirtualInterviewerOpen] = useState(true);
+  const [isCoverLetterOpen, setIsCoverLetterOpen] = useState(true);
 
   const isCareerGuideLoading = useAsyncJobsStore((store) =>
     store.isFeatureLoading("career-guide"),
@@ -74,6 +75,7 @@ export function ServicesSidebar() {
   const isCollapsed = state === "collapsed";
   const isCVBoosterActive = pathname.startsWith("/services/cv-rewriter");
   const isCareerGuideActive = pathname.startsWith("/services/career-guide");
+  const isCoverLetterActive = pathname.startsWith("/services/cover-letters");
   const isPortfolioBuilderActive = pathname.startsWith(
     "/services/portfolio-builder",
   );
@@ -210,6 +212,18 @@ export function ServicesSidebar() {
                 items={CAREER_GUIDE_ITEMS}
                 open={isCareerGuideOpen}
                 onOpenChange={setIsCareerGuideOpen}
+              />
+
+              <SidebarCollapsibleGroup
+                title="Cover Letters"
+                baseUrl="/services/cover-letters"
+                currentPath={pathname}
+                icon={Mail}
+                isActive={isCoverLetterActive}
+                isCollapsed={isCollapsed}
+                items={COVER_LETTER_ITEMS}
+                open={isCoverLetterOpen}
+                onOpenChange={setIsCoverLetterOpen}
               />
             </SidebarMenu>
           </SidebarGroupContent>

@@ -22,6 +22,7 @@ import { ApplicationStatusChangedHandler } from "../../Application/Features/Appl
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
+import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -37,6 +38,6 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
         InterviewController,
         OnboardController,
         SseController],
-    providers: [OnboardService, SseService, SseAuthGuard, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
+    providers: [OnboardService, SseService, SseAuthGuard, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler],
 })
 export class HttpApiModule {}

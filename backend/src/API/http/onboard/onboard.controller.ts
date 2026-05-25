@@ -14,6 +14,7 @@ import {
     UploadedFiles,
     UnauthorizedException,
     UseInterceptors,
+    NotFoundException,
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express'
@@ -131,7 +132,6 @@ export class OnboardController {
             this.getSessionKey(req),
             questionSessionId,
             answers,
-            this.getBaseUrl(req),
         )
     }
 
@@ -145,13 +145,12 @@ export class OnboardController {
             this.getSessionKey(req),
             Number(page || 1),
             Number(pageSize || 10),
-            this.getBaseUrl(req),
         )
     }
 
     @Get('onboard/cvs/:id')
     async getCv(@Req() req: Request, @Param('id') id: string) {
-        return this.onboardService.getCv(this.getSessionKey(req), id, this.getBaseUrl(req))
+        return this.onboardService.getCv(this.getSessionKey(req), id)
     }
 
     @Delete('onboard/cvs/:id')
@@ -165,10 +164,11 @@ export class OnboardController {
         @Res() res: Response,
         @Param('id') id: string,
     ) {
-        const file = await this.onboardService.downloadCv(this.getSessionKey(req), id)
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
-        res.send(file.data)
+        const buffer = await this.onboardService.downloadCv(this.getSessionKey(req), id)
+        res.set('Content-Type', 'application/pdf')
+        res.set('Content-Disposition', `inline; filename="cv_${id}.pdf"`)
+        res.set('Content-Length', buffer.length.toString())
+        res.send(buffer)
     }
 
     @Get('onboard/user-name')
@@ -296,7 +296,6 @@ export class OnboardController {
                 audio,
                 text: body.text,
             },
-            this.getBaseUrl(req),
         )
     }
 
@@ -310,13 +309,12 @@ export class OnboardController {
             this.getSessionKey(req),
             Number(page || 1),
             Number(pageSize || 10),
-            this.getBaseUrl(req),
         )
     }
 
     @Get('onboard/interviews/:id')
     async getInterview(@Req() req: Request, @Param('id') id: string) {
-        return this.onboardService.getInterview(this.getSessionKey(req), id, this.getBaseUrl(req))
+        return this.onboardService.getInterview(this.getSessionKey(req), id)
     }
 
     @Delete('onboard/interviews/:id')
@@ -330,10 +328,75 @@ export class OnboardController {
         @Res() res: Response,
         @Param('id') id: string,
     ) {
-        const file = await this.onboardService.downloadInterviewPdf(this.getSessionKey(req), id)
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
-        res.send(file.data)
+        const url = await this.onboardService.downloadInterviewPdf(this.getSessionKey(req), id)
+        res.redirect(url)
+    }
+
+    @Post('onboard/cover-letters')
+    @UseInterceptors(
+        FileInterceptor('letter', {
+            storage: memoryStorage(),
+            limits: { fileSize: 5 * 1024 * 1024 },
+            fileFilter: (_, file, cb) => {
+                if (file.mimetype !== 'application/pdf') {
+                    return cb(new BadRequestException('Only PDF allowed'), false)
+                }
+                cb(null, true)
+            },
+        }),
+    )
+    async uploadCoverLetter(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
+        if (!file) throw new BadRequestException('Letter file is required')
+        return this.onboardService.uploadCoverLetter(this.getSessionKey(req), file)
+    }
+
+    @Get('onboard/cover-letters')
+    async listCoverLetters(
+        @Req() req: Request,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
+    ) {
+        return this.onboardService.listCoverLetters(
+            this.getSessionKey(req),
+            Number(page || 1),
+            Number(pageSize || 10),
+        )
+    }
+
+    @Get('onboard/cover-letters/:id/download')
+    async downloadCoverLetter(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('id') id: string,
+    ) {
+        try {
+            const buffer = await this.onboardService.downloadCoverLetter(this.getSessionKey(req), id)
+            res.set('Content-Type', 'application/pdf')
+            res.set('Content-Disposition', `inline; filename="cover_letter_${id}.pdf"`)
+            res.set('Content-Length', buffer.length.toString())
+            res.send(buffer)
+        } catch (err) {
+            console.error('[CoverLetter Download]', err instanceof Error ? err.message : err)
+            throw err
+        }
+    }
+
+    @Get('onboard/cover-letters/:id')
+    async getCoverLetter(@Req() req: Request, @Param('id') id: string) {
+        try {
+            return await this.onboardService.getCoverLetterById(this.getSessionKey(req), id)
+        } catch {
+            throw new NotFoundException('Cover letter not found')
+        }
+    }
+
+    @Delete('onboard/cover-letters/:id')
+    async deleteCoverLetter(@Req() req: Request, @Param('id') id: string) {
+        try {
+            return await this.onboardService.deleteCoverLetter(this.getSessionKey(req), id)
+        } catch {
+            throw new NotFoundException('Cover letter not found')
+        }
     }
 
     private getSessionKey(req: Request) {
