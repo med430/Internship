@@ -20,6 +20,7 @@ import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express
 import { memoryStorage } from 'multer'
 import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
+import { AnyFilesInterceptor } from '@nestjs/platform-express'
 
 @Controller()
 export class OnboardController {
@@ -114,7 +115,8 @@ export class OnboardController {
     }
 
     @Post('rewrite_cv')
-    async rewriteCv(@Req() req: Request, @Body() body: Record<string, any>) {
+    @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
+    async rewriteCv(@Req() req: Request, @Body() body: Record<string, any> = {}) {
         const questionSessionId = String(body.question_session_id || '').trim()
         if (!questionSessionId) {
             throw new BadRequestException('question_session_id is required')
