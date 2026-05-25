@@ -100,6 +100,7 @@ model StudentProfile {
   gender    Gender?
   address   String?
   city      String?
+  domains   String[]
 
   skills         SkillAssignment[]
   experiences    Experience[]

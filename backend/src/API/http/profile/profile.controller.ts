@@ -35,6 +35,7 @@ export class ProfileController {
                     studentDto.gender,
                     studentDto.address,
                     studentDto.city,
+                    studentDto.domains,
                 )
             )
         }

@@ -5,6 +5,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { ReactNode, useEffect } from "react";
 import { useAsyncJobsStore } from "@/lib/stores/async-jobs-store";
+import { useSseNotifications } from "@/hooks/use-sse-notifications";
+
+function NotificationsBootstrap() {
+  useSseNotifications();
+  return null;
+}
 
 function AsyncJobsBootstrap() {
   const startStream = useAsyncJobsStore((state) => state.startStream);
@@ -41,6 +47,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AsyncJobsBootstrap />
+      <NotificationsBootstrap />
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

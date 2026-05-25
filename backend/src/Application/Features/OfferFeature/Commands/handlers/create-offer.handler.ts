@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs'
 import { Inject, BadRequestException, NotFoundException } from '@nestjs/common'
 import { randomUUID } from 'crypto'
 
@@ -8,11 +8,14 @@ import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-
 
 import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { CreateOfferCommand } from "../create-offer.command"
-import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement';
+import { SkillRequirement } from '../../../../../Domain/entities/skill-requirement'
+import { OfferCreatedEvent } from '../../../../../Domain/events/offer-created.event'
 @CommandHandler(CreateOfferCommand)
 export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
 
     constructor(
+        private readonly eventBus: EventBus,
+
         @Inject(IOfferRepository)
         private readonly offerRepo: IOfferRepository,
 
@@ -20,7 +23,7 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
         private readonly skillRepo: ISkillRepository,
 
         @Inject(IRecruiterProfileRepository)
-        private readonly recruiterRepo: IRecruiterProfileRepository
+        private readonly recruiterRepo: IRecruiterProfileRepository,
     ) {}
 
     async execute(cmd: CreateOfferCommand) {
@@ -32,8 +35,8 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
             throw new BadRequestException('Invalid date range')
         }
 
-        const skills = await this.skillRepo.findByIds(
-            cmd.requiredSkills.map(s => s.skillId)
+        const skills = await this.skillRepo.findByNames(
+            cmd.requiredSkills.map(s => s.skillName)
         )
 
         if (skills.length !== cmd.requiredSkills.length) {
@@ -41,7 +44,7 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
         }
 
         const skillRequirements = cmd.requiredSkills.map(req => {
-            const skill = skills.find(s => s.id === req.skillId)!
+            const skill = skills.find(s => s.name === req.skillName)!
             return new SkillRequirement(randomUUID(), skill, req.level)
         })
 
@@ -61,6 +64,12 @@ export class CreateOfferHandler implements ICommandHandler<CreateOfferCommand> {
             cmd.type
         )
 
-        return this.offerRepo.save(offer)
+        const saved = await this.offerRepo.save(offer)
+
+        this.eventBus.publish(
+            new OfferCreatedEvent(saved.id, saved.title, saved.domain)
+        )
+
+        return saved
     }
 }

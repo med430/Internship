@@ -33,7 +33,7 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
         raw.location,
         raw.domain,
         raw.isPaid,
-        raw.workMode as unknown as WorkMode,   // ← double cast
+        raw.workMode as WorkMode,
         raw.startDate,
         raw.endDate,
         raw.skillRequirements.map(sr => new SkillRequirement(
@@ -58,7 +58,7 @@ export class OfferMapper implements IGenericMapper<Offer, PrismaOfferFull> {
       location:           domain.location,
       domain:             domain.domain,
       isPaid:             domain.isPaid,
-      workMode:           domain.workMode as unknown as PrismaWorkMode,
+      workMode:           domain.workMode as PrismaWorkMode,
       startDate:          domain.startDate,
       endDate:            domain.endDate,
       type:               domain.type as unknown as PrismaOfferType,

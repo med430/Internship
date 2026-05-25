@@ -61,8 +61,8 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
         // skills
         if (cmd.requiredSkills) {
 
-            const skills = await this.skillRepo.findByIds(
-                cmd.requiredSkills.map(s => s.skillId)
+            const skills = await this.skillRepo.findByNames(
+                cmd.requiredSkills.map(s => s.skillName)
             )
 
             if (skills.length !== cmd.requiredSkills.length) {
@@ -70,7 +70,7 @@ export class UpdateOfferHandler implements ICommandHandler<UpdateOfferCommand> {
             }
 
             offer.skillRequirements = cmd.requiredSkills.map(req => {
-                const skill = skills.find(s => s.id === req.skillId)!
+                const skill = skills.find(s => s.name === req.skillName)!
                 return new SkillRequirement(randomUUID(), skill, req.level)
             })
         }

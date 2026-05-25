@@ -6,6 +6,7 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLAPIModule } from './API/graphql/graphql.module';
 import { resolve } from 'path';
+import {CallGateway} from "./API/websocket/gateways/call.gateway";
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),
@@ -22,7 +23,7 @@ const envFilePaths = [
     GraphQLAPIModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CallGateway],
   
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs'
 import {
     Inject,
     NotFoundException,
@@ -8,17 +8,19 @@ import {
 
 import { UpdateApplicationStatusCommand } from '../update-application-status.command'
 
-
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
-
+import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
+import { IApplicationRepository } from '../../../../repositories/application.repository'
 import { ApplicationStatus } from '../../../../../Domain/enums/application-status.enum'
-import {IApplicationRepository} from "../../../../repositories/application.repository";
+import { ApplicationStatusChangedEvent } from '../../../../../Domain/events/application-status-changed.event'
 @CommandHandler(UpdateApplicationStatusCommand)
 export class UpdateApplicationStatusHandler
     implements ICommandHandler<UpdateApplicationStatusCommand> {
 
     constructor(
+        private readonly eventBus: EventBus,
+
         @Inject(IApplicationRepository)
         private readonly appRepo: IApplicationRepository,
 
@@ -26,7 +28,10 @@ export class UpdateApplicationStatusHandler
         private readonly offerRepo: IOfferRepository,
 
         @Inject(IRecruiterProfileRepository)
-        private readonly recruiterRepo: IRecruiterProfileRepository
+        private readonly recruiterRepo: IRecruiterProfileRepository,
+
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository,
     ) {}
 
     async execute(command: UpdateApplicationStatusCommand) {
@@ -76,6 +81,20 @@ export class UpdateApplicationStatusHandler
             )
         }
 
-        return this.appRepo.save(application)
+        const saved = await this.appRepo.save(application)
+
+        const student = await this.studentRepo.findById(application.studentId)
+        if (student) {
+            this.eventBus.publish(
+                new ApplicationStatusChangedEvent(
+                    student.userId,
+                    application.id,
+                    offer.title,
+                    status,
+                )
+            )
+        }
+
+        return saved
     }
 }

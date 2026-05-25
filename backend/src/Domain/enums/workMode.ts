@@ -1,5 +1,5 @@
 export enum WorkMode {
-    ONSITE,
-    REMOTE,
-    HYBRID
+    ONSITE = 'ONSITE',
+    REMOTE = 'REMOTE',
+    HYBRID = 'HYBRID',
 }
