@@ -36,6 +36,14 @@ export class SkillRepositoryImpl extends GenericRepository<Skill, any, number> i
         return result ? this.mapper.toDomain(result) : null
     }
 
+    async findByNames(names: string[]): Promise<Skill[]> {
+        const results = await this.prisma.skill.findMany({
+            where: { name: { in: names } }
+        })
+
+        return results.map(r => this.mapper.toDomain(r))
+    }
+
     // 🔥 minimal pour respecter l’interface
     async findById(id: number): Promise<Skill | null> {
         const result = await this.prisma.skill.findUnique({

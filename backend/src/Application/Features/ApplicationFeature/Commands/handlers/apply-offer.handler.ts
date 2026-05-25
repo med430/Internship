@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs'
 import {
     Inject,
     BadRequestException,
@@ -11,16 +11,20 @@ import { ApplyToOfferCommand } from '../apply-offer.command'
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IApplicationRepository } from '../../../../repositories/application.repository'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
+import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
+import { ICoverLetterRepository } from '../../../../repositories/coverletter.repository'
+import { ICVRepository } from '../../../../repositories/cv.repository'
 
 import { Application } from '../../../../../Domain/entities/application.entity'
 import { ApplicationStatus } from '../../../../../Domain/enums/application-status.enum'
-import {ICoverLetterRepository} from "../../../../repositories/coverletter.repository";
-import {ICVRepository} from "../../../../repositories/cv.repository";
+import { ApplicationSubmittedEvent } from '../../../../../Domain/events/application-submitted.event'
 @CommandHandler(ApplyToOfferCommand)
 export class ApplyToOfferHandler
     implements ICommandHandler<ApplyToOfferCommand> {
 
     constructor(
+        private readonly eventBus: EventBus,
+
         @Inject(IApplicationRepository)
         private readonly appRepo: IApplicationRepository,
 
@@ -30,11 +34,14 @@ export class ApplyToOfferHandler
         @Inject(IStudentProfileRepository)
         private readonly studentRepo: IStudentProfileRepository,
 
+        @Inject(IRecruiterProfileRepository)
+        private readonly recruiterRepo: IRecruiterProfileRepository,
+
         @Inject(ICVRepository)
         private readonly cvRepo: ICVRepository,
 
         @Inject(ICoverLetterRepository)
-        private readonly letterRepo: ICoverLetterRepository
+        private readonly letterRepo: ICoverLetterRepository,
     ) {}
 
     async execute(command: ApplyToOfferCommand) {
@@ -93,6 +100,19 @@ export class ApplyToOfferHandler
             coverLetterId
         )
 
-        return this.appRepo.save(application)
+        const saved = await this.appRepo.save(application)
+
+        const recruiter = await this.recruiterRepo.findById(offer.recruiterProfileId)
+        if (recruiter) {
+            this.eventBus.publish(
+                new ApplicationSubmittedEvent(
+                    recruiter.userId,
+                    saved.id,
+                    offer.title,
+                )
+            )
+        }
+
+        return saved
     }
 }

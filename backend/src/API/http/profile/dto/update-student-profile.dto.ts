@@ -1,6 +1,7 @@
 // dto/update-student-profile.dto.ts
-import { IsString, IsOptional, IsDateString, IsEnum, IsUrl } from 'class-validator'
+import { IsString, IsOptional, IsDateString, IsEnum, IsUrl, IsArray, IsIn } from 'class-validator'
 import { Gender } from '../../../../Domain/enums/gender'
+import { CAREER_DOMAINS } from '../../../../Domain/constants/domains'
 
 export class UpdateStudentProfileDto {
     // User fields
@@ -44,4 +45,9 @@ export class UpdateStudentProfileDto {
     @IsOptional()
     @IsString()
     city?: string
+
+    @IsOptional()
+    @IsArray()
+    @IsIn([...CAREER_DOMAINS], { each: true })
+    domains?: string[]
 }

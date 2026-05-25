@@ -16,5 +16,6 @@ export class UpdateStudentProfileCommand {
         public readonly gender?: Gender,
         public readonly address?: string,
         public readonly city?: string,
+        public readonly domains?: string[],
     ) {}
 }

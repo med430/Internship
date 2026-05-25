@@ -15,6 +15,13 @@ import {SkillAssignmentController} from "./skillAssignment/skill.controller";
 import { InterviewController } from "./interview/interview.controller";
 import { OnboardController } from "./onboard/onboard.controller";
 import { OnboardService } from "./onboard/onboard.service";
+import { SseController } from "./sse/sse.controller";
+import { SseService } from "./sse/sse.service";
+import { SseAuthGuard } from "./sse/sse-auth.guard";
+import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
+import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
+import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
+import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -28,7 +35,8 @@ import { OnboardService } from "./onboard/onboard.service";
         ProfileController,
         SkillAssignmentController,
         InterviewController,
-        OnboardController],
-    providers: [OnboardService],
+        OnboardController,
+        SseController],
+    providers: [OnboardService, SseService, SseAuthGuard, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
 })
 export class HttpApiModule {}

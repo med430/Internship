@@ -102,6 +102,7 @@ export class StudentProfileMapper implements IGenericMapper<StudentProfile, Pris
             cv.updatedAt,
             cv.deletedAt ?? undefined,
         )),
+        raw.domains ?? [],
     )
   }
 
@@ -114,6 +115,7 @@ export class StudentProfileMapper implements IGenericMapper<StudentProfile, Pris
       gender:    domain.gender    ?? null,
       address:   domain.address   ?? null,
       city:      domain.city      ?? null,
+      domains:   domain.domains   ?? [],
     }
   }
 }

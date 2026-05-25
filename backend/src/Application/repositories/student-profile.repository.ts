@@ -4,6 +4,7 @@ import { IGenericRepository } from './generic.repository'
 
 export interface IStudentProfileRepository extends IGenericRepository<StudentProfile> {
     findByUserId(userId: string): Promise<StudentProfile | null>
+    findByDomain(domain: string): Promise<StudentProfile[]>
     update(profile: StudentProfile): Promise<StudentProfile>
 }
 

@@ -26,6 +26,8 @@ export class StudentProfile {
         public educations: Education[] = [],
         public certifications: Certification[] = [],
 
-        public cvs: CV[] = []
+        public cvs: CV[] = [],
+
+        public domains: string[] = [],
     ) {}
 }
