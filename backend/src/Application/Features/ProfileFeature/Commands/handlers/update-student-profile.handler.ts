@@ -47,6 +47,7 @@ ProfileResponseDTO
         profile.gender    = command.gender    ?? profile.gender
         profile.address   = command.address   ?? profile.address
         profile.city      = command.city      ?? profile.city
+        profile.domains   = command.domains   ?? profile.domains
 
         await this.studentProfileRepo.update(profile)
 

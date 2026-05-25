@@ -1,13 +1,11 @@
-// cover-letter.controller.ts
 import {
-    Controller, Post, Delete, Param,
+    Controller, Post, Param,
     UseGuards, UseInterceptors, UploadedFile,
     BadRequestException, Patch
 } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { diskStorage } from 'multer'
-import { randomUUID } from 'crypto'
+import { memoryStorage } from 'multer'
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
 import { UploadCoverLetterCommand } from '../../../Application/Features/CoverLetterFeature/Commands/upload-cover-letter.command'
@@ -24,10 +22,7 @@ export class CoverLetterController {
     @Post()
     @UseInterceptors(
         FileInterceptor('letter', {
-            storage: diskStorage({
-                destination: './uploads/letters',
-                filename: (_, __, cb) => cb(null, `${randomUUID()}.pdf`)
-            }),
+            storage: memoryStorage(),
             limits: { fileSize: 2 * 1024 * 1024 },
             fileFilter: (_, file, cb) => {
                 if (file.mimetype !== 'application/pdf') {

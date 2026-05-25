@@ -20,6 +20,7 @@ interface NotificationStore {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  addNotification: (notification: NotificationRecord) => void;
 }
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
@@ -55,5 +56,11 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
         unreadCount: notifications.filter((item) => !item.is_read).length,
       };
     });
+  },
+  addNotification: (notification) => {
+    set((state) => ({
+      notifications: [notification, ...state.notifications],
+      unreadCount: state.unreadCount + 1,
+    }));
   },
 }));

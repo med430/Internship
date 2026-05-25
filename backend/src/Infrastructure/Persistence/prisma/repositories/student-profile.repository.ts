@@ -52,6 +52,14 @@ export class StudentProfileRepositoryImpl
     return result ? this.mapper.toDomain(result) : null
   }
 
+  async findByDomain(domain: string): Promise<StudentProfile[]> {
+    const results = await this.prisma.studentProfile.findMany({
+      where: { domains: { has: domain } },
+      include: this.includeOptions,
+    })
+    return results.map(r => this.mapper.toDomain(r))
+  }
+
   async update(profile: StudentProfile): Promise<StudentProfile> {
     const result = await this.prisma.studentProfile.update({
       where: { id: profile.id },

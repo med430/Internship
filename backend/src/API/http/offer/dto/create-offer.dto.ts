@@ -2,19 +2,21 @@ import {
     IsString,
     IsBoolean,
     IsEnum,
+    IsIn,
     IsDateString,
     IsArray,
-    ValidateNested, IsNumber
+    ValidateNested,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
 import { OfferType } from '../../../../Domain/enums/offer-type.enum'
 import { WorkMode } from '../../../../Domain/enums/workMode'
 import { SkillLevel } from '../../../../Domain/enums/skill-level.enum'
+import { CAREER_DOMAINS } from '../../../../Domain/constants/domains'
 
 class SkillRequirementDTO {
-    @IsNumber()
-    skillId: number
+    @IsString()
+    skillName: string
 
     @IsEnum(SkillLevel)
     level: SkillLevel
@@ -33,7 +35,7 @@ export class CreateOfferDTO {
     @IsString()
     location: string
 
-    @IsString()
+    @IsIn(CAREER_DOMAINS)
     domain: string
 
     @IsBoolean()

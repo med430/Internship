@@ -2,6 +2,7 @@
 
 import { Injectable } from '@nestjs/common'
 import { existsSync, unlinkSync } from 'fs'
+import { join } from 'path'
 import { FileStorageService } from '../../Application/Services/FileStorageService/FileStorageService'
 
 @Injectable()
@@ -11,21 +12,14 @@ export class LocalFileStorageService extends FileStorageService {
         file: Express.Multer.File,
         folder: 'cvs' | 'letters'
     ): Promise<string> {
-
-        if (!file || !file.filename) {
-            throw new Error('Invalid file')
-        }
-
-        // multer a déjà stocké le fichier physiquement
+        if (!file || !file.filename) throw new Error('Invalid file')
         return `/uploads/${folder}/${file.filename}`
     }
 
     async delete(fileUrl: string): Promise<void> {
-
-        const path = this.getFilePath(fileUrl)
-
+        if (!fileUrl?.startsWith('/uploads/')) return
+        const path = join(process.cwd(), fileUrl)
         if (!existsSync(path)) return
-
         try {
             unlinkSync(path)
         } catch (error) {

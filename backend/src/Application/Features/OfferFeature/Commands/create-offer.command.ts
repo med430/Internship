@@ -17,7 +17,7 @@ export class CreateOfferCommand {
         public readonly type: any,
 
         public readonly requiredSkills: {
-            skillId: number
+            skillName: string
             level: any
         }[]
     ) {}

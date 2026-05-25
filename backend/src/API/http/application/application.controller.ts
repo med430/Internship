@@ -92,11 +92,11 @@ export class ApplicationController {
         @CurrentUser() user,
         @Res() res: Response
     ) {
-        const filePath = await this.commandBus.execute(
+        const fileUrl = await this.commandBus.execute(
             new DownloadApplicationFileCommand(id, user.id, 'cv')
         )
 
-        return res.download(filePath)
+        return res.redirect(fileUrl)
     }
 
     // ================= DOWNLOAD LETTER =================
@@ -107,11 +107,11 @@ export class ApplicationController {
         @CurrentUser() user,
         @Res() res: Response
     ) {
-        const filePath = await this.commandBus.execute(
+        const fileUrl = await this.commandBus.execute(
             new DownloadApplicationFileCommand(id, user.id, 'coverLetter')
         )
 
-        return res.download(filePath)
+        return res.redirect(fileUrl)
     }
 
     // ================= WITHDRAW =================

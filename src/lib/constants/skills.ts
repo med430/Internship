@@ -1,0 +1,60 @@
+export const SKILL_LIST = [
+  // Frontend
+  'React',
+  'Vue.js',
+  'Angular',
+  'Next.js',
+  'TypeScript',
+  'JavaScript',
+  'HTML/CSS',
+  'Tailwind CSS',
+  'Redux',
+  // Backend
+  'Node.js',
+  'NestJS',
+  'Express.js',
+  'Django',
+  'Spring Boot',
+  'Laravel',
+  'FastAPI',
+  'GraphQL',
+  'REST API',
+  // Database
+  'PostgreSQL',
+  'MySQL',
+  'MongoDB',
+  'Redis',
+  'Prisma',
+  'TypeORM',
+  // Mobile
+  'React Native',
+  'Flutter',
+  'Swift',
+  'Kotlin',
+  // DevOps / Cloud
+  'Docker',
+  'Kubernetes',
+  'AWS',
+  'GCP',
+  'Azure',
+  'CI/CD',
+  'GitHub Actions',
+  'Linux',
+  // AI / Data
+  'Python',
+  'TensorFlow',
+  'PyTorch',
+  'Machine Learning',
+  'Data Science',
+  'LangChain',
+  // General
+  'Git',
+  'Agile/Scrum',
+  'Problem Solving',
+  'Communication',
+  'C++',
+  'Java',
+  'Rust',
+] as const
+
+export type SkillName = (typeof SKILL_LIST)[number]
