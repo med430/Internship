@@ -168,9 +168,7 @@ export class OnboardController {
         @Param('id') id: string,
     ) {
         const file = await this.onboardService.downloadCv(this.getSessionKey(req), id)
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
-        res.send(file.data)
+        res.redirect(file.url)
     }
 
     @Get('onboard/user-name')
@@ -333,9 +331,7 @@ export class OnboardController {
         @Param('id') id: string,
     ) {
         const file = await this.onboardService.downloadInterviewPdf(this.getSessionKey(req), id)
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
-        res.send(file.data)
+        res.redirect(file.url)
     }
 
     private getSessionKey(req: Request) {

@@ -116,6 +116,20 @@ export class StudentProfileMapper implements IGenericMapper<StudentProfile, Pris
       address:   domain.address   ?? null,
       city:      domain.city      ?? null,
       domains:   domain.domains   ?? [],
+
+      // Recommendation preferences 
+      preferredDomains:    [],
+      preferredCities:     [],
+      preferredWorkMode:   null,
+      availableFrom:       null,
+      availableTo:         null,
+      paidOnly:            false,
+      preferredOfferTypes: [],
+      languages:           [],
+      maxCommuteCities:    [],
+      schoolId:            null,
+      currentYear:         null,
+      currentProgram:      null,
     }
   }
 }

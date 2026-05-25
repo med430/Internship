@@ -816,7 +816,8 @@ export class OnboardService {
             data: {
                 sessionKey,
                 questionSessionId,
-                pdfData,
+                // TODO(cloudinary): upload pdfData buffer via CloudinaryStorageService and store URL here
+                pdfUrl: '',
                 originalScore,
                 finalScore,
                 jobTitle: role,
@@ -897,7 +898,7 @@ export class OnboardService {
 
         return {
             filename: `${cv.jobTitle.replace(/\s+/g, '_')}_cv.pdf`,
-            data: Buffer.from(cv.pdfData),
+            url: cv.pdfUrl,
         }
     }
 
@@ -1320,13 +1321,13 @@ export class OnboardService {
         const interview = await this.prisma.publicInterview.findFirst({
             where: { id, sessionKey, status: 'COMPLETED' },
         })
-        if (!interview || !interview.pdfData) {
+        if (!interview || !interview.pdfUrl) {
             throw new Error('Interview PDF not found.')
         }
 
         return {
             filename: `interview-report-${id}.pdf`,
-            data: Buffer.from(interview.pdfData),
+            url: interview.pdfUrl,
         }
     }
 
@@ -2808,7 +2809,8 @@ export class OnboardService {
                 summary,
                 transcript: data.turns,
                 data,
-                pdfData,
+                // TODO(cloudinary): upload pdfData buffer via CloudinaryStorageService and store URL here
+                pdfUrl: '',
             },
         })
 
