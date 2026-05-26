@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Copy, Check, Phone, PhoneOff, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { useCallSocket } from '@/hooks/use-call-socket';
 import { useAudio } from '@/hooks/use-audio';
 import { useVideo } from '@/hooks/use-video';
@@ -18,18 +20,21 @@ function createEmptyMedia(): PeerMedia {
 }
 
 export default function CallPage() {
-    const [room, setRoom] = useState('room1');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    const roomFromUrl = searchParams.get('room') ?? '';
     const [joined, setJoined] = useState(false);
     const [text, setText] = useState('');
     const [peers, setPeers] = useState<string[]>([]);
     const [peerNames, setPeerNames] = useState<Map<string, string>>(new Map());
     const [userName, setUserName] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const peerMediaRef = useRef<Map<string, PeerMedia>>(new Map());
     const peerVideoEls = useRef<Map<string, HTMLVideoElement | null>>(new Map());
 
-    // Fetch user name from Supabase on mount
     useEffect(() => {
         const supabase = createClient();
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -43,9 +48,26 @@ export default function CallPage() {
         });
     }, []);
 
+    const callLink =
+        typeof window !== 'undefined'
+            ? `${window.location.origin}/services/call?room=${roomFromUrl}`
+            : '';
+
+    const handleNewCall = () => {
+        const id = crypto.randomUUID();
+        router.push(`/services/call?room=${id}`);
+    };
+
+    const handleCopyLink = async () => {
+        await navigator.clipboard.writeText(callLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // ---- media source helpers ----
+
     const attachMediaSource = useCallback((peerId: string, el: HTMLVideoElement) => {
         const media = peerMediaRef.current.get(peerId)!;
-
         const ms = new MediaSource();
         media.ms = ms;
         el.src = URL.createObjectURL(ms);
@@ -69,9 +91,7 @@ export default function CallPage() {
         media.liveEdgeInterval = setInterval(() => {
             if (!el || el.buffered.length === 0) return;
             const liveEdge = el.buffered.end(el.buffered.length - 1);
-            if (liveEdge - el.currentTime > 0.5) {
-                el.currentTime = liveEdge - 0.1;
-            }
+            if (liveEdge - el.currentTime > 0.5) el.currentTime = liveEdge - 0.1;
         }, 500);
     }, []);
 
@@ -85,12 +105,10 @@ export default function CallPage() {
         const media = peerMediaRef.current.get(peerId);
         const el = peerVideoEls.current.get(peerId);
         if (!media || !el) return;
-
         if (media.liveEdgeInterval) clearInterval(media.liveEdgeInterval);
         media.ms = null;
         media.sb = null;
         media.pending = firstChunk ? [firstChunk] : [];
-
         attachMediaSource(peerId, el);
     }, [attachMediaSource]);
 
@@ -104,12 +122,8 @@ export default function CallPage() {
     const appendPeerVideo = useCallback((peerId: string, data: ArrayBuffer) => {
         const media = peerMediaRef.current.get(peerId);
         if (!media) return;
-
         const { sb } = media;
-        if (!sb || sb.updating) {
-            media.pending.push(data);
-            return;
-        }
+        if (!sb || sb.updating) { media.pending.push(data); return; }
         try {
             sb.appendBuffer(data);
         } catch {
@@ -117,8 +131,10 @@ export default function CallPage() {
         }
     }, [resetPeerMedia]);
 
+    // ---- socket ----
+
     const { isConnected, messages, sendAudio, sendVideo, sendText, sendSignal } =
-        useCallSocket(joined ? room : '', userName, {
+        useCallSocket(joined ? roomFromUrl : '', userName, {
             onAudio: (data) => audio.playChunk(data),
             onVideo: (peerId, data) => appendPeerVideo(peerId, data),
             onPeerJoined: (id, name) => {
@@ -162,124 +178,161 @@ export default function CallPage() {
         setText('');
     };
 
+    // ---- no room in URL → landing ----
+    if (!roomFromUrl) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+                <h1 className="text-2xl font-semibold text-foreground">Start a Call</h1>
+                <p className="text-sm text-muted-foreground">
+                    Create a room and share the link with anyone you want to call.
+                </p>
+                <button
+                    onClick={handleNewCall}
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+                >
+                    <Phone className="w-4 h-4" />
+                    New Call
+                </button>
+            </div>
+        );
+    }
+
+    // ---- room in URL but not yet joined → lobby ----
+    if (!joined) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+                <h1 className="text-2xl font-semibold text-foreground">You have a call waiting</h1>
+
+                {/* Copyable link */}
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-muted/40 max-w-md w-full">
+                    <span className="flex-1 text-xs text-muted-foreground truncate">{callLink}</span>
+                    <button onClick={handleCopyLink} className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                    Share the link above with whoever you want to invite.
+                </p>
+
+                <button
+                    onClick={handleJoin}
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+                >
+                    <Phone className="w-4 h-4" />
+                    Join Call
+                </button>
+            </div>
+        );
+    }
+
+    // ---- in call ----
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">
 
-            {/* Connection status */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                {isConnected ? 'Connected' : 'Disconnected'}
-            </div>
+            {/* Top bar: status + link */}
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    {isConnected ? 'Connected' : 'Disconnected'}
+                </div>
 
-            {/* Room join */}
-            {!joined && (
-                <div className="flex gap-2">
-                    <input
-                        className="border border-border rounded-md px-3 py-2 bg-background text-foreground text-sm"
-                        value={room}
-                        onChange={(e) => setRoom(e.target.value)}
-                        placeholder="Room name"
-                    />
-                    <button
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
-                        onClick={handleJoin}
-                    >
-                        Join
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/40">
+                    <span className="text-xs text-muted-foreground truncate max-w-[220px]">{callLink}</span>
+                    <button onClick={handleCopyLink} className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                 </div>
-            )}
+            </div>
 
             {/* Video tiles */}
-            {joined && (
-                <div className="flex flex-wrap gap-4 justify-center">
-                    {/* Local tile */}
-                    <div className="relative">
+            <div className="flex flex-wrap gap-4 justify-center">
+                {/* Local tile */}
+                <div className="relative">
+                    <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-64 h-48 rounded-xl bg-muted object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
+                        {userName || 'You'}
+                    </span>
+                </div>
+
+                {/* Remote peer tiles */}
+                {peers.map((peerId) => (
+                    <div key={peerId} className="relative">
                         <video
-                            ref={localVideoRef}
+                            ref={(el) => {
+                                peerVideoEls.current.set(peerId, el);
+                                if (el) setupPeerVideo(peerId, el);
+                            }}
                             autoPlay
-                            muted
                             playsInline
                             className="w-64 h-48 rounded-xl bg-muted object-cover"
                         />
                         <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
-                            {userName || 'You'}
+                            {peerNames.get(peerId) ?? peerId.slice(0, 6)}
                         </span>
                     </div>
+                ))}
+            </div>
 
-                    {/* Remote peer tiles */}
-                    {peers.map((peerId) => (
-                        <div key={peerId} className="relative">
-                            <video
-                                ref={(el) => {
-                                    peerVideoEls.current.set(peerId, el);
-                                    if (el) setupPeerVideo(peerId, el);
-                                }}
-                                autoPlay
-                                playsInline
-                                className="w-64 h-48 rounded-xl bg-muted object-cover"
-                            />
-                            <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
-                                {peerNames.get(peerId) ?? peerId.slice(0, 6)}
-                            </span>
+            {/* Controls */}
+            <div className="flex gap-3">
+                <button
+                    onClick={() => (audio.recording ? audio.stop() : void audio.start())}
+                    className={`p-3 rounded-full text-white ${audio.recording ? 'bg-red-500' : 'bg-muted-foreground/60'}`}
+                    title={audio.recording ? 'Mute' : 'Unmute'}
+                >
+                    {audio.recording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+                <button
+                    onClick={() => (video.cameraOn ? video.stopCamera() : void video.startCamera())}
+                    className={`p-3 rounded-full text-white ${video.cameraOn ? 'bg-red-500' : 'bg-muted-foreground/60'}`}
+                    title={video.cameraOn ? 'Camera off' : 'Camera on'}
+                >
+                    {video.cameraOn ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                </button>
+                <button
+                    onClick={handleHangUp}
+                    className="p-3 rounded-full bg-red-600 text-white"
+                    title="Hang up"
+                >
+                    <PhoneOff className="w-5 h-5" />
+                </button>
+            </div>
+
+            {/* Chat */}
+            <div className="w-full max-w-md border border-border rounded-xl overflow-hidden">
+                <div className="h-40 overflow-y-auto p-3 space-y-1 bg-muted/30">
+                    {messages.map((m, i) => (
+                        <div key={i} className="text-sm">
+                            <span className="font-medium text-muted-foreground">
+                                {m.sender.slice(0, 6)}:
+                            </span>{' '}
+                            {m.text}
                         </div>
                     ))}
                 </div>
-            )}
-
-            {/* Controls */}
-            {joined && (
-                <div className="flex gap-3">
+                <div className="flex border-t border-border">
+                    <input
+                        className="flex-1 px-3 py-2 bg-background text-foreground text-sm outline-none"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Type a message..."
+                    />
                     <button
-                        onClick={() => (audio.recording ? audio.stop() : void audio.start())}
-                        className={`px-4 py-2 rounded-md text-sm text-white ${audio.recording ? 'bg-red-500' : 'bg-green-600'}`}
+                        onClick={handleSendMessage}
+                        className="px-4 py-2 bg-primary text-primary-foreground text-sm"
                     >
-                        {audio.recording ? '🔇 Mute' : '🎤 Unmute'}
-                    </button>
-                    <button
-                        onClick={() => (video.cameraOn ? video.stopCamera() : void video.startCamera())}
-                        className={`px-4 py-2 rounded-md text-sm text-white ${video.cameraOn ? 'bg-red-500' : 'bg-blue-600'}`}
-                    >
-                        {video.cameraOn ? '📷 Camera off' : '📷 Camera on'}
-                    </button>
-                    <button
-                        onClick={handleHangUp}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md text-sm"
-                    >
-                        ✕ Hang up
+                        Send
                     </button>
                 </div>
-            )}
-
-            {/* Chat */}
-            {joined && (
-                <div className="w-full max-w-md border border-border rounded-xl overflow-hidden">
-                    <div className="h-40 overflow-y-auto p-3 space-y-1 bg-muted/30">
-                        {messages.map((m, i) => (
-                            <div key={i} className="text-sm">
-                                <span className="font-medium text-muted-foreground">
-                                    {m.sender.slice(0, 6)}:
-                                </span>{' '}
-                                {m.text}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex border-t border-border">
-                        <input
-                            className="flex-1 px-3 py-2 bg-background text-foreground text-sm outline-none"
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                            placeholder="Type a message..."
-                        />
-                        <button
-                            onClick={handleSendMessage}
-                            className="px-4 py-2 bg-primary text-primary-foreground text-sm"
-                        >
-                            Send
-                        </button>
-                    </div>
-                </div>
-            )}
+            </div>
         </div>
     );
 }

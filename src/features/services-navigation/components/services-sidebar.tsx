@@ -3,13 +3,15 @@
 import { useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Briefcase,
   GraduationCap,
   LayoutDashboard,
   Mail,
+  MessageSquare,
+  Phone,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -43,7 +45,13 @@ const getServerSnapshot = () => false;
 
 export function ServicesSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { state } = useSidebar();
+
+  const handleStartCall = () => {
+    const id = crypto.randomUUID();
+    router.push(`/services/call?room=${id}`);
+  };
   const { resolvedTheme } = useTheme();
   const isHydrated = useSyncExternalStore(
     subscribe,
@@ -140,6 +148,30 @@ export function ServicesSidebar() {
                   <Link href="/services/dashboard">
                     <LayoutDashboard className="h-5 w-5" />
                     <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Start a Call"
+                  isActive={pathname.startsWith("/services/call")}
+                  onClick={handleStartCall}
+                >
+                  <Phone className="h-5 w-5" />
+                  <span>Start a Call</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Messages"
+                  isActive={pathname.startsWith("/services/chat")}
+                >
+                  <Link href="/services/chat">
+                    <MessageSquare className="h-5 w-5" />
+                    <span>Messages</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

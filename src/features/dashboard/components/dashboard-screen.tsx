@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Briefcase,
   Compass,
   FileText,
+  MessageSquare,
+  Phone,
   Sparkles,
   Target,
   Zap,
@@ -16,8 +19,14 @@ import ServiceCard from "@/components/services/service-card";
 import { useDashboardController } from "../hooks/use-dashboard-controller";
 
 export function DashboardScreen() {
+  const router = useRouter();
   const { userName, greeting, latestCV, latestGuide, latestLetter, loading } =
     useDashboardController();
+
+  const handleStartCall = () => {
+    const id = crypto.randomUUID();
+    router.push(`/services/call?room=${id}`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,7 +150,7 @@ export function DashboardScreen() {
         <div
           className={`${!loading && !latestCV && !latestGuide && !latestLetter ? "mt-12 md:mt-20" : ""}`}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <ServiceCard
               href="/services/cv-rewriter"
               title="CV Booster"
@@ -199,6 +208,56 @@ export function DashboardScreen() {
               features={[
                 { label: "AI-powered personas", colorClass: "bg-purple-500" },
                 { label: "Real-time feedback", colorClass: "bg-blue-500" },
+              ]}
+            />
+
+            <div
+              onClick={handleStartCall}
+              className="cursor-pointer group relative overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-xl p-5 flex flex-col gap-3 hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-emerald-400/8 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative z-10 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-green-500/10">
+                    <Phone className="h-5 w-5 text-green-500" />
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-label">
+                    Live
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground font-heading">
+                    Start a Call
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 font-body line-clamp-2">
+                    Create a private room and invite anyone with a link
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5 mt-auto">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="text-[10px] text-muted-foreground font-label">Video & audio</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] text-muted-foreground font-label">Private link</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ServiceCard
+              href="/services/chat"
+              title="Messages"
+              description="Chat in real-time with your network — private, instant messaging"
+              icon={MessageSquare}
+              gradient="from-blue-500/5 via-indigo-400/8 to-blue-500/5"
+              tagText="Real-time"
+              tagIcon={MessageSquare}
+              tagColor="primary"
+              features={[
+                { label: "Instant delivery", colorClass: "bg-blue-500" },
+                { label: "Read receipts", colorClass: "bg-indigo-400" },
               ]}
             />
 

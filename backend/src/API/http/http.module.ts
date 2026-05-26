@@ -20,6 +20,7 @@ import { SseService } from "./sse/sse.service";
 import { SseAuthGuard } from "./sse/sse-auth.guard";
 import { TrackingController } from "./tracking/tracking.controller";
 import { AdminRecommendationsController } from "./admin/admin-recommendations.controller";
+import { ChatController } from "./chat/chat.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
@@ -42,7 +43,8 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
         OnboardController,
         SseController,
         TrackingController,
-        AdminRecommendationsController],
+        AdminRecommendationsController,
+        ChatController],
     providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
     exports: [SupabaseSyncMiddleware],
 })
