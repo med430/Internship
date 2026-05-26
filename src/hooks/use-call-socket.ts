@@ -12,20 +12,20 @@ export interface ChatMessage {
 
 interface UseCallSocketOptions {
     onAudio?: (data: ArrayBuffer) => void;
-    onVideo?: (data: ArrayBuffer) => void;
-    onPeerJoined?: (peerId: string) => void;
+    onVideo?: (peerId: string, data: ArrayBuffer) => void;
+    onPeerJoined?: (peerId: string, name: string) => void;
     onPeerLeft?: (peerId: string) => void;
 }
 
 export function useCallSocket(
     room: string,
+    userName: string,
     options: UseCallSocketOptions = {},
 ) {
     const socketRef = useRef<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-    // Keep options in a ref so the effect doesn't re-run when they change
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
@@ -35,7 +35,7 @@ export function useCallSocket(
 
         socket.on('connect', () => {
             setIsConnected(true);
-            socket.emit('join-room', room);
+            if (room) socket.emit('join-room', { room, name: userName });
         });
 
         socket.on('disconnect', () => {
@@ -60,22 +60,28 @@ export function useCallSocket(
             }
         });
 
-        socket.on('video', (data: unknown) => {
+        socket.on('video', (peerId: string, data: unknown) => {
             if (!optionsRef.current.onVideo) return;
             const raw = Array.isArray(data) ? data[0] : data;
             if (raw instanceof ArrayBuffer) {
-                optionsRef.current.onVideo(raw);
+                optionsRef.current.onVideo(peerId, raw);
             } else if (raw?.buffer instanceof ArrayBuffer) {
                 const ab = raw.buffer.slice(
                     raw.byteOffset,
                     raw.byteOffset + raw.byteLength,
                 ) as ArrayBuffer;
-                optionsRef.current.onVideo(ab);
+                optionsRef.current.onVideo(peerId, ab);
             }
         });
 
-        socket.on('peer-joined', ({ peerId }: { peerId: string }) => {
-            optionsRef.current.onPeerJoined?.(peerId);
+        socket.on('existing-peers', (peers: { peerId: string; name: string }[]) => {
+            peers.forEach(({ peerId, name }) =>
+                optionsRef.current.onPeerJoined?.(peerId, name),
+            );
+        });
+
+        socket.on('peer-joined', ({ peerId, name }: { peerId: string; name: string }) => {
+            optionsRef.current.onPeerJoined?.(peerId, name);
         });
 
         socket.on('peer-left', ({ peerId }: { peerId: string }) => {
@@ -86,7 +92,7 @@ export function useCallSocket(
             socket.emit('leave-room');
             socket.disconnect();
         };
-    }, [room]); // re-runs only if room changes
+    }, [room, userName]);
 
     const sendAudio = useCallback((data: ArrayBuffer) => {
         socketRef.current?.emit('audio', data);

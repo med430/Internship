@@ -1,86 +1,159 @@
-// src/features/call/components/call-page.tsx (or wherever your routing puts it)
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useCallSocket } from '@/hooks/use-call-socket';
 import { useAudio } from '@/hooks/use-audio';
 import { useVideo } from '@/hooks/use-video';
+import { createClient } from '@/utils/supabase/client';
+
+interface PeerMedia {
+    ms: MediaSource | null;
+    sb: SourceBuffer | null;
+    pending: ArrayBuffer[];
+    liveEdgeInterval: ReturnType<typeof setInterval> | null;
+}
+
+function createEmptyMedia(): PeerMedia {
+    return { ms: null, sb: null, pending: [], liveEdgeInterval: null };
+}
 
 export default function CallPage() {
     const [room, setRoom] = useState('room1');
     const [joined, setJoined] = useState(false);
     const [text, setText] = useState('');
-    const [muted, setMuted] = useState(false);
+    const [peers, setPeers] = useState<string[]>([]);
+    const [peerNames, setPeerNames] = useState<Map<string, string>>(new Map());
+    const [userName, setUserName] = useState('');
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
-    const remoteVideoRef = useRef<HTMLVideoElement>(null);
-    const remoteMediaSourceRef = useRef<MediaSource | null>(null);
-    const remoteSourceBufferRef = useRef<SourceBuffer | null>(null);
+    const peerMediaRef = useRef<Map<string, PeerMedia>>(new Map());
+    const peerVideoEls = useRef<Map<string, HTMLVideoElement | null>>(new Map());
 
-    // ---- hooks ----
-    const { isConnected, messages, sendAudio, sendVideo, sendText, sendSignal } =
-        useCallSocket(joined ? room : '', {
-            onAudio: (data) => audio.playChunk(data),
-            onVideo: (data) => appendRemoteVideo(data),
-            onPeerJoined: (id) => console.log('peer joined:', id),
-            onPeerLeft: (id) => console.log('peer left:', id),
-        });
-
-    const audio = useAudio({ onChunk: sendAudio });
-
-    const video = useVideo({
-        onChunk: sendVideo,
-        localVideoRef,
-    });
-
-    // ---- remote video playback setup ----
+    // Fetch user name from Supabase on mount
     useEffect(() => {
-        if (!remoteVideoRef.current) return;
-
-        const ms = new MediaSource();
-        remoteMediaSourceRef.current = ms;
-        remoteVideoRef.current.src = URL.createObjectURL(ms);
-
-        ms.addEventListener('sourceopen', () => {
-            const sb = ms.addSourceBuffer('video/webm;codecs=vp8');
-            remoteSourceBufferRef.current = sb;
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) return;
+            const name =
+                user.user_metadata?.full_name ||
+                user.user_metadata?.name ||
+                user.email?.split('@')[0] ||
+                'Anonymous';
+            setUserName(name);
         });
     }, []);
 
-    const appendRemoteVideo = (data: ArrayBuffer) => {
-        const sb = remoteSourceBufferRef.current;
-        if (!sb || sb.updating) return;
+    const attachMediaSource = useCallback((peerId: string, el: HTMLVideoElement) => {
+        const media = peerMediaRef.current.get(peerId)!;
+
+        const ms = new MediaSource();
+        media.ms = ms;
+        el.src = URL.createObjectURL(ms);
+
+        ms.addEventListener('sourceopen', () => {
+            const sb = ms.addSourceBuffer('video/webm;codecs=vp8');
+            media.sb = sb;
+
+            sb.addEventListener('updateend', () => {
+                if (media.pending.length > 0 && !sb.updating) {
+                    sb.appendBuffer(media.pending.shift()!);
+                }
+            });
+
+            if (media.pending.length > 0) {
+                sb.appendBuffer(media.pending.shift()!);
+            }
+        });
+
+        if (media.liveEdgeInterval) clearInterval(media.liveEdgeInterval);
+        media.liveEdgeInterval = setInterval(() => {
+            if (!el || el.buffered.length === 0) return;
+            const liveEdge = el.buffered.end(el.buffered.length - 1);
+            if (liveEdge - el.currentTime > 0.5) {
+                el.currentTime = liveEdge - 0.1;
+            }
+        }, 500);
+    }, []);
+
+    const setupPeerVideo = useCallback((peerId: string, el: HTMLVideoElement) => {
+        const media = peerMediaRef.current.get(peerId);
+        if (!media || media.ms) return;
+        attachMediaSource(peerId, el);
+    }, [attachMediaSource]);
+
+    const resetPeerMedia = useCallback((peerId: string, firstChunk?: ArrayBuffer) => {
+        const media = peerMediaRef.current.get(peerId);
+        const el = peerVideoEls.current.get(peerId);
+        if (!media || !el) return;
+
+        if (media.liveEdgeInterval) clearInterval(media.liveEdgeInterval);
+        media.ms = null;
+        media.sb = null;
+        media.pending = firstChunk ? [firstChunk] : [];
+
+        attachMediaSource(peerId, el);
+    }, [attachMediaSource]);
+
+    const teardownPeerVideo = useCallback((peerId: string) => {
+        const media = peerMediaRef.current.get(peerId);
+        if (media?.liveEdgeInterval) clearInterval(media.liveEdgeInterval);
+        peerMediaRef.current.delete(peerId);
+        peerVideoEls.current.delete(peerId);
+    }, []);
+
+    const appendPeerVideo = useCallback((peerId: string, data: ArrayBuffer) => {
+        const media = peerMediaRef.current.get(peerId);
+        if (!media) return;
+
+        const { sb } = media;
+        if (!sb || sb.updating) {
+            media.pending.push(data);
+            return;
+        }
         try {
             sb.appendBuffer(data);
         } catch {
-            // Buffer full or codec mismatch — safe to ignore
+            resetPeerMedia(peerId, data);
         }
-    };
+    }, [resetPeerMedia]);
 
-    // ---- init audio playback context on mount ----
+    const { isConnected, messages, sendAudio, sendVideo, sendText, sendSignal } =
+        useCallSocket(joined ? room : '', userName, {
+            onAudio: (data) => audio.playChunk(data),
+            onVideo: (peerId, data) => appendPeerVideo(peerId, data),
+            onPeerJoined: (id, name) => {
+                if (!peerMediaRef.current.has(id)) {
+                    peerMediaRef.current.set(id, createEmptyMedia());
+                }
+                setPeers((prev) => (prev.includes(id) ? prev : [...prev, id]));
+                setPeerNames((prev) => new Map(prev).set(id, name));
+                if (video.cameraOn) video.restartRecorder();
+            },
+            onPeerLeft: (id) => {
+                teardownPeerVideo(id);
+                setPeers((prev) => prev.filter((p) => p !== id));
+                setPeerNames((prev) => { const m = new Map(prev); m.delete(id); return m; });
+            },
+        });
+
+    const audio = useAudio({ onChunk: sendAudio });
+    const video = useVideo({ onChunk: sendVideo, localVideoRef });
+
     useEffect(() => {
         audio.initPlayback();
         return () => audio.destroy();
     }, []);
 
-    // ---- handlers ----
     const handleJoin = () => setJoined(true);
 
     const handleHangUp = () => {
         audio.stop();
         video.stopCamera();
         sendSignal('hang-up');
+        peers.forEach(teardownPeerVideo);
+        setPeers([]);
+        setPeerNames(new Map());
         setJoined(false);
-    };
-
-    const handleToggleMute = () => {
-        if (muted) {
-            void audio.start();
-        } else {
-            audio.stop();
-        }
-        setMuted((prev) => !prev);
-        sendSignal(muted ? 'unmute' : 'mute');
     };
 
     const handleSendMessage = () => {
@@ -89,7 +162,6 @@ export default function CallPage() {
         setText('');
     };
 
-    // ---- render ----
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">
 
@@ -119,7 +191,8 @@ export default function CallPage() {
 
             {/* Video tiles */}
             {joined && (
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4 justify-center">
+                    {/* Local tile */}
                     <div className="relative">
                         <video
                             ref={localVideoRef}
@@ -129,20 +202,27 @@ export default function CallPage() {
                             className="w-64 h-48 rounded-xl bg-muted object-cover"
                         />
                         <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
-              You
-            </span>
+                            {userName || 'You'}
+                        </span>
                     </div>
-                    <div className="relative">
-                        <video
-                            ref={remoteVideoRef}
-                            autoPlay
-                            playsInline
-                            className="w-64 h-48 rounded-xl bg-muted object-cover"
-                        />
-                        <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
-              Remote
-            </span>
-                    </div>
+
+                    {/* Remote peer tiles */}
+                    {peers.map((peerId) => (
+                        <div key={peerId} className="relative">
+                            <video
+                                ref={(el) => {
+                                    peerVideoEls.current.set(peerId, el);
+                                    if (el) setupPeerVideo(peerId, el);
+                                }}
+                                autoPlay
+                                playsInline
+                                className="w-64 h-48 rounded-xl bg-muted object-cover"
+                            />
+                            <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">
+                                {peerNames.get(peerId) ?? peerId.slice(0, 6)}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -176,9 +256,9 @@ export default function CallPage() {
                     <div className="h-40 overflow-y-auto p-3 space-y-1 bg-muted/30">
                         {messages.map((m, i) => (
                             <div key={i} className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  {m.sender.slice(0, 6)}:
-                </span>{' '}
+                                <span className="font-medium text-muted-foreground">
+                                    {m.sender.slice(0, 6)}:
+                                </span>{' '}
                                 {m.text}
                             </div>
                         ))}
