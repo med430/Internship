@@ -1,10 +1,17 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { RecruiterProfile } from '../../../Domain/entities/recruiter-profile.entity';
 import { GetRecruiterProfileQuery } from '../../../Application/Features/RecruiterProfileFeature/Queries/get-recruiter-profile.query';
 import { GetRecruiterProfilesQuery } from '../../../Application/Features/RecruiterProfileFeature/Queries/get-recruiter-profiles.query';
 
 @Resolver('RecruiterProfile')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class RecruiterProfileResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

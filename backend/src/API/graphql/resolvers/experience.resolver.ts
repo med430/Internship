@@ -1,6 +1,11 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
 import { Experience } from '../../../Domain/entities/experience.entity';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { GetExperienceQuery } from '../../../Application/Features/ExperienceFeature/Queries/get-experience.query';
 import { GetExperiencesQuery } from '../../../Application/Features/ExperienceFeature/Queries/get-experiences.query';
 import {
@@ -9,6 +14,8 @@ import {
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity';
 
 @Resolver('Experience')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class ExperienceResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

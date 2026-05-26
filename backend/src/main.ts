@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {ValidationPipe} from "@nestjs/common";
+import { ValidationPipe } from "@nestjs/common";
 import * as dotenv from "dotenv";
 import * as express from 'express'
 import { existsSync } from 'fs';
 import { resolve } from 'path';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 const envPathCandidates = [
   resolve(process.cwd(), '.env'),
@@ -22,6 +23,7 @@ async function bootstrap() {
     origin: [/^http:\/\/localhost:\d+$/],
     credentials: true,
   });
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT ?? 3000);
 }

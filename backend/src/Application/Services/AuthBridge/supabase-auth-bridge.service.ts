@@ -3,19 +3,23 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
-import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose'
+import * as jwt from 'jsonwebtoken'
 import { IUserRepository } from '../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../repositories/student-profile.repository'
 import { User } from '../../../Domain/entities/user.entity'
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity'
 import { Role } from '../../../Domain/enums/role.enum'
 
-interface SupabaseJwtPayload extends JWTPayload {
+interface SupabaseJwtPayload {
     sub?: string
     email?: string
     role?: string
     user_metadata?: { role?: string; name?: string; lastname?: string; username?: string }
     app_metadata?:  { role?: string }
+    exp?: number
+    iat?: number
+    iss?: string
+    aud?: string | string[]
 }
 
 export interface ResolvedUser {
@@ -28,23 +32,23 @@ export interface ResolvedUser {
 @Injectable()
 export class SupabaseAuthBridge {
     private readonly logger = new Logger(SupabaseAuthBridge.name)
-    private readonly jwks: ReturnType<typeof createRemoteJWKSet>
-    private readonly issuer: string
+    private readonly jwtSecret: string
 
     constructor(
         cfg: ConfigService,
         @Inject(IUserRepository)            private readonly users:    IUserRepository,
         @Inject(IStudentProfileRepository)  private readonly profiles: IStudentProfileRepository,
     ) {
-        const baseUrl = (cfg.get<string>('NEXT_PUBLIC_SUPABASE_URL') ?? '').replace(/\/$/, '')
-        this.issuer = `${baseUrl}/auth/v1`
-        this.jwks = createRemoteJWKSet(new URL(`${this.issuer}/.well-known/jwks.json`))
+        this.jwtSecret = cfg.get<string>('SUPABASE_JWT_SECRET') ?? ''
+        if (!this.jwtSecret) {
+            this.logger.warn('SUPABASE_JWT_SECRET is not set — JWT verification will fail')
+        }
     }
 
-    // Verifies the JWT against Supabase's public keys, finds our User by sub, creates one if missing.
+    // Verifies the JWT using the Supabase JWT secret, finds our User by sub, creates one if missing.
     // Returns null for missing, malformed, expired, or forged tokens.
     async resolve(token: string | null | undefined): Promise<ResolvedUser | null> {
-        const payload = await this.verify(token)
+        const payload = this.verify(token)
         if (!payload?.sub) return null
 
         const existing = await this.users.findById(payload.sub)
@@ -55,12 +59,11 @@ export class SupabaseAuthBridge {
         return this.provision(payload)
     }
 
-    // Performs proper signature verification using ES256 keys served from Supabase's JWKS endpoint.
-    private async verify(token: string | null | undefined): Promise<SupabaseJwtPayload | null> {
+    // Performs signature verification using the Supabase JWT secret (HS256).
+    private verify(token: string | null | undefined): SupabaseJwtPayload | null {
         if (!token) return null
         try {
-            const { payload } = await jwtVerify(token, this.jwks, { issuer: this.issuer })
-            return payload as SupabaseJwtPayload
+            return jwt.verify(token, this.jwtSecret) as SupabaseJwtPayload
         } catch (err) {
             this.logger.debug(`token rejected: ${(err as Error).message}`)
             return null

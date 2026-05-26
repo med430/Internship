@@ -10,6 +10,9 @@ import {
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { CreateOfferDTO } from './dto/create-offer.dto'
@@ -19,7 +22,8 @@ import { CreateOfferCommand } from '../../../Application/Features/OfferFeature/C
 import { UpdateOfferCommand } from '../../../Application/Features/OfferFeature/Commands/update-offer.command'
 import { DeleteOfferCommand } from '../../../Application/Features/OfferFeature/Commands/delete-offer.command'
 @Controller('offers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.RECRUITER)
 export class OfferController {
 
     constructor(private readonly bus: CommandBus) {}

@@ -1,5 +1,10 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { Application } from '../../../Domain/entities/application.entity';
 import { GetApplicationQuery } from '../../../Application/Features/ApplicationFeature/Queries/get-application.query';
 import { GetApplicationsQuery } from '../../../Application/Features/ApplicationFeature/Queries/get-applications.query';
@@ -13,6 +18,8 @@ import { CoverLetter } from '../../../Domain/entities/coverletter.entity';
 import { GetCoverLetterQuery } from '../../../Application/Features/CoverLetterFeature/Queries/get-cover-letter.query';
 
 @Resolver('Application')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class ApplicationResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

@@ -10,6 +10,9 @@ import { CommandBus } from '@nestjs/cqrs'
 import type { Response } from 'express'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 import {FileInterceptor} from "@nestjs/platform-express";
 import {memoryStorage} from "multer";
@@ -19,7 +22,8 @@ import {DownloadOwnCVCommand} from "../../../Application/Features/CvFeature/Comm
 import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 @Controller('cvs')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class CVController {
 
     constructor(

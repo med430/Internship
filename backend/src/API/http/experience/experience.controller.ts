@@ -10,6 +10,9 @@ import {
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { CreateExperienceDTO } from './dto/create-experience.dto'
@@ -20,7 +23,8 @@ import { UpdateExperienceCommand } from '../../../Application/Features/Experienc
 import { DeleteExperienceCommand } from '../../../Application/Features/ExperienceFeature/Commands/delete-experience.command'
 
 @Controller('experiences')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class ExperienceController {
 
     constructor(private readonly bus: CommandBus) {}

@@ -1,5 +1,10 @@
 import { Query, Args, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { GetSkillAssignmentsQuery } from '../../../Application/Features/SkillAssignmentFeature/Queries/get-skill-assignments.query';
 import { GetSkillAssignmentQuery } from '../../../Application/Features/SkillAssignmentFeature/Queries/get-skill-assignment.query';
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity';
@@ -13,6 +18,8 @@ import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/
 import { User } from '../../../Domain/entities/user.entity';
 
 @Resolver(StudentProfile)
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class StudentProfileResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

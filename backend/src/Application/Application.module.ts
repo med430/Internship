@@ -47,6 +47,7 @@ import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/h
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
 import { StartInterviewHandler } from './Features/InterviewFeature/Commands/handlers/start-interview.handler';
 import { AnswerInterviewHandler } from './Features/InterviewFeature/Commands/handlers/answer-interview.handler';
+import { UpdateUserRoleHandler } from './Features/UserFeature/Commands/handlers/update-user-role.handler';
 
 // ── Query handlers ─────────────────────────────────────────
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
@@ -130,6 +131,7 @@ const CommandHandlers = [
   StartInterviewHandler,
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
+  UpdateUserRoleHandler,
 ];
 
 const QueryHandlers = [
@@ -224,6 +226,7 @@ const QueryHandlers = [
     JwtModule,
     PassportModule,
     FileStorageModule,
+    PersistenceModule,
     InterviewAiService,
     ContentScoringService,
     ScoringService,

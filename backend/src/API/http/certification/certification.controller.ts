@@ -10,6 +10,9 @@ import {
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 import {CreateCertificationDTO} from "./dto/create-certification.dto";
 import {
@@ -23,7 +26,8 @@ import {
 } from "../../../Application/Features/CertificationFeature/Commands/delete-certification.command";
 import {UpdateCertificationDTO} from "./dto/update-certification.dto";
 @Controller('certifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class CertificationController {
 
     constructor(private readonly bus: CommandBus) {}

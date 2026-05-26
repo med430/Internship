@@ -5,8 +5,8 @@ import {HttpApiModule} from "./API/http/http.module";
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLAPIModule } from './API/graphql/graphql.module';
 import { resolve } from 'path';
-import {CallGateway} from "./API/websocket/gateways/call.gateway";
 import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
+import { CallGateway } from './API/websocket/gateways/call.gateway';
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),

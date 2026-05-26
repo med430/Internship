@@ -25,6 +25,7 @@ export default async function ServicesLayout({
   }
 
   const profile = await getServerProfile();
+  const role = (user.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
     name: profile?.name || user.user_metadata?.name || "User",
@@ -32,11 +33,12 @@ export default async function ServicesLayout({
     avatar:
       (profile?.avatar_url as string) || user.user_metadata?.avatar_url || "",
     profileCompletion: calculateProfileCompletion(profile),
+    role,
   };
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar role={role} />
       <main className="flex-1 w-full">
         <div className="border-b h-16 px-4 flex items-center justify-between bg-slate-100 dark:bg-neutral-950 shadow-sm z-50 fixed top-0 left-0 right-0">
           <div className="flex items-center gap-3">

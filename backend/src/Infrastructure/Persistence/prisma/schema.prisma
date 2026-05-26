@@ -646,14 +646,3 @@ model PublicInterview {
   @@index([sessionKey])
   @@index([createdAt])
 }
-
-model PublicCoverLetter {
-  id         String   @id @default(uuid())
-  sessionKey String
-  fileUrl    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([sessionKey])
-  @@index([createdAt])
-}
