@@ -90,6 +90,11 @@ import { MlClientService } from './Services/RecommendationService/ml-client.serv
 import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
 import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFeature/Commands/handlers/compute-recommendations.handler';
 import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
+import { CreateConversationHandler } from './Features/ChatFeature/Commands/handlers/create-conversation.handler';
+import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/send-message.handler';
+import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
+import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
+import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 
@@ -132,6 +137,8 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
+  CreateConversationHandler,
+  SendMessageHandler,
 ];
 
 const QueryHandlers = [
@@ -180,6 +187,9 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
+  // Chat
+  GetConversationsHandler,
+  GetMessagesHandler,
 ];
 
 @Global()
@@ -189,6 +199,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    ChatPersistenceModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ← ajout
