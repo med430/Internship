@@ -56,5 +56,26 @@ export function useVideo({ onChunk, localVideoRef }: UseVideoOptions) {
         setCameraOn(false);
     }, [localVideoRef]);
 
-    return { cameraOn, startCamera, stopCamera };
+    const restartRecorder = useCallback(() => {
+        const stream = streamRef.current;
+        if (!stream) return;
+
+        recorderRef.current?.stop();
+
+        const recorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp8',
+            videoBitsPerSecond: 500_000,
+        });
+
+        recorder.ondataavailable = async (e) => {
+            if (e.data.size === 0) return;
+            const buffer = await e.data.arrayBuffer();
+            onChunk(buffer);
+        };
+
+        recorder.start(100);
+        recorderRef.current = recorder;
+    }, [onChunk]);
+
+    return { cameraOn, startCamera, stopCamera, restartRecorder };
 }

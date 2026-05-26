@@ -8,6 +8,8 @@ import {
   Project as PrismaProject,
   SkillAssignment as PrismaSkillAssignment,
   StudentProfile as PrismaStudentProfile,
+  WorkMode as PrismaWorkMode,
+  OfferType as PrismaOfferType,
 } from '@prisma/client'
 import {IGenericMapper} from './generic.mapper'
 import {StudentProfile} from "../../../../Domain/entities/student-profile.entity";
@@ -19,6 +21,8 @@ import {SkillAssignment} from "../../../../Domain/entities/skill-assignment.enti
 import {Gender} from "../../../../Domain/enums/gender";
 import {Education} from "../../../../Domain/entities/education.entity";
 import {Project} from "../../../../Domain/entities/project.entity";
+import {WorkMode} from "../../../../Domain/enums/workMode";
+import {OfferType} from "../../../../Domain/enums/offer-type.enum";
 
 type PrismaStudentProfileFull = PrismaStudentProfile & {
   skills:         PrismaSkillAssignment[]
@@ -103,6 +107,19 @@ export class StudentProfileMapper implements IGenericMapper<StudentProfile, Pris
             cv.deletedAt ?? undefined,
         )),
         raw.domains ?? [],
+
+        raw.preferredDomains ?? [],
+        raw.preferredCities ?? [],
+        raw.preferredWorkMode ? (raw.preferredWorkMode as WorkMode) : undefined,
+        raw.availableFrom ?? undefined,
+        raw.availableTo ?? undefined,
+        raw.paidOnly,
+        (raw.preferredOfferTypes ?? []) as unknown as OfferType[],
+        raw.languages ?? [],
+        raw.maxCommuteCities ?? [],
+        raw.schoolId ?? undefined,
+        raw.currentYear ?? undefined,
+        raw.currentProgram ?? undefined,
     )
   }
 
@@ -116,6 +133,19 @@ export class StudentProfileMapper implements IGenericMapper<StudentProfile, Pris
       address:   domain.address   ?? null,
       city:      domain.city      ?? null,
       domains:   domain.domains   ?? [],
+
+      preferredDomains:    domain.preferredDomains ?? [],
+      preferredCities:     domain.preferredCities ?? [],
+      preferredWorkMode:   (domain.preferredWorkMode ?? null) as PrismaWorkMode | null,
+      availableFrom:       domain.availableFrom ?? null,
+      availableTo:         domain.availableTo ?? null,
+      paidOnly:            domain.paidOnly,
+      preferredOfferTypes: (domain.preferredOfferTypes ?? []) as unknown as PrismaOfferType[],
+      languages:           domain.languages ?? [],
+      maxCommuteCities:    domain.maxCommuteCities ?? [],
+      schoolId:            domain.schoolId ?? null,
+      currentYear:         domain.currentYear ?? null,
+      currentProgram:      domain.currentProgram ?? null,
     }
   }
 }

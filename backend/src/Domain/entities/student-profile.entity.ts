@@ -5,6 +5,8 @@ import {Project} from "./project.entity";
 import {Education} from "./education.entity";
 import {Certification} from "./certification.entity";
 import {Gender} from "../enums/gender";
+import {WorkMode} from "../enums/workMode";
+import {OfferType} from "../enums/offer-type.enum";
 
 export class StudentProfile {
     constructor(
@@ -29,5 +31,21 @@ export class StudentProfile {
         public cvs: CV[] = [],
 
         public domains: string[] = [],
+
+        // Recommendation preferences
+        public preferredDomains: string[] = [],
+        public preferredCities: string[] = [],
+        public preferredWorkMode?: WorkMode,
+        public availableFrom?: Date,
+        public availableTo?: Date,
+        public paidOnly: boolean = false,
+        public preferredOfferTypes: OfferType[] = [],
+        public languages: string[] = [],
+        public maxCommuteCities: string[] = [],
+
+        // Academic context
+        public schoolId?: number,
+        public currentYear?: number,
+        public currentProgram?: string,
     ) {}
 }
