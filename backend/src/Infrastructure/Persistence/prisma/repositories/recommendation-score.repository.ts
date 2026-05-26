@@ -42,13 +42,14 @@ export class RecommendationScoreRepositoryImpl
         return row ? this.mapper.toDomain(row) : null
     }
 
+    // Upserts in parallel chunks; no transaction (scores are idempotent so partial writes are safe).
     async upsertMany(scores: RecommendationScore[]): Promise<number> {
         if (scores.length === 0) return 0
 
-        // Prisma has no native batch-upsert; sequential upserts inside a transaction.
-        // Acceptable for thousands × hundreds. If volumes grow, switch to raw SQL INSERT ... ON CONFLICT.
-        await this.prisma.$transaction(
-            scores.map(s =>
+        const CHUNK_SIZE = 25
+        for (let i = 0; i < scores.length; i += CHUNK_SIZE) {
+            const chunk = scores.slice(i, i + CHUNK_SIZE)
+            await Promise.all(chunk.map(s =>
                 this.prisma.recommendationScore.upsert({
                     where: { studentId_offerId: { studentId: s.studentId, offerId: s.offerId } },
                     create: {
@@ -73,8 +74,8 @@ export class RecommendationScoreRepositoryImpl
                         computedAt:    s.computedAt,
                     },
                 })
-            )
-        )
+            ))
+        }
         return scores.length
     }
 

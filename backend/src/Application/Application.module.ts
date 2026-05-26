@@ -83,6 +83,10 @@ import { ScoringService } from './Services/RecommendationService/scoring.service
 import { IMlClient } from './Services/RecommendationService/ml-client.interface';
 import { MlClientService } from './Services/RecommendationService/ml-client.service';
 import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
+import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFeature/Commands/handlers/compute-recommendations.handler';
+import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
+import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
+import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 
 const CommandHandlers = [
   LoginHandler,
@@ -119,6 +123,7 @@ const CommandHandlers = [
   UpdateSkillHandler,
   StartInterviewHandler,
   AnswerInterviewHandler,
+  ComputeRecommendationsHandler,
 ];
 
 const QueryHandlers = [
@@ -163,6 +168,8 @@ const QueryHandlers = [
   // Interviews
   GetInterviewQueryHandler,
   GetInterviewsQueryHandler,
+  // Recommendation feed
+  GetRecommendedOffersHandler,
 ];
 
 @Global()
@@ -191,6 +198,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    OfferFeedService,
+    SupabaseAuthBridge,
     {
       provide: IMlClient,
       useFactory: (cfg: ConfigService) =>
@@ -210,6 +219,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    OfferFeedService,
+    SupabaseAuthBridge,
     IMlClient,
   ],
 })

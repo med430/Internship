@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {HttpApiModule} from "./API/http/http.module";
-import {TypeOrmModule} from "@nestjs/typeorm";
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLAPIModule } from './API/graphql/graphql.module';
 import { resolve } from 'path';
 import {CallGateway} from "./API/websocket/gateways/call.gateway";
+import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),
@@ -24,6 +24,10 @@ const envFilePaths = [
   ],
   controllers: [AppController],
   providers: [AppService, CallGateway],
-  
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // Auto-syncs any Supabase-authenticated request to a NeonDB User row. Runs before every route, never blocks.
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(SupabaseSyncMiddleware).forRoutes('*')
+  }
+}

@@ -21,10 +21,14 @@ import { memoryStorage } from 'multer'
 import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
 
 @Controller()
 export class OnboardController {
-    constructor(private readonly onboardService: OnboardService) {}
+    constructor(
+        private readonly onboardService: OnboardService,
+        private readonly offerFeed: OfferFeedService,
+    ) {}
 
     @Get('health')
     health() {
@@ -52,18 +56,78 @@ export class OnboardController {
         return this.onboardService.updateProfile(this.getSessionKey(req), dto)
     }
 
+    // Authenticated student → personalised feed (jobs key preserved). Anonymous → existing demo filter flow.
     @Post('jobs/filter')
-    async filterJobs(@Body() body: Record<string, any>) {
+    async filterJobs(@Req() req: Request, @Body() body: Record<string, any>) {
+        const outcome = await this.offerFeed.dispatch({
+            bearerToken: this.extractBearerToken(req.header('authorization')),
+            limit: typeof body.limit === 'number' ? body.limit : 20,
+            cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+        })
+
+        if (outcome.kind === 'authenticated') {
+            return {
+                success: true,
+                jobs: outcome.page.items.map((item) => this.mapItemToJobDocument(item)),
+                total_found: outcome.page.items.length,
+                next_cursor: outcome.page.nextCursor,
+                source: outcome.page.source,
+                message: `Found ${outcome.page.items.length} matches for you.`,
+            }
+        }
+
         return this.onboardService.filterJobs(body, body.resume_content, body.limit)
     }
 
+    // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
-    async matchJobs(@Body() body: Record<string, any>) {
+    async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
+        const outcome = await this.offerFeed.dispatch({
+            bearerToken: this.extractBearerToken(req.header('authorization')),
+            limit: typeof body.limit === 'number' ? body.limit : 20,
+            cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+        })
+
+        if (outcome.kind === 'authenticated') {
+            return {
+                success: true,
+                matches: outcome.page.items.map((item) => this.mapItemToJobDocument(item)),
+                total_found: outcome.page.items.length,
+                next_cursor: outcome.page.nextCursor,
+                source: outcome.page.source,
+                message: `Found ${outcome.page.items.length} matches for you.`,
+            }
+        }
+
         if (!body.resume_content) {
             throw new BadRequestException('resume_content is required')
         }
-
         return this.onboardService.matchJobs(body.resume_content, body.limit)
+    }
+
+    // Shapes a ranked offer into the JobDocument format the frontend expects.
+    private mapItemToJobDocument(item: { offer: any; score: number; breakdown?: any; bookmarked: boolean }) {
+        const offer = item.offer
+        const salary = offer.stipendMin && offer.stipendMax
+            ? `${offer.stipendMin}-${offer.stipendMax} TND`
+            : offer.isPaid ? 'paid' : 'unpaid'
+        return {
+            job_id: offer.id,
+            title: offer.title,
+            company: offer.company,
+            location: offer.location,
+            description: offer.description,
+            work_model: offer.workMode,
+            employment_type: offer.type,
+            job_function: offer.domain,
+            salary,
+            source: 'stagio',
+            source_url: `/services/jobmatcher/${offer.id}`,
+            posted_date: (offer.createdAt ?? new Date()).toISOString(),
+            match_score: Math.round(item.score * 100),
+            score_breakdown: item.breakdown,
+            bookmarked: item.bookmarked,
+        }
     }
 
     @Get('virtual-interviewer/personas')

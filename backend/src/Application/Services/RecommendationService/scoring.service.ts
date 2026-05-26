@@ -25,7 +25,7 @@ export class ScoringService {
 
         return new RecommendationScore(
             randomUUID(),
-            student.id,
+            student.userId,
             offer.id,
             contentScore,
             finalScore,

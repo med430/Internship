@@ -3,6 +3,7 @@ import {
   Database,
   FileText,
   MessageSquareText,
+  Shield,
   Target,
   Video,
   type LucideIcon,
@@ -19,6 +20,11 @@ export const PRIMARY_ITEMS: SidebarMenuEntry[] = [
     title: "Jobmatcher",
     url: "/services/jobmatcher",
     icon: Target,
+  },
+  {
+    title: "Recommendation Admin",
+    url: "/services/admin/recommendations",
+    icon: Shield,
   },
 ];
 
