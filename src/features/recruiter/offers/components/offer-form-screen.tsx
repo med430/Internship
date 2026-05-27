@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeCheck, Briefcase, Building2, MapPin, Sparkles, Tag } from "lucide-react";
 
+import { createClient } from "@/utils/supabase/client";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-function readToken(): string | null {
-  if (typeof document === "undefined") return null;
-  return document.cookie.split('; ').find(s => s.startsWith('recruiter_token='))?.split('=')[1] || null;
+async function getSupabaseToken(): Promise<string | null> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
@@ -50,7 +53,7 @@ export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = readToken();
+    const token = await getSupabaseToken();
     try {
       const body = {
         title,

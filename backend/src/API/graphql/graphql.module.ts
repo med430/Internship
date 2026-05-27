@@ -21,11 +21,8 @@ import { SkillAssignmentResolver } from './resolvers/skill-assignment.resolver';
 import { ApplicationResolver } from './resolvers/application.resolver';
 import { InterviewResolver } from './resolvers/interview.resolver';
 import { RecommendationResolver } from './resolvers/recommendation.resolver';
-import { InterviewResolver } from './resolvers/interview.resolver';
-import { ApplicationResolver } from './resolvers/application.resolver';
 import { StudentProfileResolver } from './resolvers/student-profile.resolver';
 import { RecruiterProfileResolver } from './resolvers/recruiter-profile.resolver';
-import { CoverletterResolver } from './resolvers/coverletter.resolver';
 
 @Module({
   imports: [
@@ -54,11 +51,8 @@ import { CoverletterResolver } from './resolvers/coverletter.resolver';
     ApplicationResolver,
     InterviewResolver,
     RecommendationResolver,
-    InterviewResolver,
-    ApplicationResolver,
     StudentProfileResolver,
     RecruiterProfileResolver,
-    CoverletterResolver,
   ],
 })
 export class GraphQLAPIModule {}

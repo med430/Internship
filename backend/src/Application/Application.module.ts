@@ -1,17 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 
 import { PersistenceModule } from '../Infrastructure/Persistence/persistence.module';
-import { AuthService } from './Services/AuthService/AuthService';
-import { JwtAuthService } from '../Infrastructure/auth/jwt-auth.service';
-import { JwtStrategy } from '../API/http/guards/jwt.strategy';
 import { FileStorageModule } from '../Infrastructure/storage/file.module';
 
-// ── Command handlers (unchanged) ──────────────────────────
-import { LoginHandler } from './Features/AuthFeature/Commands/handlers/login.handler';
+// ── Command handlers ───────────────────────────────────────
 import { RegisterRecruiterHandler } from './Features/AuthFeature/Commands/handlers/register-recruiter.handler';
 import { RegisterStudentHandler } from './Features/AuthFeature/Commands/handlers/register-student.handler';
 import { CreateOfferHandler } from './Features/OfferFeature/Commands/handlers/create-offer.handler';
@@ -104,7 +98,6 @@ import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
 
 const CommandHandlers = [
-  LoginHandler,
   RegisterStudentHandler,
   RegisterRecruiterHandler,
   CreateOfferHandler,
@@ -213,23 +206,11 @@ const QueryHandlers = [
     PersistenceModule,
     ChatPersistenceModule,
     NotificationPersistenceModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule], // ← ajout
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: Number(config.get('JWT_EXPIRATION_TIME') || 3600),
-        },
-      }),
-    }),
   ],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
     ...NotificationHandlers,
-    JwtStrategy,
     InterviewAiService,
     ContentScoringService,
     ScoringService,
@@ -241,15 +222,9 @@ const QueryHandlers = [
         cfg.get<string>('ML_MOCK') === 'true' ? new MlClientMock() : new MlClientService(cfg),
       inject: [ConfigService],
     },
-    {
-      provide: AuthService,
-      useClass: JwtAuthService,
-    },
   ],
   exports: [
     CqrsModule,
-    JwtModule,
-    PassportModule,
     FileStorageModule,
     PersistenceModule,
     NotificationPersistenceModule,

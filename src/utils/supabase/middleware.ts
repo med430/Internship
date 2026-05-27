@@ -32,16 +32,15 @@ export const updateSession = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Accept backend-issued JWT stored in cookie as an authentication signal
-  // so pages protected by the middleware don't force a Supabase login when
-  // the backend token is present (interview_token).
-  const interviewToken = request.cookies.get("interview_token")?.value;
-
   const protectedRoutes = ["/services", "/profile", "/settings"];
+  const recruiterRoutes = ["/recruiter/offers", "/recruiter/applications"];
   const authRoutes = ["/login", "/signup", "/forgot-password"];
   const adminRoutes = ["/services/admin"];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
+  const isRecruiterRoute = recruiterRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
   const isAuthRoute = authRoutes.some((route) =>
@@ -51,10 +50,14 @@ export const updateSession = async (request: NextRequest) => {
     request.nextUrl.pathname.startsWith(route),
   );
 
-  if (isProtectedRoute && !user && !interviewToken) {
+  if (isProtectedRoute && !user) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isRecruiterRoute && !user) {
+    return NextResponse.redirect(new URL("/recruiter/login", request.url));
   }
 
   if (isAdminRoute && user?.app_metadata?.role !== "ADMIN") {

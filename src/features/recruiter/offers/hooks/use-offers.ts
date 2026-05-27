@@ -1,22 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-function readToken(): string | null {
-  if (typeof document === "undefined") return null;
-  return document.cookie.split('; ').find(s => s.startsWith('recruiter_token='))?.split('=')[1] || null;
+async function getSupabaseToken(): Promise<string | null> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 export function useOffers() {
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const token = readToken();
 
   const fetchOffers = useCallback(async () => {
     setLoading(true);
     try {
+      const token = await getSupabaseToken();
       const query = `
         query Offers($pageNumber: Int, $pageSize: Int) {
           offers(pageNumber: $pageNumber, pageSize: $pageSize) {
@@ -51,11 +53,12 @@ export function useOffers() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => { fetchOffers(); }, [fetchOffers]);
 
   const removeOffer = useCallback(async (id: string) => {
+    const token = await getSupabaseToken();
     if (!token) throw new Error('Not authenticated');
     const resp = await fetch(`${API_BASE}/offers/${id}/delete`, {
       method: 'PATCH',
@@ -63,7 +66,7 @@ export function useOffers() {
     });
     if (!resp.ok) throw new Error('Delete failed');
     await fetchOffers();
-  }, [token, fetchOffers]);
+  }, [fetchOffers]);
 
   return { offers, loading, fetchOffers, removeOffer };
 }

@@ -3,7 +3,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { cookies } from "next/headers";
 import { resolveRequestOrigin } from "./internal/form-origin";
 import { validatePasswordPolicy } from "./internal/password-rules";
 import {
@@ -70,7 +69,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     return { success: false, error: passwordPolicyError };
   }
 
-  const userMetadata: Record<string, string> = { role };
+  const userMetadata: Record<string, string> = { role, name, lastname, username };
   if (role === "RECRUITER") {
     const company = formData.get("company") as string;
     if (!company?.trim()) {
@@ -207,49 +206,6 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     return { success: false, error: error.message };
   }
 
-  // Retrieve backend JWT used by protected Nest endpoints.
-  try {
-    const backendResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        cache: "no-store",
-      },
-    );
-
-    if (!backendResponse.ok) {
-      const text = await backendResponse.text().catch(() => "");
-      return {
-        success: false,
-        error: text || "Backend login failed. Please ensure the backend is running.",
-      };
-    }
-
-    const backendPayload = (await backendResponse.json()) as { token?: string };
-    if (!backendPayload.token) {
-      return {
-        success: false,
-        error: "Backend login did not return a token",
-      };
-    }
-
-    const cookieStore = await cookies();
-    cookieStore.set("interview_token", backendPayload.token, {
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-  } catch {
-    return {
-      success: false,
-      error: "Backend login failed. Please ensure the backend is running.",
-    };
-  }
-
   redirect("/services/dashboard");
 }
 
@@ -321,12 +277,6 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  const cookieStore = await cookies();
-  cookieStore.set("interview_token", "", {
-    path: "/",
-    sameSite: "lax",
-    expires: new Date(0),
-  });
   redirect("/login");
 }
 

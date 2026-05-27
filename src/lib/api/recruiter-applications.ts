@@ -1,4 +1,5 @@
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { createClient } from "@/utils/supabase/client";
 
 export type RecruiterApplication = {
 	id: string;
@@ -32,42 +33,15 @@ type GraphQLRecruiterApplicationsResponse = {
 	errors?: Array<{ message?: string }>;
 };
 
-function readRecruiterToken(): string | null {
-	if (typeof document === "undefined") return null;
-
-	const cookieToken = document.cookie
-		.split("; ")
-		.find((entry) => entry.startsWith("recruiter_token="))
-		?.split("=")[1];
-
-	const localToken = window.localStorage.getItem("recruiter_token");
-	return cookieToken || localToken;
-}
-
-function parseJwtPayload(token: string): Record<string, unknown> | null {
-	try {
-		const parts = token.split(".");
-		if (parts.length < 2) return null;
-		const encoded = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-		const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
-		const decoded = atob(padded);
-		return JSON.parse(decoded) as Record<string, unknown>;
-	} catch {
-		return null;
-	}
-}
-
-function getRecruiterUserIdFromToken(): string | null {
-	const token = readRecruiterToken();
-	if (!token) return null;
-
-	const payload = parseJwtPayload(token);
-	const userId = payload?.userId;
-	return typeof userId === "string" && userId.trim() ? userId : null;
+async function getSupabaseToken(): Promise<string | null> {
+	if (typeof window === "undefined") return null;
+	const supabase = createClient();
+	const { data: { session } } = await supabase.auth.getSession();
+	return session?.access_token ?? null;
 }
 
 async function recruiterFetch(input: string, init: RequestInit = {}) {
-	const token = readRecruiterToken();
+	const token = await getSupabaseToken();
 	if (!token) {
 		throw new Error("You need to sign in as a recruiter again.");
 	}
@@ -135,16 +109,7 @@ export async function fetchRecruiterApplications(
 		throw new Error(payload.errors[0]?.message || "Failed to load applications");
 	}
 
-	const allApplications = payload.data?.applications || [];
-	const recruiterUserId = getRecruiterUserIdFromToken();
-
-	if (!recruiterUserId) {
-		return allApplications;
-	}
-
-	return allApplications.filter(
-		(application) => application.offer?.recruiterProfile?.user?.id === recruiterUserId,
-	);
+	return payload.data?.applications || [];
 }
 
 export async function updateRecruiterApplicationStatus(

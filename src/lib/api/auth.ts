@@ -26,11 +26,6 @@ function readBackendTokenFromStorage(): string | null {
 export async function getAccessToken(options?: {
   forceRefresh?: boolean;
 }): Promise<string> {
-  const backendToken = readBackendTokenFromStorage();
-  if (backendToken) {
-    return backendToken;
-  }
-
   const serverSnapshot = await resolveServerSessionSnapshot();
   if (serverSnapshot.accessToken) {
     return serverSnapshot.accessToken;
