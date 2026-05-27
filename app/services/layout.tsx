@@ -33,13 +33,13 @@ export default async function ServicesLayout({
 
   const [profile, me] = await Promise.all([getServerProfile(), getServerMe()]);
   // Role is sourced from NeonDB (the backend's RolesGuard reads the same place). JWT app_metadata is the fallback.
-  const role = me?.role ?? (user.app_metadata?.role as string | undefined) ?? undefined;
+  const role = me?.role ?? (user?.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
-    name: profile?.name || user.user_metadata?.name || "User",
-    email: profile?.email || user.email || "",
+    name: profile?.name || user?.user_metadata?.name || "User",
+    email: profile?.email || user?.email || "",
     avatar:
-      (profile?.avatar_url as string) || user.user_metadata?.avatar_url || "",
+      (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
     profileCompletion: calculateProfileCompletion(profile),
     role,
   };

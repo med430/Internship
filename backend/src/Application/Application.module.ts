@@ -90,8 +90,10 @@ import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFea
 import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
 import { CreateConversationHandler } from './Features/ChatFeature/Commands/handlers/create-conversation.handler';
 import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/send-message.handler';
+import { MarkMessagesReadHandler } from './Features/ChatFeature/Commands/handlers/mark-messages-read.handler';
 import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
 import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
+import { GetConversationByIdHandler } from './Features/ChatFeature/Queries/handlers/get-conversation-by-id.handler';
 import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
 import { NotificationPersistenceModule } from '../Infrastructure/notifications/notification-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
@@ -103,6 +105,9 @@ import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Quer
 import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
 import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
+import { UpgradeSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/upgrade-subscription.handler';
+import { CancelSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/cancel-subscription.handler';
+import { GetMySubscriptionHandler } from './Features/SubscriptionFeature/Queries/handlers/get-my-subscription.handler';
 
 // Local dev guard: skip chat handlers + ChatPersistenceModule when CHAT_DB_URL is unset (no MongoDB available).
 const chatEnabled = !!process.env.CHAT_DB_URL;
@@ -146,8 +151,13 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
+  CreateConversationHandler,
+  SendMessageHandler,
+  MarkMessagesReadHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
+  UpgradeSubscriptionHandler,
+  CancelSubscriptionHandler,
   ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
 ];
 
@@ -205,8 +215,14 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
+  // Chat
+  GetConversationsHandler,
+  GetMessagesHandler,
+  GetConversationByIdHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
+  // Subscription
+  GetMySubscriptionHandler,
   // Chat (skipped when CHAT_DB_URL unset)
   ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
 ];
@@ -218,6 +234,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    ChatPersistenceModule,
     NotificationPersistenceModule,
     ...(chatEnabled ? [ChatPersistenceModule] : []),
   ],

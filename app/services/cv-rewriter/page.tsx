@@ -1,5 +1,10 @@
 import { CVRewriterScreen } from "@/features/cv-rewriter/components/cv-rewriter-screen";
+import { SubscriptionGate } from "@/components/shared/subscription-gate";
 
 export default function CVRewriterPage() {
-  return <CVRewriterScreen />;
+  return (
+    <SubscriptionGate featureName="AI CV Rewriter">
+      <CVRewriterScreen />
+    </SubscriptionGate>
+  );
 }

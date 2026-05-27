@@ -1,14 +1,15 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs'
 import { Inject } from '@nestjs/common'
 import { ApplicationSubmittedEvent } from '../../../../../Domain/events/application-submitted.event'
-import { SseService } from '../../../../../API/http/sse/sse.service'
+import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
 
 @EventsHandler(ApplicationSubmittedEvent)
 export class ApplicationSubmittedHandler implements IEventHandler<ApplicationSubmittedEvent> {
     constructor(
-        private readonly sseService: SseService,
+        @Inject(INotificationEmitter)
+        private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
     ) {}
@@ -25,7 +26,7 @@ export class ApplicationSubmittedHandler implements IEventHandler<ApplicationSub
             false, new Date(), null,
         ))
 
-        this.sseService.sendToUser(recruiterUserId, {
+        this.notificationEmitter.sendToUser(recruiterUserId, {
             id: saved.id,
             type: 'application-submitted',
             title: saved.title,

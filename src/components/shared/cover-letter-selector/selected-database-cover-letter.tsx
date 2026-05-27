@@ -2,6 +2,8 @@ import { format } from "date-fns";
 import { FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CoverLetter } from "@/lib/api/cover-letters";
+import { fetchWithAuth } from "@/lib/api/auth";
+import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 
 interface SelectedDatabaseCoverLetterProps {
   letter: CoverLetter;
@@ -28,6 +30,75 @@ export function SelectedDatabaseCoverLetter({ letter, onRemove }: SelectedDataba
       >
         <X className="h-4 w-4" />
       </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={async () => {
+            try {
+              const apiUrl = getClientApiBaseUrl();
+              // Prefer onboard download, then uploaded route
+              const tryUrls = [`${apiUrl}/onboard/cover-letters/${letter.id}/download`, `${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
+              let blob: Blob | null = null;
+              for (const url of tryUrls) {
+                if (!url) continue;
+                try {
+                  const res = await fetchWithAuth(url, { method: 'GET' });
+                  if (!res.ok) continue;
+                  blob = await res.blob();
+                  break;
+                } catch {
+                  // try next
+                }
+              }
+              if (!blob) throw new Error('Failed to load preview');
+              const blobUrl = window.URL.createObjectURL(blob);
+              window.open(blobUrl, '_blank');
+            } catch (err) {
+              console.error(err);
+              alert('Failed to open cover letter preview');
+            }
+          }}
+        >
+          Preview
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={async () => {
+            try {
+              const apiUrl = getClientApiBaseUrl();
+              const tryUrls = [`${apiUrl}/onboard/cover-letters/${letter.id}/download`, `${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
+              let blob: Blob | null = null;
+              for (const url of tryUrls) {
+                if (!url) continue;
+                try {
+                  const res = await fetchWithAuth(url, { method: 'GET' });
+                  if (!res.ok) continue;
+                  blob = await res.blob();
+                  break;
+                } catch {
+                  // try next
+                }
+              }
+              if (!blob) throw new Error('Failed to download');
+              const blobUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = `cover_letter_${letter.id}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+              console.error(err);
+              alert('Failed to download cover letter');
+            }
+          }}
+        >
+          Download
+        </Button>
+      </div>
     </div>
   );
 }

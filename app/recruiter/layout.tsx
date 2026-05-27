@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { RecruiterSidebar } from "@/components/recruiter-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,10 +50,23 @@ export default async function RecruiterLayout({
   const { data: { user } } = await supabase.auth.getUser();
   const { data: { session } } = await supabase.auth.getSession();
 
-  const isAuthenticated = Boolean(user);
+  const role = (
+    (user?.app_metadata?.role ?? user?.user_metadata?.role ?? "") as string
+  ).toUpperCase();
+
+  // Safety net: middleware already redirects wrong-role users, but guard here too.
+  if (user && role !== "RECRUITER") {
+    redirect("/services/dashboard");
+  }
+
+  // Unauthenticated users only reach this layout for /recruiter/login or /recruiter/signup
+  // (middleware redirects them away from all other recruiter routes).
+  if (!user) {
+    return <main className="w-full">{children}</main>;
+  }
 
   let avatarUrl: string | null = null;
-  if (user?.email && session?.access_token) {
+  if (user.email && session?.access_token) {
     avatarUrl = await fetchRecruiterAvatar(session.access_token, user.email);
   }
 
@@ -61,10 +75,6 @@ export default async function RecruiterLayout({
     email: user?.email ?? "",
     avatar: avatarUrl ?? undefined,
   };
-
-  if (!isAuthenticated) {
-    return <main className="w-full">{children}</main>;
-  }
 
   return (
     <SidebarProvider>

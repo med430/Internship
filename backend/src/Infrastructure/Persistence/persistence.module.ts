@@ -25,6 +25,7 @@ import { ProfileViewMapper } from './prisma/mappers/profile-view.mapper';
 import { SearchQueryMapper } from './prisma/mappers/search-query.mapper';
 import { RecommendationScoreMapper } from './prisma/mappers/recommendation-score.mapper'
 import { InterviewSlotMapper } from './prisma/mappers/interview-slot.mapper';
+import { SubscriptionMapper } from './prisma/mappers/subscription.mapper';
 
 // Interfaces
 import { IUserRepository } from '../../Application/repositories/user.repository';
@@ -49,6 +50,7 @@ import { IProfileViewRepository } from '../../Application/repositories/profile-v
 import { ISearchQueryRepository } from '../../Application/repositories/search-query.repository';
 import { IRecommendationScoreRepository } from '../../Application/repositories/recommendation-score.repository'
 import { IInterviewSlotRepository } from '../../Application/repositories/interview-slot.repository';
+import { ISubscriptionRepository } from '../../Application/repositories/subscription.repository';
 
 // Implementations
 import { UserRepositoryImpl } from './prisma/repositories/user.prisma.repository';
@@ -73,6 +75,7 @@ import { ProfileViewRepositoryImpl } from './prisma/repositories/profile-view.re
 import { SearchQueryRepositoryImpl } from './prisma/repositories/search-query.repository';
 import { RecommendationScoreRepositoryImpl } from './prisma/repositories/recommendation-score.repository'
 import { InterviewSlotRepositoryImpl } from './prisma/repositories/interview-slot.repository';
+import { SubscriptionRepositoryImpl } from './prisma/repositories/subscription.repository';
 
 const repositories = [
     { provide: IUserRepository,                  useClass: UserRepositoryImpl },
@@ -97,6 +100,7 @@ const repositories = [
     { provide: ISearchQueryRepository,           useClass: SearchQueryRepositoryImpl },
     { provide: IRecommendationScoreRepository,   useClass: RecommendationScoreRepositoryImpl },
     { provide: IInterviewSlotRepository,         useClass: InterviewSlotRepositoryImpl },
+    { provide: ISubscriptionRepository,          useClass: SubscriptionRepositoryImpl },
 ]
 
 const mappers = [
@@ -122,6 +126,7 @@ const mappers = [
     SearchQueryMapper,
     RecommendationScoreMapper,
     InterviewSlotMapper,
+    SubscriptionMapper,
 ]
 
 @Module({
@@ -154,6 +159,7 @@ const mappers = [
         ISearchQueryRepository,
         IRecommendationScoreRepository,
         IInterviewSlotRepository,
+        ISubscriptionRepository,
     ],
 })
 export class PersistenceModule {}

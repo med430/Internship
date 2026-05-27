@@ -17,6 +17,7 @@ import { Role } from '../../../Domain/enums/role.enum'
 import { SupabaseUser } from '../decorators/supabase-user.decorator'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
 import { IStudentProfileRepository } from '../../../Application/repositories/student-profile.repository'
+import { IUserRepository } from '../../../Application/repositories/user.repository'
 import { UpdateStudentProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-student-profile.command'
 import { Gender } from '../../../Domain/enums/gender'
 import { UpdateMeProfileDto } from './dto/update-me-profile.dto'
@@ -29,15 +30,27 @@ export class MeProfileController {
     constructor(
         private readonly commandBus: CommandBus,
         @Inject(IStudentProfileRepository) private readonly studentRepo: IStudentProfileRepository,
+        @Inject(IUserRepository) private readonly userRepo: IUserRepository,
     ) {}
 
-    // Returns the current student's profile with all matching-relevant fields and their skill list.
+    // Returns the current student's full profile: User fields + StudentProfile fields + skills.
     @Get()
     async getProfile(@SupabaseUser() user: ResolvedUser) {
-        const profile = await this.studentRepo.findByUserId(user.id)
+        const [profile, dbUser] = await Promise.all([
+            this.studentRepo.findByUserId(user.id),
+            this.userRepo.findById(user.id),
+        ])
         if (!profile) throw new NotFoundException('Student profile not found')
 
         return {
+            // User fields
+            name: dbUser?.name ?? null,
+            lastname: dbUser?.lastname ?? null,
+            username: dbUser?.username ?? null,
+            phone: dbUser?.phone ?? null,
+            avatarUrl: dbUser?.avatarUrl ?? null,
+
+            // StudentProfile fields
             id: profile.id,
             userId: profile.userId,
             bio: profile.bio ?? null,
@@ -57,7 +70,7 @@ export class MeProfileController {
             paidOnly: profile.paidOnly ?? false,
             availableFrom: profile.availableFrom?.toISOString() ?? null,
             availableTo: profile.availableTo?.toISOString() ?? null,
-            
+
             skills: (profile.skills ?? []).map(sa => ({
                 id: sa.id,
                 skillId: sa.skillId,

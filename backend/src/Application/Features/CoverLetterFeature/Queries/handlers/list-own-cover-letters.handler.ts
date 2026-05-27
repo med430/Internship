@@ -19,7 +19,15 @@ export class ListOwnCoverLettersHandler implements IQueryHandler<ListOwnCoverLet
         const profile = await this.studentRepo.findByUserId(query.userId)
         if (!profile) throw new NotFoundException('Profile not found')
 
-        const all = await this.letterRepo.findByStudent(profile.id)
+        let all = await this.letterRepo.findByStudent(profile.id)
+
+        // Ensure newest-first ordering by updatedAt (or createdAt)
+        all = all.sort((a, b) => {
+            const aTime = (a.updatedAt ?? a.createdAt ?? new Date(0)).getTime()
+            const bTime = (b.updatedAt ?? b.createdAt ?? new Date(0)).getTime()
+            return bTime - aTime
+        })
+
         const total = all.length
         const totalPages = Math.max(1, Math.ceil(total / query.pageSize))
         const start = (query.page - 1) * query.pageSize

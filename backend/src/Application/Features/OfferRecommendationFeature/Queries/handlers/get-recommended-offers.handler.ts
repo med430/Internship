@@ -23,7 +23,7 @@ export interface RecommendedOfferDto {
 export interface RecommendedOffersPage {
     items: RecommendedOfferDto[]
     nextCursor: string | null
-    source: 'recommendation' | 'newest-fallback'
+    source: 'recommendation' | 'newest-fallback' | 'explore'
 }
 
 @QueryHandler(GetRecommendedOffersQuery)
@@ -43,6 +43,10 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
 
         if (query.savedOnly) {
             return this.bookmarkedFeed(query.studentUserId, limit, cursor)
+        }
+
+        if (query.explore) {
+            return this.exploreFeed(query.studentUserId, limit, cursor, query.exploreSeed)
         }
 
         const scores = await this.scores.findTopForStudent(query.studentUserId, RANKED_FEED_CANDIDATE_LIMIT)
@@ -124,6 +128,50 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         return { items: slice, nextCursor, source: 'newest-fallback' }
     }
 
+    // Offers tab: explore ranking, not personal match ranking. It mixes freshness, popularity,
+    // per-student view fatigue, deadline urgency, bookmarks, and a stable seeded shuffle.
+    private async exploreFeed(
+        studentUserId: string,
+        limit: number,
+        cursor: FeedCursor | null,
+        seed: number,
+    ): Promise<RecommendedOffersPage> {
+        const all = await this.offers.findAll()
+        const active = all.filter(o => !o.deletedAt && this.notPastDeadline(o))
+        const offerIds = active.map(o => o.id)
+        const [bookmarkedIds, viewCounts, globalViewCounts] = await Promise.all([
+            this.getBookmarkedOfferIds(studentUserId, offerIds),
+            this.views.countByStudent(studentUserId),
+            this.views.countByOffers(offerIds),
+        ])
+        const maxGlobalViews = Math.max(1, ...Array.from(globalViewCounts.values()))
+
+        const items = active
+            .map(offer => ({
+                offer,
+                score: this.exploreScore(
+                    offer,
+                    bookmarkedIds.has(offer.id),
+                    viewCounts.get(offer.id) ?? 0,
+                    globalViewCounts.get(offer.id) ?? 0,
+                    maxGlobalViews,
+                    seed,
+                ),
+                breakdown: undefined,
+                bookmarked: bookmarkedIds.has(offer.id),
+            }))
+            .sort((a, b) => b.score - a.score || (a.offer.id < b.offer.id ? 1 : -1))
+
+        const startIdx = cursor
+            ? items.findIndex(x => x.score < cursor.score || (x.score === cursor.score && x.offer.id < cursor.id))
+            : 0
+        const slice = items.slice(Math.max(0, startIdx), Math.max(0, startIdx) + limit)
+        const last = slice[slice.length - 1]
+        const nextCursor = slice.length === limit && last ? encodeCursor({ score: last.score, id: last.offer.id }) : null
+
+        return { items: slice, nextCursor, source: 'explore' }
+    }
+
     // Saved tab: active bookmarks only, reusing the same JobDocument mapper as the main feed.
     private async bookmarkedFeed(
         studentUserId: string,
@@ -189,6 +237,30 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         return clamp01(score.finalScore * freshness * viewedPenalty * deadlineUrgency + bookmarkBoost)
     }
 
+    private exploreScore(
+        offer: Offer,
+        isBookmarked: boolean,
+        viewCount: number,
+        globalViewCount: number,
+        maxGlobalViews: number,
+        seed: number,
+    ): number {
+        const ageDays = offer.createdAt ? (Date.now() - offer.createdAt.getTime()) / 86_400_000 : 0
+        const freshness = Math.max(0.35, Math.exp(-ageDays / 21))
+        const popularity = Math.log1p(globalViewCount) / Math.log1p(maxGlobalViews)
+        const viewedPenalty = viewCount >= 3 ? 0.65 : viewCount > 0 ? 0.85 : 1.0
+        const deadlineUrgency = this.deadlineFactor(offer.applicationDeadline)
+        const bookmarkBoost = isBookmarked ? 0.05 : 0
+        const seededNoise = deterministicNoise(`${seed}:${offer.id}`)
+
+        return clamp01(
+            (0.55 * freshness + 0.25 * popularity + 0.08 * seededNoise)
+            * viewedPenalty
+            * deadlineUrgency
+            + bookmarkBoost,
+        )
+    }
+
     // ×1.2 if deadline is within 3 days, ×1.0 otherwise (or unknown).
     private deadlineFactor(deadline?: Date): number {
         if (!deadline) return 1.0
@@ -219,4 +291,13 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
 
 function clamp01(value: number): number {
     return Math.max(0, Math.min(1, value))
+}
+
+function deterministicNoise(input: string): number {
+    let hash = 2166136261
+    for (let i = 0; i < input.length; i += 1) {
+        hash ^= input.charCodeAt(i)
+        hash = Math.imul(hash, 16777619)
+    }
+    return (hash >>> 0) / 0xffffffff
 }

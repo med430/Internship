@@ -2,55 +2,70 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Search,
-  SlidersHorizontal,
   Briefcase,
   RefreshCw,
   User,
   FileText,
+  ChevronDown,
+  Wifi,
+  CircleDollarSign,
+  Filter,
+  X,
 } from "lucide-react";
 import type { CVSource } from "@/components/shared/cv-selector";
-import type { JobSearchFilters } from "@/types/job-matcher";
 import JobMatcherHero from "@/components/services/job-matcher-hero";
-import type { ActiveFilterTag } from "../types";
-import { ActiveFilterTags } from "./active-filter-tags";
-import { JobMatcherQuickFilters } from "./job-matcher-quick-filters";
 import { SelectedCVBanner } from "./selected-cv-banner";
+import { cn } from "@/lib/utils";
+
+const ALL_TYPES = ["INTERNSHIP", "PFE", "RESEARCH", "PHD", "ALTERNANCE"];
+const ALL_MODES = ["remote", "hybrid", "onsite"];
 
 interface JobMatcherToolbarProps {
   searchQuery: string;
-  activeFilterTags: ActiveFilterTag[];
   selectedCVSource: CVSource | null;
   isExtractingCV: boolean;
   isLoading: boolean;
   shouldShowCVPrompt: boolean;
+  typeFilter: string[];
+  modeFilter: string[];
+  paidOnly: boolean;
+  hasDisplayFilters: boolean;
   onSearchChange: (value: string) => void;
   onOpenCVSelector: () => void;
   onRefresh: () => Promise<void>;
-  onOpenFilterModal: () => void;
-  onResetFilters: () => void;
-  onRemoveFilter: (type: keyof JobSearchFilters, value: string) => void;
-  onAddQuickFilter: (
-    type: keyof JobSearchFilters,
-    value: string | number,
-  ) => void;
+  onTypeFilterChange: (types: string[]) => void;
+  onModeFilterChange: (modes: string[]) => void;
+  onPaidOnlyChange: (value: boolean) => void;
+  onClearDisplayFilters: () => void;
   onRemoveCV: () => void;
 }
 
 export function JobMatcherToolbar({
   searchQuery,
-  activeFilterTags,
   selectedCVSource,
   isExtractingCV,
   isLoading,
   shouldShowCVPrompt,
+  typeFilter,
+  modeFilter,
+  paidOnly,
+  hasDisplayFilters,
   onSearchChange,
   onOpenCVSelector,
   onRefresh,
-  onOpenFilterModal,
-  onResetFilters,
-  onRemoveFilter,
-  onAddQuickFilter,
+  onTypeFilterChange,
+  onModeFilterChange,
+  onPaidOnlyChange,
+  onClearDisplayFilters,
   onRemoveCV,
 }: JobMatcherToolbarProps) {
   return (
@@ -114,42 +129,141 @@ export function JobMatcherToolbar({
           )}
 
           <div className="space-y-4">
-            <div className="flex gap-3 max-w-3xl">
-              <div className="relative flex-1">
+            {/* Unified inline filter bar */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search by title, company..."
+                  placeholder="Search by title, company, description..."
                   value={searchQuery}
-                  onChange={(event) => onSearchChange(event.target.value)}
-                  className="pl-10"
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="pl-10 h-9"
                 />
               </div>
+
+              {/* Type filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-9 gap-1.5",
+                      typeFilter.length && "border-primary text-primary",
+                    )}
+                  >
+                    <Filter className="h-3.5 w-3.5" />
+                    Type
+                    {typeFilter.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="h-4 px-1 text-[10px]"
+                      >
+                        {typeFilter.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuLabel className="text-xs">
+                    Offer type
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ALL_TYPES.map((t) => (
+                    <DropdownMenuCheckboxItem
+                      key={t}
+                      checked={typeFilter.includes(t)}
+                      onCheckedChange={(v) =>
+                        onTypeFilterChange(
+                          v ? [...typeFilter, t] : typeFilter.filter((x) => x !== t),
+                        )
+                      }
+                      className="text-xs"
+                    >
+                      {t.charAt(0) + t.slice(1).toLowerCase()}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Work mode filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-9 gap-1.5",
+                      modeFilter.length && "border-primary text-primary",
+                    )}
+                  >
+                    <Wifi className="h-3.5 w-3.5" />
+                    Mode
+                    {modeFilter.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="h-4 px-1 text-[10px]"
+                      >
+                        {modeFilter.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40">
+                  <DropdownMenuLabel className="text-xs">
+                    Work mode
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ALL_MODES.map((m) => (
+                    <DropdownMenuCheckboxItem
+                      key={m}
+                      checked={modeFilter.includes(m)}
+                      onCheckedChange={(v) =>
+                        onModeFilterChange(
+                          v ? [...modeFilter, m] : modeFilter.filter((x) => x !== m),
+                        )
+                      }
+                      className="text-xs"
+                    >
+                      {m.charAt(0).toUpperCase() + m.slice(1)}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Paid only */}
               <Button
                 variant="outline"
-                className="gap-2"
-                onClick={onOpenFilterModal}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                Edit Filters
-                {activeFilterTags.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 h-5 w-5 rounded-full p-0 text-xs"
-                  >
-                    {activeFilterTags.length}
-                  </Badge>
+                size="sm"
+                onClick={() => onPaidOnlyChange(!paidOnly)}
+                className={cn(
+                  "h-9 gap-1.5",
+                  paidOnly && "border-green-500 text-green-600 dark:text-green-400",
                 )}
+              >
+                <CircleDollarSign className="h-3.5 w-3.5" />
+                Paid only
               </Button>
+
+              {/* Clear */}
+              {(hasDisplayFilters || searchQuery) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onSearchChange("");
+                    onClearDisplayFilters();
+                  }}
+                  className="h-9 gap-1.5 text-muted-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              )}
             </div>
-
-            <ActiveFilterTags
-              tags={activeFilterTags}
-              onReset={onResetFilters}
-              onRemove={onRemoveFilter}
-            />
-
-            {/* <JobMatcherQuickFilters onAddQuickFilter={onAddQuickFilter} /> */}
 
             {shouldShowCVPrompt && (
               <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-md p-6 text-center">

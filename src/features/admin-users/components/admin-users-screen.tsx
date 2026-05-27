@@ -19,8 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { updateUserRole } from "@/lib/actions/admin-actions";
 import type { AdminUser } from "@/lib/api/admin-client";
+
+const PAGE_SIZE = 20;
 
 type Role = AdminUser["role"];
 
@@ -36,6 +47,7 @@ interface AdminUsersScreenProps {
 
 export function AdminUsersScreen({ users: initial }: AdminUsersScreenProps) {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [users, setUsers] = useState<AdminUser[]>(initial);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +61,15 @@ export function AdminUsersScreen({ users: initial }: AdminUsersScreenProps) {
       u.role.toLowerCase().includes(q)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  function handleSearch(q: string) {
+    setSearch(q);
+    setPage(1);
+  }
 
   function handleRoleChange(userId: string, role: Role) {
     setError(null);
@@ -94,7 +115,7 @@ export function AdminUsersScreen({ users: initial }: AdminUsersScreenProps) {
             className="pl-9"
             placeholder="Search by name, email or role…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
 
@@ -110,14 +131,14 @@ export function AdminUsersScreen({ users: initial }: AdminUsersScreenProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {paginated.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No users found.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((user) => (
+                paginated.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.name} {user.lastname}
@@ -159,6 +180,53 @@ export function AdminUsersScreen({ users: initial }: AdminUsersScreenProps) {
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(1, p - 1)); }}
+                  aria-disabled={safePage === 1}
+                  className={safePage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                .reduce<(number | "ellipsis")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("ellipsis");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "ellipsis" ? (
+                    <PaginationItem key={`e-${idx}`}><PaginationEllipsis /></PaginationItem>
+                  ) : (
+                    <PaginationItem key={p}>
+                      <PaginationLink
+                        href="#"
+                        isActive={p === safePage}
+                        onClick={(e) => { e.preventDefault(); setPage(p as number); }}
+                      >
+                        {p}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                )}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); setPage((p) => Math.min(totalPages, p + 1)); }}
+                  aria-disabled={safePage === totalPages}
+                  className={safePage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
     </div>
   );

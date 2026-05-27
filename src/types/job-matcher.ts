@@ -82,6 +82,9 @@ export interface JobFilterRequest {
   cursor?: string;
   // Ask the authenticated recommendation feed for active bookmarks only.
   savedOnly?: boolean;
+  // Ask for the Offers explore feed instead of personalised matcher ranking.
+  explore?: boolean;
+  exploreSeed?: number;
 }
 
 export interface JobFilterResponse {
@@ -89,7 +92,7 @@ export interface JobFilterResponse {
   jobs: JobDocument[];
   total_found: number;
   next_cursor?: string | null;
-  source?: "recommendation" | "newest-fallback";
+  source?: "recommendation" | "newest-fallback" | "explore";
   filter_stats?: {
     jobs_found: number;
     used_resume_matching: boolean;
@@ -147,6 +150,8 @@ export interface JobCardProps {
   isPaid?: boolean;
   applicationDeadline?: Date | null;
   workModel?: string;
+  detailSource?: "matcher" | "offers";
+  showMatchScore?: boolean;
   onLike?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
   onView?: (jobId: string) => void;

@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs'
 import { Inject } from '@nestjs/common'
 import { OfferCreatedEvent } from '../../../../../Domain/events/offer-created.event'
-import { SseService } from '../../../../../API/http/sse/sse.service'
+import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
@@ -9,7 +9,8 @@ import { Notification } from '../../../../../Domain/entities/notification.entity
 @EventsHandler(OfferCreatedEvent)
 export class OfferCreatedHandler implements IEventHandler<OfferCreatedEvent> {
     constructor(
-        private readonly sseService: SseService,
+        @Inject(INotificationEmitter)
+        private readonly notificationEmitter: INotificationEmitter,
         @Inject(IStudentProfileRepository)
         private readonly studentRepo: IStudentProfileRepository,
         @Inject(INotificationRepository)
@@ -30,7 +31,7 @@ export class OfferCreatedHandler implements IEventHandler<OfferCreatedEvent> {
                 false, new Date(), null,
             ))
 
-            this.sseService.sendToUser(student.userId, {
+            this.notificationEmitter.sendToUser(student.userId, {
                 id: saved.id,
                 type: 'new-offer-in-domain',
                 title: saved.title,

@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs'
 import { Inject } from '@nestjs/common'
 import { InterviewSlotRespondedEvent } from '../../../../../Domain/events/interview-slot-responded.event'
-import { SseService } from '../../../../../API/http/sse/sse.service'
+import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
 import { InterviewSlotStatus } from '../../../../../Domain/enums/interview-slot-status.enum'
@@ -9,7 +9,8 @@ import { InterviewSlotStatus } from '../../../../../Domain/enums/interview-slot-
 @EventsHandler(InterviewSlotRespondedEvent)
 export class InterviewSlotRespondedHandler implements IEventHandler<InterviewSlotRespondedEvent> {
     constructor(
-        private readonly sseService: SseService,
+        @Inject(INotificationEmitter)
+        private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
     ) {}
@@ -29,7 +30,7 @@ export class InterviewSlotRespondedHandler implements IEventHandler<InterviewSlo
             false, new Date(), null,
         ))
 
-        this.sseService.sendToUser(recipientUserId, {
+        this.notificationEmitter.sendToUser(recipientUserId, {
             id: saved.id,
             type: 'interview-slot-responded',
             title: saved.title,

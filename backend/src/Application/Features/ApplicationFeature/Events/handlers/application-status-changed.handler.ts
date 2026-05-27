@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs'
 import { Inject } from '@nestjs/common'
 import { ApplicationStatusChangedEvent } from '../../../../../Domain/events/application-status-changed.event'
-import { SseService } from '../../../../../API/http/sse/sse.service'
+import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
 import { ApplicationStatus } from '../../../../../Domain/enums/application-status.enum'
@@ -9,7 +9,8 @@ import { ApplicationStatus } from '../../../../../Domain/enums/application-statu
 @EventsHandler(ApplicationStatusChangedEvent)
 export class ApplicationStatusChangedHandler implements IEventHandler<ApplicationStatusChangedEvent> {
     constructor(
-        private readonly sseService: SseService,
+        @Inject(INotificationEmitter)
+        private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
     ) {}
@@ -28,7 +29,7 @@ export class ApplicationStatusChangedHandler implements IEventHandler<Applicatio
             false, new Date(), null,
         ))
 
-        this.sseService.sendToUser(studentUserId, {
+        this.notificationEmitter.sendToUser(studentUserId, {
             id: saved.id,
             type: 'application-status-changed',
             title: saved.title,

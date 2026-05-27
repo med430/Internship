@@ -1,6 +1,8 @@
 import { format } from "date-fns";
 import { FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { fetchWithAuth } from "@/lib/api/auth";
+import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 import {
   HoverCard,
   HoverCardContent,
@@ -14,9 +16,10 @@ interface SelectedDatabaseCVProps {
 }
 
 export function SelectedDatabaseCV({ cv, onRemove }: SelectedDatabaseCVProps) {
-  const scoreImprovement = Math.round(
-    ((cv.final_score - cv.original_score) / cv.original_score) * 100 + 10,
-  );
+  const scoreImprovement =
+    cv.original_score > 0
+      ? Math.round(((cv.final_score - cv.original_score) / cv.original_score) * 100 + 10)
+      : null;
   const formattedDate = format(new Date(cv.created_at), "MMM dd, yyyy");
 
   return (
@@ -32,9 +35,11 @@ export function SelectedDatabaseCV({ cv, onRemove }: SelectedDatabaseCVProps) {
             </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
               <p className="text-xs text-muted-foreground">{formattedDate}</p>
-              <span className="text-xs font-semibold text-[#05e34f] dark:text-[#04c945]">
-                +{scoreImprovement}% Boost
-              </span>
+              {scoreImprovement !== null && Number.isFinite(scoreImprovement) && (
+                <span className="text-xs font-semibold text-[#05e34f] dark:text-[#04c945]">
+                  +{scoreImprovement}% Boost
+                </span>
+              )}
             </div>
           </div>
           <Button
@@ -45,6 +50,74 @@ export function SelectedDatabaseCV({ cv, onRemove }: SelectedDatabaseCVProps) {
           >
             <X className="h-4 w-4" />
           </Button>
+          <div className="flex gap-2 ml-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                try {
+                  const apiUrl = getClientApiBaseUrl();
+                  const tryUrls = [`${apiUrl}/download_cv/${cv.id}`, `${apiUrl}/cvs/${cv.id}/download`];
+                  let blob: Blob | null = null;
+                  for (const url of tryUrls) {
+                    try {
+                      const res = await fetchWithAuth(url, { method: 'GET' });
+                      if (!res.ok) continue;
+                      blob = await res.blob();
+                      break;
+                    } catch {
+                      // try next
+                    }
+                  }
+                  if (!blob) throw new Error('Failed to load preview');
+                  const blobUrl = window.URL.createObjectURL(blob);
+                  window.open(blobUrl, '_blank');
+                } catch (err) {
+                  console.error(err);
+                  alert('Failed to open CV preview');
+                }
+              }}
+              className="flex-shrink-0"
+            >
+              Preview
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                try {
+                  const apiUrl = getClientApiBaseUrl();
+                  const tryUrls = [`${apiUrl}/download_cv/${cv.id}`, `${apiUrl}/cvs/${cv.id}/download`];
+                  let blob: Blob | null = null;
+                  for (const url of tryUrls) {
+                    try {
+                      const res = await fetchWithAuth(url, { method: 'GET' });
+                      if (!res.ok) continue;
+                      blob = await res.blob();
+                      break;
+                    } catch {
+                      // try next
+                    }
+                  }
+                  if (!blob) throw new Error('Failed to download CV');
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `cv_${cv.id}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  window.URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error(err);
+                  alert('Failed to download CV');
+                }
+              }}
+              className="flex-shrink-0"
+            >
+              Download
+            </Button>
+          </div>
         </div>
       </HoverCardTrigger>
       <HoverCardContent

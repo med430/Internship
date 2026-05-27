@@ -11,6 +11,8 @@ export interface FeedRequest {
     limit?: number
     cursor?: string
     savedOnly?: boolean
+    explore?: boolean
+    exploreSeed?: number
 }
 
 export type FeedOutcome =
@@ -31,7 +33,14 @@ export class OfferFeedService {
         if (!user) return { kind: 'anonymous' }
 
         const page = await this.queryBus.execute<GetRecommendedOffersQuery, RecommendedOffersPage>(
-            new GetRecommendedOffersQuery(user.id, req.limit ?? 20, req.cursor, req.savedOnly === true),
+            new GetRecommendedOffersQuery(
+                user.id,
+                req.limit ?? 20,
+                req.cursor,
+                req.savedOnly === true,
+                req.explore === true,
+                req.exploreSeed ?? 0,
+            ),
         )
         return { kind: 'authenticated', page }
     }

@@ -68,7 +68,7 @@ export function ChatNotificationProvider() {
       // Always add to the notification bell
       addNotification({
         id: crypto.randomUUID(),
-        userId: "",
+        userId: currentUserIdRef.current,
         title: `New message from ${message.senderName}`,
         message: preview,
         type: "chat",

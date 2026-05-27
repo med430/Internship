@@ -6,5 +6,7 @@ export class GetRecommendedOffersQuery {
         public readonly limit: number,
         public readonly cursor?: string,
         public readonly savedOnly = false,
+        public readonly explore = false,
+        public readonly exploreSeed = 0,
     ) {}
 }

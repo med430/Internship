@@ -119,10 +119,7 @@ export class ApplicationController {
     }
 
     private async sendFile(res: Response, fileUrl: string) {
-        // Always stream via downloadFileBuffer:
-        // - LocalFileStorageService reads from disk
-        // - CloudinaryStorageService generates a signed URL and fetches the buffer
-        //   (Cloudinary private resources cannot be accessed via bare redirect)
+        // Stream the private Cloudinary file through a signed download URL.
         const buffer = await this.fileStorage.downloadFileBuffer(fileUrl)
         const filename = fileUrl.split('/').pop() ?? 'document.pdf'
         res.setHeader('Content-Type', 'application/pdf')

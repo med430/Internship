@@ -6,11 +6,13 @@ import {
     WebSocketServer,
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { IMessageRepository } from '../../../Application/repositories/message.repository';
-import { IConversationRepository } from '../../../Application/repositories/conversation.repository';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { SendMessageCommand } from '../../../Application/Features/ChatFeature/Commands/send-message.command';
+import { MarkMessagesReadCommand } from '../../../Application/Features/ChatFeature/Commands/mark-messages-read.command';
+import { GetConversationByIdQuery } from '../../../Application/Features/ChatFeature/Queries/get-conversation-by-id.query';
 import { Message } from '../../../Domain/entities/message.entity';
+import { Conversation } from '../../../Domain/entities/conversation.entity';
 
 interface ChatPayload {
     conversationId: string;
@@ -38,22 +40,17 @@ export class ChatGateway implements OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;
 
-    // socket.id → set of conversationIds the socket is listening to
     private subscriptions = new Map<string, Set<string>>();
 
     constructor(
-        @Inject(IMessageRepository)
-        private readonly messageRepo: IMessageRepository,
-        @Inject(IConversationRepository)
-        private readonly conversationRepo: IConversationRepository,
+        private readonly commandBus: CommandBus,
+        private readonly queryBus: QueryBus,
     ) {}
 
     handleDisconnect(client: Socket) {
         this.subscriptions.delete(client.id);
     }
 
-    // Client registers its userId so it can receive messages addressed to it
-    // even when it isn't actively viewing that conversation (e.g. notification provider).
     @SubscribeMessage('register-user')
     handleRegisterUser(
         @MessageBody() payload: { userId: string },
@@ -64,7 +61,6 @@ export class ChatGateway implements OnGatewayDisconnect {
         }
     }
 
-    // Client subscribes to a conversation room to receive real-time messages
     @SubscribeMessage('join-conversation')
     handleJoin(
         @MessageBody() payload: { conversationId: string },
@@ -89,7 +85,6 @@ export class ChatGateway implements OnGatewayDisconnect {
         this.subscriptions.get(client.id)?.delete(conversationId);
     }
 
-    // Send a message via WebSocket (alternative to REST POST)
     @SubscribeMessage('send-message')
     async handleSendMessage(
         @MessageBody() payload: ChatPayload,
@@ -97,26 +92,25 @@ export class ChatGateway implements OnGatewayDisconnect {
     ) {
         const { conversationId, content, senderId, senderName } = payload;
 
-        const conversation = await this.conversationRepo.findById(conversationId);
-        if (!conversation) {
+        let saved: Message;
+        let conversation: Conversation;
+
+        try {
+            [saved, conversation] = await Promise.all([
+                this.commandBus.execute<SendMessageCommand, Message>(
+                    new SendMessageCommand(conversationId, senderId, senderName, content),
+                ),
+                this.queryBus.execute<GetConversationByIdQuery, Conversation>(
+                    new GetConversationByIdQuery(conversationId),
+                ),
+            ]);
+        } catch {
             client.emit('error', { message: 'Conversation not found' });
             return;
         }
 
-        const now = new Date();
-        const message = new Message('', conversationId, senderId, senderName, content, [senderId], now, now);
-        const saved = await this.messageRepo.save(message);
-
-        // Update conversation preview
-        conversation.lastMessagePreview = content.slice(0, 80);
-        conversation.lastMessageAt = now;
-        await this.conversationRepo.save(conversation);
-
-        // Broadcast to everyone in the conversation room (chat page viewers)
         this.server.to(`conv:${conversationId}`).emit('new-message', saved);
 
-        // Also deliver to each participant's personal user room so that
-        // the notification provider receives it even when they aren't on the chat page.
         for (const participantId of conversation.participantIds) {
             this.server.to(`user:${participantId}`).emit('new-message', saved);
         }
@@ -127,7 +121,6 @@ export class ChatGateway implements OnGatewayDisconnect {
         @MessageBody() payload: TypingPayload,
         @ConnectedSocket() client: Socket,
     ) {
-        // Broadcast typing indicator to others in the room
         client.to(`conv:${payload.conversationId}`).emit('user-typing', {
             senderId: payload.senderId,
             senderName: payload.senderName,
@@ -139,7 +132,9 @@ export class ChatGateway implements OnGatewayDisconnect {
         @MessageBody() payload: ReadPayload,
         @ConnectedSocket() _client: Socket,
     ) {
-        await this.messageRepo.markAsRead(payload.conversationId, payload.userId);
+        await this.commandBus.execute(
+            new MarkMessagesReadCommand(payload.conversationId, payload.userId),
+        );
         this.server.to(`conv:${payload.conversationId}`).emit('messages-read', {
             conversationId: payload.conversationId,
             userId: payload.userId,

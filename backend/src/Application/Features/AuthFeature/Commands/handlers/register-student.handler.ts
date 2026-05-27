@@ -1,7 +1,7 @@
 // Commands/handlers/register-student.handler.ts
-import { CommandHandler } from '@nestjs/cqrs'
+import {CommandHandler} from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
-import { randomUUID } from 'crypto'
+import {randomUUID} from 'crypto'
 import {ConflictException, Inject} from '@nestjs/common'
 import { RegisterStudentCommand } from '../register-student.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
@@ -9,21 +9,27 @@ import { IStudentProfileRepository } from '../../../../repositories/student-prof
 import { User } from '../../../../../Domain/entities/user.entity'
 import { Role } from '../../../../../Domain/enums/role.enum'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
-import { RegisterResponseDTO } from '../../../../../API/http/auth/dto/register-response.dto'
+import { RegisterResult } from '../register-result'
 import { StudentProfile } from '../../../../../Domain/entities/student-profile.entity'
+import { Subscription } from '../../../../../Domain/entities/subscription.entity'
+import { SubscriptionType } from '../../../../../Domain/enums/subscription-type.enum'
+import { ISubscriptionRepository } from '../../../../repositories/subscription.repository'
 
 @CommandHandler(RegisterStudentCommand)
 export class RegisterStudentHandler extends GenericCommandHandler<
 RegisterStudentCommand,
     User,
-RegisterResponseDTO
+RegisterResult
 > {
     constructor(
         @Inject(IUserRepository)
         private userRepo: IUserRepository,
 
         @Inject(IStudentProfileRepository)
-        private studentProfileRepo: IStudentProfileRepository
+        private studentProfileRepo: IStudentProfileRepository,
+
+        @Inject(ISubscriptionRepository)
+        private subscriptionRepo: ISubscriptionRepository,
     ) { super() }
 
     protected async map(command: RegisterStudentCommand): Promise<User> {
@@ -40,7 +46,7 @@ RegisterResponseDTO
         )
     }
 
-    protected async persist(user: User): Promise<RegisterResponseDTO> {
+    protected async persist(user: User): Promise<RegisterResult> {
         const existing = await this.userRepo.findByEmail(user.email)
         if (existing) throw new ConflictException('Email already in use')
 
@@ -64,11 +70,19 @@ RegisterResponseDTO
             throw error
         }
 
+        const subscription = new Subscription(
+            randomUUID(),
+            savedUser.id,
+            SubscriptionType.FREE
+        );
+
+        await this.subscriptionRepo.save(subscription);
+
         await this.studentProfileRepo.save(
             new StudentProfile(randomUUID(), savedUser.id)
         )
 
-        return new RegisterResponseDTO(
+        return new RegisterResult(
             savedUser.id,
             savedUser.email,
             savedUser.username,

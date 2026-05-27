@@ -85,8 +85,30 @@ export class ApplyToOfferHandler
             offerId
         )
 
-        if (existing && existing.status !== ApplicationStatus.WITHDRAWN) {
-            throw new BadRequestException('Already applied')
+        if (existing) {
+            if (existing.status !== ApplicationStatus.WITHDRAWN) {
+                throw new BadRequestException('Already applied')
+            }
+
+            existing.cvId = cvId
+            existing.coverLetterId = coverLetterId
+            existing.status = ApplicationStatus.SUBMITTED
+            existing.matchScore = 0
+
+            const saved = await this.appRepo.save(existing)
+
+            const recruiter = await this.recruiterRepo.findById(offer.recruiterProfileId)
+            if (recruiter) {
+                this.eventBus.publish(
+                    new ApplicationSubmittedEvent(
+                        recruiter.userId,
+                        saved.id,
+                        offer.title,
+                    )
+                )
+            }
+
+            return saved
         }
 
         // 🔥 6. CREATE APPLICATION (ordre CORRECT)

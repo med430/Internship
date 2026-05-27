@@ -9,14 +9,14 @@ import { User } from '../../../../../Domain/entities/user.entity'
 import { Role } from '../../../../../Domain/enums/role.enum'
 import { RecruiterProfile } from '../../../../../Domain/entities/recruiter-profile.entity'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
-import { RegisterResponseDTO } from '../../../../../API/http/auth/dto/register-response.dto'
+import { RegisterResult } from '../register-result'
 import { Inject, ConflictException } from '@nestjs/common'  // ← ajouter ConflictException
 
 @CommandHandler(RegisterRecruiterCommand)
 export class RegisterRecruiterHandler extends GenericCommandHandler<
 RegisterRecruiterCommand,
     User,
-RegisterResponseDTO
+RegisterResult
 > {
     private _command: RegisterRecruiterCommand
 
@@ -44,7 +44,7 @@ protected async map(command: RegisterRecruiterCommand): Promise<User> {
     )
 }
 
-protected async persist(user: User): Promise<RegisterResponseDTO> {
+protected async persist(user: User): Promise<RegisterResult> {
     // ← ajouter
     const existing = await this.userRepo.findByEmail(user.email)
     if (existing) throw new ConflictException('Email already in use')
@@ -79,7 +79,7 @@ protected async persist(user: User): Promise<RegisterResponseDTO> {
         )
     )
 
-    return new RegisterResponseDTO(
+    return new RegisterResult(
         savedUser.id,
         savedUser.email,
         savedUser.username,

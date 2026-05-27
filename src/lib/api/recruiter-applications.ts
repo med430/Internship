@@ -93,7 +93,7 @@ export async function fetchRecruiterApplications(
 							}
 						}
 						cv { id }
-						coverLetter { id }
+							coverLetter { id }
 						status
 						createdAt
 					}

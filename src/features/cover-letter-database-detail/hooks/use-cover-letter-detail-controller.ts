@@ -36,22 +36,29 @@ export function useCoverLetterDetailController(letterId: string) {
 
         try {
           const apiUrl = getClientApiBaseUrl();
-          const response = await fetchWithAuth(
-            `${apiUrl}/onboard/cover-letters/${letterId}/download`,
-            { method: "GET" },
-          );
-          if (!isActive) return;
-
-          if (response.ok) {
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
+          // Try onboard download first, then uploaded cover-letters download
+          const tryUrls = [`${apiUrl}/onboard/cover-letters/${letterId}/download`, `${apiUrl}/cover-letters/${letterId}/download`]
+          let gotBlob: Blob | null = null
+          for (const url of tryUrls) {
+            try {
+              const response = await fetchWithAuth(url, { method: 'GET' })
+              if (!response.ok) continue
+              gotBlob = await response.blob()
+              break
+            } catch {
+              // try next
+            }
+          }
+          if (!isActive) return
+          if (gotBlob) {
+            const blobUrl = window.URL.createObjectURL(gotBlob)
             setPdfBlobUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev);
-              return blobUrl;
-            });
+              if (prev) window.URL.revokeObjectURL(prev)
+              return blobUrl
+            })
           }
         } catch {
-          toast.error("Failed to load PDF preview");
+          toast.error("Failed to load PDF preview")
         }
       } catch (fetchError) {
         if (!isActive) return;
@@ -80,14 +87,20 @@ export function useCoverLetterDetailController(letterId: string) {
     try {
       setDownloading(true);
       const apiUrl = getClientApiBaseUrl();
-      const response = await fetchWithAuth(
-        `${apiUrl}/onboard/cover-letters/${letterId}/download`,
-        { method: "GET" },
-      );
-
-      if (!response.ok) throw new Error("Download failed");
-
-      const blob = await response.blob();
+      // Try both download endpoints
+      const tryUrls = [`${apiUrl}/onboard/cover-letters/${letterId}/download`, `${apiUrl}/cover-letters/${letterId}/download`]
+      let blob: Blob | null = null
+      for (const url of tryUrls) {
+        try {
+          const response = await fetchWithAuth(url, { method: 'GET' })
+          if (!response.ok) continue
+          blob = await response.blob()
+          break
+        } catch {
+          // try next
+        }
+      }
+      if (!blob) throw new Error('Download failed')
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

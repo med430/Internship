@@ -11,12 +11,12 @@ const API_BASE_URL =
 async function getAccessToken() {
   const supabase = await createClient();
   const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!error && session?.access_token) {
-    return session.access_token;
+  if (user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) return session.access_token;
   }
 
   // Fall back to backend-issued JWT stored in cookie (server-side). cookies() is async in Next 15.

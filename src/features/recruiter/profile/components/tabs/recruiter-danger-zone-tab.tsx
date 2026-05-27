@@ -59,7 +59,7 @@ export function RecruiterDangerZoneTab() {
       toast.warning("Account deactivated", {
         description: "Your account has been deactivated.",
       });
-      router.push("/login");
+      router.push("/");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to deactivate account");
       setIsDeleting(false);

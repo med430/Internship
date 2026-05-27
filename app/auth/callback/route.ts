@@ -71,7 +71,13 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/complete-profile`);
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      const role = (user.app_metadata?.role as string | undefined)?.toUpperCase();
+      const destination =
+        role === "ADMIN" && next === "/services/dashboard"
+          ? "/services/admin"
+          : next;
+
+      return NextResponse.redirect(`${origin}${destination}`);
     }
   }
 

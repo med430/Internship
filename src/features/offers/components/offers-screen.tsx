@@ -3,11 +3,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, Loader2 } from "lucide-react";
+import { Bookmark, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import JobCard from "@/components/job-matcher/job-card";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { jobFilterAPI } from "@/lib/api/job-filter-client";
 import { tracking } from "@/lib/api/tracking-client";
@@ -19,6 +21,7 @@ const SAVED_PAGE_SIZE = 12;
 const SKELETON_COUNT = 6;
 const PREFETCH_ROOT_MARGIN = "800px";
 const UNBOOKMARK_UNDO_MS = 6000;
+const EXPLORE_SEED_WINDOW_MS = 15 * 60 * 1000;
 
 type OffersTab = "all" | "saved";
 
@@ -67,8 +70,16 @@ function appendUniqueJobs(existing: JobDocument[], incoming: JobDocument[]): Job
 	return fresh.length > 0 ? [...existing, ...fresh] : existing;
 }
 
+function matchesJobSearch(job: JobDocument, query: string): boolean {
+	return [job.title, job.company, job.description]
+		.join(" ")
+		.toLowerCase()
+		.includes(query);
+}
+
 export function OffersScreen() {
 	const [activeTab, setActiveTab] = useState<OffersTab>("all");
+	const [searchQuery, setSearchQuery] = useState("");
 	const [jobs, setJobs] = useState<JobDocument[]>([]);
 	const [savedJobs, setSavedJobs] = useState<JobDocument[]>([]);
 	const [cursor, setCursor] = useState<string | null>(null);
@@ -81,6 +92,7 @@ export function OffersScreen() {
 	const [savedDone, setSavedDone] = useState(false);
 	const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
 	const [pendingUnsave, setPendingUnsave] = useState<Set<string>>(new Set());
+	const [exploreSeed] = useState(() => Math.floor(Date.now() / EXPLORE_SEED_WINDOW_MS));
 
 	const sentinelRef = useRef<HTMLDivElement | null>(null);
 	const fetchingRef = useRef(false);
@@ -88,7 +100,7 @@ export function OffersScreen() {
 	const abortRef = useRef<AbortController | null>(null);
 	const pendingUnbookmarkTimersRef = useRef<Map<string, number>>(new Map());
 
-	// Pulls one page of the ranked feed and appends it, advancing the cursor.
+	// Pulls one page of the explore feed and appends it, advancing the cursor.
 	const loadPage = useCallback(async (cursorValue: string | null) => {
 		if (fetchingRef.current) return;
 		fetchingRef.current = true;
@@ -97,7 +109,12 @@ export function OffersScreen() {
 		abortRef.current = controller;
 		try {
 			const response = await jobFilterAPI.filterJobs(
-				{ limit: PAGE_SIZE, ...(cursorValue ? { cursor: cursorValue } : {}) },
+				{
+					limit: PAGE_SIZE,
+					explore: true,
+					exploreSeed,
+					...(cursorValue ? { cursor: cursorValue } : {}),
+				},
 				{ signal: controller.signal },
 			);
 
@@ -140,7 +157,7 @@ export function OffersScreen() {
 		} finally {
 			fetchingRef.current = false;
 		}
-	}, []);
+	}, [exploreSeed]);
 
 	const loadSavedOffers = useCallback(async (cursorValue: string | null) => {
 		if (savedFetchingRef.current) return;
@@ -352,13 +369,37 @@ export function OffersScreen() {
 		() => savedJobs.filter((job) => bookmarked.has(job.job_id) || pendingUnsave.has(job.job_id)),
 		[bookmarked, pendingUnsave, savedJobs],
 	);
-	const visibleJobs = activeTab === "saved" ? savedVisibleJobs : jobs;
+	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+	const visibleJobs = useMemo(() => {
+		const baseJobs = activeTab === "saved" ? savedVisibleJobs : jobs;
+		if (!normalizedSearchQuery) return baseJobs;
+		return baseJobs.filter((job) => matchesJobSearch(job, normalizedSearchQuery));
+	}, [activeTab, jobs, normalizedSearchQuery, savedVisibleJobs]);
 	const savedCount = Math.max(0, bookmarked.size - pendingUnsave.size);
 	const loadingInitial = activeTab === "all"
 		? jobs.length === 0 && !done
 		: savedVisibleJobs.length === 0 && (!savedLoaded || savedLoading);
 	const currentLoadingMore = activeTab === "all" ? loadingMore : savedLoadingMore;
 	const currentDone = activeTab === "all" ? done : savedDone;
+	const emptyMessage = normalizedSearchQuery
+		? activeTab === "saved"
+			? "No saved offers match your search."
+			: "No offers match your search."
+		: activeTab === "saved"
+			? "No saved offers yet."
+			: "No offers available right now.";
+
+	useEffect(() => {
+		if (!normalizedSearchQuery) return;
+		const timer = window.setTimeout(() => {
+			tracking.trackSearch(
+				searchQuery.trim(),
+				{ source: "offers", tab: activeTab },
+				visibleJobs.length,
+			);
+		}, 400);
+		return () => window.clearTimeout(timer);
+	}, [activeTab, normalizedSearchQuery, searchQuery, visibleJobs.length]);
 
 	if (loadingInitial) {
 		return (
@@ -367,6 +408,8 @@ export function OffersScreen() {
 					activeTab={activeTab}
 					onTabChange={setActiveTab}
 					savedCount={savedCount}
+					searchQuery={searchQuery}
+					onSearchChange={setSearchQuery}
 				/>
 				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{Array.from({ length: SKELETON_COUNT }).map((_, i) => <SkeletonCard key={i} />)}
@@ -382,12 +425,12 @@ export function OffersScreen() {
 					activeTab={activeTab}
 					onTabChange={setActiveTab}
 					savedCount={savedCount}
+					searchQuery={searchQuery}
+					onSearchChange={setSearchQuery}
 				/>
 				<Card>
 					<CardContent className="py-10 text-center text-sm text-muted-foreground">
-						{activeTab === "saved"
-							? "No saved offers yet."
-							: "No offers available right now."}
+						{emptyMessage}
 					</CardContent>
 				</Card>
 			</div>
@@ -400,6 +443,8 @@ export function OffersScreen() {
 				activeTab={activeTab}
 				onTabChange={setActiveTab}
 				savedCount={savedCount}
+				searchQuery={searchQuery}
+				onSearchChange={setSearchQuery}
 			/>
 
 			<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -411,6 +456,8 @@ export function OffersScreen() {
 							key={job.job_id}
 							{...props}
 							isSaved={bookmarked.has(job.job_id) && !isPendingUnsave}
+							detailSource="offers"
+							showMatchScore={false}
 							onSave={handleSave}
 							onView={handleView}
 						/>
@@ -447,33 +494,63 @@ function OffersHeader({
 	activeTab,
 	onTabChange,
 	savedCount,
+	searchQuery,
+	onSearchChange,
 }: {
 	activeTab: OffersTab;
 	onTabChange: (tab: OffersTab) => void;
 	savedCount: number;
+	searchQuery: string;
+	onSearchChange: (query: string) => void;
 }) {
 	return (
-		<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-			<div>
-				<h1 className="text-2xl font-semibold">Offers</h1>
-				<p className="text-sm text-muted-foreground mt-1">
-					Browse recruiter offers ranked for you. Scroll to load more.
-				</p>
+		<header className="space-y-4">
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold">Offers</h1>
+					<p className="text-sm text-muted-foreground mt-1">
+						Browse recruiter offers ranked for you. Scroll to load more.
+					</p>
+				</div>
+				<Tabs value={activeTab} onValueChange={(value) => onTabChange(value as OffersTab)}>
+					<TabsList>
+						<TabsTrigger value="all">All offers</TabsTrigger>
+						<TabsTrigger value="saved" className="gap-1.5">
+							<Bookmark className="w-4 h-4" />
+							Saved
+							{savedCount > 0 && (
+								<span className="ml-1 rounded-full bg-background px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+									{savedCount}
+								</span>
+							)}
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
 			</div>
-			<Tabs value={activeTab} onValueChange={(value) => onTabChange(value as OffersTab)}>
-				<TabsList>
-					<TabsTrigger value="all">All offers</TabsTrigger>
-					<TabsTrigger value="saved" className="gap-1.5">
-						<Bookmark className="w-4 h-4" />
-						Saved
-						{savedCount > 0 && (
-							<span className="ml-1 rounded-full bg-background px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-								{savedCount}
-							</span>
-						)}
-					</TabsTrigger>
-				</TabsList>
-			</Tabs>
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative flex-1 min-w-[220px]">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Search by title, company, description..."
+						value={searchQuery}
+						onChange={(event) => onSearchChange(event.target.value)}
+						className="pl-10 h-9"
+					/>
+				</div>
+				{searchQuery && (
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => onSearchChange("")}
+						className="h-9 gap-1.5 text-muted-foreground"
+					>
+						<X className="h-3.5 w-3.5" />
+						Clear
+					</Button>
+				)}
+			</div>
 		</header>
 	);
 }
