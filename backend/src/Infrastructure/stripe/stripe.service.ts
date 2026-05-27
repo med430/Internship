@@ -21,7 +21,13 @@ export class StripeService {
             mode: 'subscription',
             customer_email: userEmail,
             line_items: [{ price: this.proPriceId, quantity: 1 }],
+            // Store userId on the session itself (used by checkout.session.completed)
             metadata: { userId },
+            // Also propagate userId to the Subscription object so customer.subscription.deleted
+            // can identify the user without a DB lookup by stripeCustomerId.
+            subscription_data: {
+                metadata: { userId },
+            },
             success_url: `${this.config.get('NEXT_PUBLIC_SITE_URL')}/services/subscription/success`,
             cancel_url:  `${this.config.get('NEXT_PUBLIC_SITE_URL')}/services/subscription/cancel`,
         })

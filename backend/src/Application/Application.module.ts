@@ -101,6 +101,7 @@ import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
 import { UpgradeSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/upgrade-subscription.handler';
 import { CancelSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/cancel-subscription.handler';
+import { GetMySubscriptionHandler } from './Features/SubscriptionFeature/Queries/handlers/get-my-subscription.handler';
 
 const CommandHandlers = [
   RegisterStudentHandler,
@@ -206,6 +207,8 @@ const QueryHandlers = [
   GetMessagesHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
+  // Subscription
+  GetMySubscriptionHandler,
 ];
 
 @Global()

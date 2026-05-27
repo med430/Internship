@@ -56,6 +56,20 @@ enum RecruiterMode {
     DIRECT
 }
 
+enum SubscriptionType {
+    FREE
+    PAID
+}
+
+# =======================
+# SUBSCRIPTION
+# =======================
+
+type SubscriptionStatus {
+    type: SubscriptionType!
+    isPro: Boolean!
+}
+
 # =======================
 # BASE INTERFACE
 # =======================
@@ -311,6 +325,9 @@ type RecruiterProfile {
 # =======================
 
 type Query {
+    # ── Subscription ───────────────────────────────────────
+    mySubscription: SubscriptionStatus!
+
     # ── Users ──────────────────────────────────────────────
     user(id: ID!): User
     users(pageNumber: Int, pageSize: Int): [User]!

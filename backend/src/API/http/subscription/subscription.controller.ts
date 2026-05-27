@@ -1,10 +1,12 @@
-import { Controller, Post, Get, UseGuards, Req } from '@nestjs/common'
+import { Controller, Post, Get, UseGuards, Req, Inject } from '@nestjs/common'
+import { QueryBus } from '@nestjs/cqrs'
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
 import { StripeService } from '../../../Infrastructure/stripe/stripe.service'
 import { ISubscriptionRepository } from '../../../Application/repositories/subscription.repository'
 import { IStudentProfileRepository } from '../../../Application/repositories/student-profile.repository'
-import { Inject } from '@nestjs/common'
+import { GetMySubscriptionQuery } from '../../../Application/Features/SubscriptionFeature/Queries/get-my-subscription.query'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
+import type { SubscriptionStatusResult } from '../../../Application/Features/SubscriptionFeature/Queries/handlers/get-my-subscription.handler'
 
 @Controller('subscription')
 @UseGuards(SupabaseAuthGuard)
@@ -12,6 +14,7 @@ export class SubscriptionController {
 
     constructor(
         private readonly stripeService: StripeService,
+        private readonly queryBus: QueryBus,
         @Inject(ISubscriptionRepository)
         private readonly subscriptionRepo: ISubscriptionRepository,
         @Inject(IStudentProfileRepository)
@@ -41,13 +44,9 @@ export class SubscriptionController {
         return { url }
     }
 
-    // Returns the current subscription status for the logged-in student.
+    // Returns the current subscription status for the logged-in student (delegates to CQRS query).
     @Get('status')
-    async getStatus(@Req() req: { user: ResolvedUser }) {
-        const profile = await this.profileRepo.findByUserId(req.user.id)
-        if (!profile) return { type: 'FREE' }
-
-        const subscription = await this.subscriptionRepo.findByStudentProfileId(profile.id)
-        return { type: subscription?.type ?? 'FREE' }
+    async getStatus(@Req() req: { user: ResolvedUser }): Promise<SubscriptionStatusResult> {
+        return this.queryBus.execute(new GetMySubscriptionQuery(req.user.id))
     }
 }
