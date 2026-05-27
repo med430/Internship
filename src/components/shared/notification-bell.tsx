@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bell, CheckCheck, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,8 @@ export function NotificationBell() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "Just now";
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 

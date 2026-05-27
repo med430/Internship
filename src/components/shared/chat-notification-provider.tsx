@@ -21,7 +21,10 @@ export function ChatNotificationProvider() {
   const addNotification = useNotificationStore((s) => s.addNotification);
   const currentUserIdRef = useRef<string>("");
   const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000";
@@ -65,12 +68,14 @@ export function ChatNotificationProvider() {
       // Always add to the notification bell
       addNotification({
         id: crypto.randomUUID(),
+        userId: "",
         title: `New message from ${message.senderName}`,
         message: preview,
         type: "chat",
         link: "/services/chat",
-        is_read: false,
-        created_at: new Date().toISOString(),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        deletedAt: null,
       });
     });
 
