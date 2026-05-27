@@ -99,6 +99,8 @@ import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Quer
 import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
 import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
+import { UpgradeSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/upgrade-subscription.handler';
+import { CancelSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/cancel-subscription.handler';
 
 const CommandHandlers = [
   RegisterStudentHandler,
@@ -142,6 +144,8 @@ const CommandHandlers = [
   SendMessageHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
+  UpgradeSubscriptionHandler,
+  CancelSubscriptionHandler,
 ];
 
 const NotificationHandlers = [
