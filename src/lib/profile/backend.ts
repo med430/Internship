@@ -21,7 +21,7 @@ async function getAccessToken() {
 
   // Fall back to backend-issued JWT stored in cookie (server-side).
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const interviewToken = cookieStore.get("interview_token")?.value;
     if (interviewToken) return interviewToken;
   } catch {

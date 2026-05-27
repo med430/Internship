@@ -17,7 +17,7 @@ export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [domain, setDomain] = useState(CAREER_DOMAINS[0] ?? "IT & Software Engineering");
+  const [domain, setDomain] = useState<string>(CAREER_DOMAINS[0] ?? "IT & Software Engineering");
   const router = useRouter();
 
   useEffect(() => {

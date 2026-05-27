@@ -26,6 +26,7 @@ import { NotificationController } from "./notifications/notification.controller"
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
+import { SubscriptionGuard } from "./guards/subscription.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
@@ -59,7 +60,7 @@ import { InterviewSlotRespondedHandler } from "../../Application/Features/Interv
         NotificationController,
         InterviewSlotController,
         SubscriptionController],
-    providers: [OnboardService, SseService, StripeService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
+    providers: [OnboardService, SseService, StripeService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SubscriptionGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

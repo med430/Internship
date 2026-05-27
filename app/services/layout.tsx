@@ -31,13 +31,14 @@ export default async function ServicesLayout({
   }
 
   const profile = await getServerProfile();
-  const role = (user.app_metadata?.role as string | undefined) ?? undefined;
+  // user may be null when the page is accessed via an interviewToken-only session
+  const role = (user?.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
-    name: profile?.name || user.user_metadata?.name || "User",
-    email: profile?.email || user.email || "",
+    name: profile?.name || user?.user_metadata?.name || "User",
+    email: profile?.email || user?.email || "",
     avatar:
-      (profile?.avatar_url as string) || user.user_metadata?.avatar_url || "",
+      (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
     profileCompletion: calculateProfileCompletion(profile),
     role,
   };

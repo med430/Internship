@@ -13,6 +13,7 @@ import {
     UploadedFile,
     UploadedFiles,
     UnauthorizedException,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
@@ -22,6 +23,7 @@ import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
+import { SubscriptionGuard } from '../guards/subscription.guard'
 
 @Controller()
 export class OnboardController {
@@ -81,6 +83,7 @@ export class OnboardController {
 
     // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
+    @UseGuards(SubscriptionGuard)
     async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
         const outcome = await this.offerFeed.dispatch({
             bearerToken: this.extractBearerToken(req.header('authorization')),
@@ -136,6 +139,7 @@ export class OnboardController {
     }
 
     @Post('generate_queries')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(
         FileFieldsInterceptor(
             [
@@ -179,6 +183,7 @@ export class OnboardController {
     }
 
     @Post('rewrite_cv')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
     async rewriteCv(@Req() req: Request, @Body() body: Record<string, any> = {}) {
         const questionSessionId = String(body.question_session_id || '').trim()
@@ -241,6 +246,7 @@ export class OnboardController {
     }
 
     @Post('career-guide/generate')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async generateCareerGuide(
         @Req() req: Request,
@@ -287,6 +293,7 @@ export class OnboardController {
     }
 
     @Post('portfolio/build')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async buildPortfolio(
         @Req() req: Request,
@@ -335,6 +342,7 @@ export class OnboardController {
     }
 
     @Post('onboard/interviews/start')
+    @UseGuards(SubscriptionGuard)
     async startInterview(@Req() req: Request, @Body() body: Record<string, any>) {
         return this.onboardService.startInterview(this.getSessionKey(req), {
             personaKey: body.personaKey,
