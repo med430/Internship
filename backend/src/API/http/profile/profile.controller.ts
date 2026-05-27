@@ -8,10 +8,13 @@ import { UpdateStudentProfileCommand } from '../../../Application/Features/Profi
 import { UpdateRecruiterProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-recruiter-profile.command'
 import { SoftDeleteUserCommand } from '../../../Application/Features/ProfileFeature/Commands/soft-delete-user.command'
 import { Role } from '../../../Domain/enums/role.enum'
-import {JwtAuthGuard} from "../guards/jwt-auth.guard";
+import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
 
 @Controller('me')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER)
 export class ProfileController {
     constructor(private commandBus: CommandBus) {}
 

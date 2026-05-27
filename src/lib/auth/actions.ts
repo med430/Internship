@@ -51,9 +51,14 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const name = formData.get("name") as string;
   const lastname = formData.get("lastname") as string;
   const username = formData.get("username") as string;
+  const role = (formData.get("role") as string) || "STUDENT";
 
   if (!email || !password || !confirmPassword || !name || !lastname || !username) {
     return { success: false, error: "All fields are required" };
+  }
+
+  if (!["STUDENT", "RECRUITER"].includes(role)) {
+    return { success: false, error: "Invalid role selected" };
   }
 
   if (password !== confirmPassword) {
@@ -63,6 +68,19 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const passwordPolicyError = validatePasswordPolicy(password);
   if (passwordPolicyError) {
     return { success: false, error: passwordPolicyError };
+  }
+
+  const userMetadata: Record<string, string> = { role };
+  if (role === "RECRUITER") {
+    const company = formData.get("company") as string;
+    if (!company?.trim()) {
+      return { success: false, error: "Company name is required for recruiters" };
+    }
+    userMetadata.company = company.trim();
+    const companyDescription = formData.get("companyDescription") as string;
+    if (companyDescription?.trim()) userMetadata.companyDescription = companyDescription.trim();
+    const website = formData.get("website") as string;
+    if (website?.trim()) userMetadata.website = website.trim();
   }
 
   const supabase = await createClient();
@@ -75,6 +93,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     password,
     options: {
       emailRedirectTo: redirectUrl,
+      data: userMetadata,
     },
   });
 

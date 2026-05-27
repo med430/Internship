@@ -1,6 +1,11 @@
 import { Query, Args, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { SkillAssignment } from '../../../Domain/entities/skill-assignment.entity';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import {
   GetSkillAssignmentsQuery
 } from '../../../Application/Features/SkillAssignmentFeature/Queries/get-skill-assignments.query';
@@ -13,6 +18,8 @@ import {
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity';
 
 @Resolver(SkillAssignment)
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class SkillAssignmentResolver {
   constructor(private readonly queryBus: QueryBus) {
   }

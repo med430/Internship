@@ -22,6 +22,9 @@ import {
 import { calculatePasswordStrength } from "@/lib/auth/password-strength";
 import { Toast } from "@/components/ui/toast";
 import Link from "next/link";
+import { GraduationCap, Briefcase } from "lucide-react";
+
+type Role = "STUDENT" | "RECRUITER";
 
 export function SignupForm({
   className,
@@ -31,6 +34,7 @@ export function SignupForm({
   const [showSuccess, setShowSuccess] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [role, setRole] = React.useState<Role>("STUDENT");
   const [toast, setToast] = React.useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -158,9 +162,47 @@ export function SignupForm({
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Create your account</h1>
                 <p className="text-muted-foreground text-sm text-balance">
-                  Enter your details below to create your account
+                  Choose your role to get started
                 </p>
               </div>
+
+              {/* Role selector */}
+              <input type="hidden" name="role" value={role} />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("STUDENT")}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-sm transition-colors",
+                    role === "STUDENT"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/50",
+                  )}
+                >
+                  <GraduationCap className="h-6 w-6" />
+                  <span className="font-medium">Student</span>
+                  <span className="text-xs leading-tight text-center">
+                    Looking for internships
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("RECRUITER")}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-sm transition-colors",
+                    role === "RECRUITER"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/50",
+                  )}
+                >
+                  <Briefcase className="h-6 w-6" />
+                  <span className="font-medium">Recruiter</span>
+                  <span className="text-xs leading-tight text-center">
+                    Posting job offers
+                  </span>
+                </button>
+              </div>
+
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -176,6 +218,7 @@ export function SignupForm({
                   We&apos;ll send a confirmation link to this email.
                 </FieldDescription>
               </Field>
+
               <Field>
                 <Field className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field>
@@ -277,6 +320,54 @@ export function SignupForm({
                   Must be at least 8 characters with letters and numbers.
                 </FieldDescription>
               </Field>
+
+              {/* Recruiter-only fields */}
+              {role === "RECRUITER" && (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="company">Company name</FieldLabel>
+                    <Input
+                      id="company"
+                      name="company"
+                      type="text"
+                      placeholder="Acme Corp"
+                      required
+                      disabled={isLoading}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="companyDescription">
+                      Company description{" "}
+                      <span className="text-muted-foreground font-normal">
+                        (optional)
+                      </span>
+                    </FieldLabel>
+                    <Input
+                      id="companyDescription"
+                      name="companyDescription"
+                      type="text"
+                      placeholder="What does your company do?"
+                      disabled={isLoading}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="website">
+                      Website{" "}
+                      <span className="text-muted-foreground font-normal">
+                        (optional)
+                      </span>
+                    </FieldLabel>
+                    <Input
+                      id="website"
+                      name="website"
+                      type="url"
+                      placeholder="https://acme.com"
+                      disabled={isLoading}
+                    />
+                  </Field>
+                </>
+              )}
+
               <Field>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Creating Account..." : "Create Account"}

@@ -10,6 +10,9 @@ import {
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { CreateEducationDTO } from './dto/create-education.dto'
@@ -20,7 +23,8 @@ import { UpdateEducationCommand } from '../../../Application/Features/EducationF
 import { DeleteEducationCommand } from '../../../Application/Features/EducationFeature/Commands/delete-education.command'
 
 @Controller('educations')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class EducationController {
 
     constructor(private readonly bus: CommandBus) {}

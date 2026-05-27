@@ -1,5 +1,10 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { Certification } from '../../../Domain/entities/certification.entity';
 import { GetCertificationQuery } from '../../../Application/Features/CertificationFeature/Queries/get-certification.query';
 import { GetCertificationsQuery } from '../../../Application/Features/CertificationFeature/Queries/get-certifications.query';
@@ -19,6 +24,8 @@ import { StudentProfile } from '../../../Domain/entities/student-profile.entity'
 import { Project } from '../../../Domain/entities/project.entity';
 
 @Resolver('Certification')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class CertificationResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

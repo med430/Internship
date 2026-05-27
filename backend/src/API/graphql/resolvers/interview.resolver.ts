@@ -1,5 +1,6 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
 import { Interview } from '../../../Domain/entities/interview.entity';
 import { GetInterviewQuery } from '../../../Application/Features/InterviewFeature/Queries/get-interview.query';
 import { GetInterviewsQuery } from '../../../Application/Features/InterviewFeature/Queries/get-interviews.query';
@@ -8,8 +9,14 @@ import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/
 import { GetOfferQuery } from '../../../Application/Features/OfferFeature/Queries/get-offer.query';
 import { User } from '../../../Domain/entities/user.entity';
 import { Offer } from '../../../Domain/entities/offer.entity';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 
 @Resolver('Interview')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.ADMIN)
 export class InterviewResolver {
   constructor(private readonly queryBus: QueryBus) {}
 

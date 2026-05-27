@@ -3,13 +3,15 @@
 import { useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Briefcase,
   GraduationCap,
   LayoutDashboard,
   Mail,
+  MessageSquare,
+  Phone,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAsyncJobsStore } from "@/lib/stores/async-jobs-store";
 import {
+  ADMIN_ITEMS,
   CAREER_GUIDE_ITEMS,
   COVER_LETTER_ITEMS,
   CV_BOOSTER_ITEMS,
@@ -41,9 +44,20 @@ const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export function ServicesSidebar() {
+interface ServicesSidebarProps {
+  role?: string;
+}
+
+export function ServicesSidebar({ role }: ServicesSidebarProps) {
+  const isAdmin = role === "ADMIN";
   const pathname = usePathname();
+  const router = useRouter();
   const { state } = useSidebar();
+
+  const handleStartCall = () => {
+    const id = crypto.randomUUID();
+    router.push(`/services/call?room=${id}`);
+  };
   const { resolvedTheme } = useTheme();
   const isHydrated = useSyncExternalStore(
     subscribe,
@@ -144,6 +158,30 @@ export function ServicesSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Start a Call"
+                  isActive={pathname.startsWith("/services/call")}
+                  onClick={handleStartCall}
+                >
+                  <Phone className="h-5 w-5" />
+                  <span>Start a Call</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Messages"
+                  isActive={pathname.startsWith("/services/chat")}
+                >
+                  <Link href="/services/chat">
+                    <MessageSquare className="h-5 w-5" />
+                    <span>Messages</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               <SidebarCollapsibleGroup
                 title="CV Booster"
                 baseUrl="/services/cv-rewriter"
@@ -228,6 +266,34 @@ export function ServicesSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {ADMIN_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={item.title}
+                        isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                      >
+                        <a href={item.url}>
+                          <Icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
       </SidebarContent>
 
       <SidebarFooter>

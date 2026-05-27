@@ -10,6 +10,9 @@ import {
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 import {CreateProjectDTO} from "./dto/create-project.dto";
 import {CreateProjectCommand} from "../../../Application/Features/ProjectFeature/Commands/create-project.command";
@@ -18,7 +21,8 @@ import {UpdateProjectCommand} from "../../../Application/Features/ProjectFeature
 import {DeleteProjectCommand} from "../../../Application/Features/ProjectFeature/Commands/delete-project.command";
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class ProjectController {
 
     constructor(private readonly bus: CommandBus) {}

@@ -14,7 +14,6 @@ import {
     UploadedFiles,
     UnauthorizedException,
     UseInterceptors,
-    NotFoundException,
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express'
@@ -22,10 +21,14 @@ import { memoryStorage } from 'multer'
 import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
 
 @Controller()
 export class OnboardController {
-    constructor(private readonly onboardService: OnboardService) {}
+    constructor(
+        private readonly onboardService: OnboardService,
+        private readonly offerFeed: OfferFeedService,
+    ) {}
 
     @Get('health')
     health() {
@@ -53,18 +56,78 @@ export class OnboardController {
         return this.onboardService.updateProfile(this.getSessionKey(req), dto)
     }
 
+    // Authenticated student → personalised feed (jobs key preserved). Anonymous → existing demo filter flow.
     @Post('jobs/filter')
-    async filterJobs(@Body() body: Record<string, any>) {
+    async filterJobs(@Req() req: Request, @Body() body: Record<string, any>) {
+        const outcome = await this.offerFeed.dispatch({
+            bearerToken: this.extractBearerToken(req.header('authorization')),
+            limit: typeof body.limit === 'number' ? body.limit : 20,
+            cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+        })
+
+        if (outcome.kind === 'authenticated') {
+            return {
+                success: true,
+                jobs: outcome.page.items.map((item) => this.mapItemToJobDocument(item)),
+                total_found: outcome.page.items.length,
+                next_cursor: outcome.page.nextCursor,
+                source: outcome.page.source,
+                message: `Found ${outcome.page.items.length} matches for you.`,
+            }
+        }
+
         return this.onboardService.filterJobs(body, body.resume_content, body.limit)
     }
 
+    // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
-    async matchJobs(@Body() body: Record<string, any>) {
+    async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
+        const outcome = await this.offerFeed.dispatch({
+            bearerToken: this.extractBearerToken(req.header('authorization')),
+            limit: typeof body.limit === 'number' ? body.limit : 20,
+            cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+        })
+
+        if (outcome.kind === 'authenticated') {
+            return {
+                success: true,
+                matches: outcome.page.items.map((item) => this.mapItemToJobDocument(item)),
+                total_found: outcome.page.items.length,
+                next_cursor: outcome.page.nextCursor,
+                source: outcome.page.source,
+                message: `Found ${outcome.page.items.length} matches for you.`,
+            }
+        }
+
         if (!body.resume_content) {
             throw new BadRequestException('resume_content is required')
         }
-
         return this.onboardService.matchJobs(body.resume_content, body.limit)
+    }
+
+    // Shapes a ranked offer into the JobDocument format the frontend expects.
+    private mapItemToJobDocument(item: { offer: any; score: number; breakdown?: any; bookmarked: boolean }) {
+        const offer = item.offer
+        const salary = offer.stipendMin && offer.stipendMax
+            ? `${offer.stipendMin}-${offer.stipendMax} TND`
+            : offer.isPaid ? 'paid' : 'unpaid'
+        return {
+            job_id: offer.id,
+            title: offer.title,
+            company: offer.company,
+            location: offer.location,
+            description: offer.description,
+            work_model: offer.workMode,
+            employment_type: offer.type,
+            job_function: offer.domain,
+            salary,
+            source: 'stagio',
+            source_url: `/services/jobmatcher/${offer.id}`,
+            posted_date: (offer.createdAt ?? new Date()).toISOString(),
+            match_score: Math.round(item.score * 100),
+            score_breakdown: item.breakdown,
+            bookmarked: item.bookmarked,
+        }
     }
 
     @Get('virtual-interviewer/personas')
@@ -134,6 +197,7 @@ export class OnboardController {
             this.getSessionKey(req),
             questionSessionId,
             answers,
+            this.getBaseUrl(req),
         )
     }
 
@@ -147,12 +211,13 @@ export class OnboardController {
             this.getSessionKey(req),
             Number(page || 1),
             Number(pageSize || 10),
+            this.getBaseUrl(req),
         )
     }
 
     @Get('onboard/cvs/:id')
     async getCv(@Req() req: Request, @Param('id') id: string) {
-        return this.onboardService.getCv(this.getSessionKey(req), id)
+        return this.onboardService.getCv(this.getSessionKey(req), id, this.getBaseUrl(req))
     }
 
     @Delete('onboard/cvs/:id')
@@ -166,11 +231,8 @@ export class OnboardController {
         @Res() res: Response,
         @Param('id') id: string,
     ) {
-        const buffer = await this.onboardService.downloadCv(this.getSessionKey(req), id)
-        res.set('Content-Type', 'application/pdf')
-        res.set('Content-Disposition', `inline; filename="cv_${id}.pdf"`)
-        res.set('Content-Length', buffer.length.toString())
-        res.send(buffer)
+        const file = await this.onboardService.downloadCv(this.getSessionKey(req), id)
+        res.redirect(file.url)
     }
 
     @Get('onboard/user-name')
@@ -298,6 +360,7 @@ export class OnboardController {
                 audio,
                 text: body.text,
             },
+            this.getBaseUrl(req),
         )
     }
 
@@ -311,12 +374,13 @@ export class OnboardController {
             this.getSessionKey(req),
             Number(page || 1),
             Number(pageSize || 10),
+            this.getBaseUrl(req),
         )
     }
 
     @Get('onboard/interviews/:id')
     async getInterview(@Req() req: Request, @Param('id') id: string) {
-        return this.onboardService.getInterview(this.getSessionKey(req), id)
+        return this.onboardService.getInterview(this.getSessionKey(req), id, this.getBaseUrl(req))
     }
 
     @Delete('onboard/interviews/:id')
@@ -330,75 +394,8 @@ export class OnboardController {
         @Res() res: Response,
         @Param('id') id: string,
     ) {
-        const url = await this.onboardService.downloadInterviewPdf(this.getSessionKey(req), id)
-        res.redirect(url)
-    }
-
-    @Post('onboard/cover-letters')
-    @UseInterceptors(
-        FileInterceptor('letter', {
-            storage: memoryStorage(),
-            limits: { fileSize: 5 * 1024 * 1024 },
-            fileFilter: (_, file, cb) => {
-                if (file.mimetype !== 'application/pdf') {
-                    return cb(new BadRequestException('Only PDF allowed'), false)
-                }
-                cb(null, true)
-            },
-        }),
-    )
-    async uploadCoverLetter(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
-        if (!file) throw new BadRequestException('Letter file is required')
-        return this.onboardService.uploadCoverLetter(this.getSessionKey(req), file)
-    }
-
-    @Get('onboard/cover-letters')
-    async listCoverLetters(
-        @Req() req: Request,
-        @Query('page') page?: string,
-        @Query('pageSize') pageSize?: string,
-    ) {
-        return this.onboardService.listCoverLetters(
-            this.getSessionKey(req),
-            Number(page || 1),
-            Number(pageSize || 10),
-        )
-    }
-
-    @Get('onboard/cover-letters/:id/download')
-    async downloadCoverLetter(
-        @Req() req: Request,
-        @Res() res: Response,
-        @Param('id') id: string,
-    ) {
-        try {
-            const buffer = await this.onboardService.downloadCoverLetter(this.getSessionKey(req), id)
-            res.set('Content-Type', 'application/pdf')
-            res.set('Content-Disposition', `inline; filename="cover_letter_${id}.pdf"`)
-            res.set('Content-Length', buffer.length.toString())
-            res.send(buffer)
-        } catch (err) {
-            console.error('[CoverLetter Download]', err instanceof Error ? err.message : err)
-            throw err
-        }
-    }
-
-    @Get('onboard/cover-letters/:id')
-    async getCoverLetter(@Req() req: Request, @Param('id') id: string) {
-        try {
-            return await this.onboardService.getCoverLetterById(this.getSessionKey(req), id)
-        } catch {
-            throw new NotFoundException('Cover letter not found')
-        }
-    }
-
-    @Delete('onboard/cover-letters/:id')
-    async deleteCoverLetter(@Req() req: Request, @Param('id') id: string) {
-        try {
-            return await this.onboardService.deleteCoverLetter(this.getSessionKey(req), id)
-        } catch {
-            throw new NotFoundException('Cover letter not found')
-        }
+        const file = await this.onboardService.downloadInterviewPdf(this.getSessionKey(req), id)
+        res.redirect(file.url)
     }
 
     private getSessionKey(req: Request) {

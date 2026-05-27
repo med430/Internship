@@ -25,14 +25,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return true
     }
 
-    private isDevBypassEnabled(): boolean {
+    protected isDevBypassEnabled(): boolean {
         const nodeEnv = this.configService.get<string>('NODE_ENV')
         const bypassFlag = this.configService.get<string>('DEV_AUTH_BYPASS')
 
         return nodeEnv === 'development' && ['1', 'true', 'yes', 'on'].includes((bypassFlag ?? '').toLowerCase())
     }
 
-    private async resolveDevBypassUser(): Promise<User> {
+    protected async resolveDevBypassUser(): Promise<User> {
         const configuredUserId = this.configService.get<string>('DEV_AUTH_BYPASS_USER_ID')
         if (configuredUserId) {
             const user = await this.userRepo.findById(configuredUserId)

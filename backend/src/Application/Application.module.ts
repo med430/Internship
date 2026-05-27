@@ -47,6 +47,7 @@ import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/h
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
 import { StartInterviewHandler } from './Features/InterviewFeature/Commands/handlers/start-interview.handler';
 import { AnswerInterviewHandler } from './Features/InterviewFeature/Commands/handlers/answer-interview.handler';
+import { UpdateUserRoleHandler } from './Features/UserFeature/Commands/handlers/update-user-role.handler';
 
 // ── Query handlers ─────────────────────────────────────────
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
@@ -82,6 +83,20 @@ import { GetInterviewsQueryHandler } from './Features/InterviewFeature/Queries/h
 import { GetRecommendationQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendation.handler';
 import { GetRecommendationsQueryHandler } from './Features/RecommendationFeature/Queries/handlers/get-recommendations.handler';
 import { InterviewAiService } from './Services/InterviewService/interview-ai.service';
+import { ContentScoringService } from './Services/RecommendationService/content-scoring.service';
+import { ScoringService } from './Services/RecommendationService/scoring.service';
+import { IMlClient } from './Services/RecommendationService/ml-client.interface';
+import { MlClientService } from './Services/RecommendationService/ml-client.service';
+import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
+import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFeature/Commands/handlers/compute-recommendations.handler';
+import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
+import { CreateConversationHandler } from './Features/ChatFeature/Commands/handlers/create-conversation.handler';
+import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/send-message.handler';
+import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
+import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
+import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
+import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
+import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 
 const CommandHandlers = [
   LoginHandler,
@@ -120,6 +135,10 @@ const CommandHandlers = [
   UpdateSkillHandler,
   StartInterviewHandler,
   AnswerInterviewHandler,
+  ComputeRecommendationsHandler,
+  UpdateUserRoleHandler,
+  CreateConversationHandler,
+  SendMessageHandler,
 ];
 
 const QueryHandlers = [
@@ -166,6 +185,11 @@ const QueryHandlers = [
   // Interviews
   GetInterviewQueryHandler,
   GetInterviewsQueryHandler,
+  // Recommendation feed
+  GetRecommendedOffersHandler,
+  // Chat
+  GetConversationsHandler,
+  GetMessagesHandler,
 ];
 
 @Global()
@@ -175,6 +199,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    ChatPersistenceModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ← ajout
@@ -192,6 +217,16 @@ const QueryHandlers = [
     ...QueryHandlers,
     JwtStrategy,
     InterviewAiService,
+    ContentScoringService,
+    ScoringService,
+    OfferFeedService,
+    SupabaseAuthBridge,
+    {
+      provide: IMlClient,
+      useFactory: (cfg: ConfigService) =>
+        cfg.get<string>('ML_MOCK') === 'true' ? new MlClientMock() : new MlClientService(cfg),
+      inject: [ConfigService],
+    },
     {
       provide: AuthService,
       useClass: JwtAuthService,
@@ -202,7 +237,13 @@ const QueryHandlers = [
     JwtModule,
     PassportModule,
     FileStorageModule,
+    PersistenceModule,
     InterviewAiService,
+    ContentScoringService,
+    ScoringService,
+    OfferFeedService,
+    SupabaseAuthBridge,
+    IMlClient,
   ],
 })
 export class ApplicationModule {}

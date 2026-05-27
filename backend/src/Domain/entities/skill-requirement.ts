@@ -6,5 +6,6 @@ export class SkillRequirement {
       public readonly id: string,
       public readonly skill: Skill,
       public level: SkillLevel,
+      public mandatory: boolean = true,
   ) {}
 }

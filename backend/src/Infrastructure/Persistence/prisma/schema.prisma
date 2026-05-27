@@ -81,6 +81,14 @@ model User {
   recruiterProfile RecruiterProfile?
   interviews       Interview[]
 
+  // Behavioral back-relations (recommendation system)
+  offerViews              OfferView[]
+  offerBookmarks          OfferBookmark[]
+  offerImpressions        OfferImpression[]
+  searchQueries           SearchQuery[]
+  profileViewsAsRecruiter ProfileView[]        @relation("RecruiterViews")
+  recommendationScores    RecommendationScore[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -102,6 +110,23 @@ model StudentProfile {
   city      String?
   domains   String[]
 
+  // Recommendation preferences (additive — nullable / default / array)
+  preferredDomains    String[]
+  preferredCities     String[]
+  preferredWorkMode   WorkMode?
+  availableFrom       DateTime?
+  availableTo         DateTime?
+  paidOnly            Boolean      @default(false)
+  preferredOfferTypes OfferType[]
+  languages           String[]
+  maxCommuteCities    String[]
+
+  // Academic context (structured)
+  schoolId       Int?
+  school         School? @relation(fields: [schoolId], references: [id])
+  currentYear    Int?
+  currentProgram String?
+
   skills         SkillAssignment[]
   experiences    Experience[]
   projects       Project[]
@@ -109,6 +134,9 @@ model StudentProfile {
   certifications Certification[]
   cvs            CV[]
   applications   Application[]
+
+  // Behavioral back-relations (recommendation system)
+  profileViewsReceived ProfileView[]
 }
 
 model RecruiterProfile {
@@ -248,9 +276,23 @@ model Offer {
   endDate   DateTime
   type      OfferType
 
+  // Recommendation-critical (additive — nullable / default / array)
+  applicationDeadline DateTime?
+  positionsCount      Int       @default(1)
+  stipendMin          Float?
+  stipendMax          Float?
+  languagesRequired   String[]
+
   skillRequirements SkillRequirement[]
   applications      Application[]
   interviews        Interview[]
+
+  // Behavioral back-relations (recommendation system)
+  views                OfferView[]
+  bookmarks            OfferBookmark[]
+  impressions          OfferImpression[]
+  recommendationScores RecommendationScore[]
+  profileViews         ProfileView[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -279,12 +321,13 @@ model SkillAssignment {
 }
 
 model SkillRequirement {
-  id      String     @id @default(uuid())
-  skillId Int
-  skill   Skill      @relation(fields: [skillId], references: [id])
-  offerId String
-  offer   Offer      @relation(fields: [offerId], references: [id])
-  level   SkillLevel
+  id        String     @id @default(uuid())
+  skillId   Int
+  skill     Skill      @relation(fields: [skillId], references: [id])
+  offerId   String
+  offer     Offer      @relation(fields: [offerId], references: [id])
+  level     SkillLevel
+  mandatory Boolean    @default(true)
 }
 
 // ─────────────────────────────────────────
@@ -411,6 +454,17 @@ model PublicCv {
   @@index([createdAt])
 }
 
+model PublicCoverLetter {
+  id         String   @id @default(uuid())
+  sessionKey String
+  fileUrl    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
 model PublicCareerGuide {
   id                    String   @id @default(uuid())
   sessionKey            String
@@ -443,6 +497,121 @@ model PublicPortfolioGeneration {
   @@index([createdAt])
 }
 
+// ─────────────────────────────────────────
+// RECOMMENDATION SYSTEM
+// ─────────────────────────────────────────
+
+model School {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  fullName String
+  city     String
+  type     String?
+  website  String?
+
+  studentProfiles StudentProfile[]
+}
+
+model OfferView {
+  id         String   @id @default(uuid())
+  studentId  String
+  offerId    String
+  viewedAt   DateTime @default(now())
+  durationMs Int?
+  source     String?
+
+  student User  @relation(fields: [studentId], references: [id])
+  offer   Offer @relation(fields: [offerId], references: [id])
+
+  @@index([studentId])
+  @@index([offerId])
+  @@index([viewedAt])
+}
+
+model OfferBookmark {
+  id        String    @id @default(uuid())
+  studentId String
+  offerId   String
+  createdAt DateTime  @default(now())
+  removedAt DateTime?
+
+  student User  @relation(fields: [studentId], references: [id])
+  offer   Offer @relation(fields: [offerId], references: [id])
+
+  @@unique([studentId, offerId])
+  @@index([studentId])
+}
+
+model OfferImpression {
+  id       String   @id @default(uuid())
+  studentId String
+  offerId  String
+  shownAt  DateTime @default(now())
+  position Int?
+
+  student User  @relation(fields: [studentId], references: [id])
+  offer   Offer @relation(fields: [offerId], references: [id])
+
+  @@index([studentId, shownAt])
+  @@index([offerId])
+}
+
+model ProfileView {
+  id               String   @id @default(uuid())
+  recruiterUserId  String
+  studentProfileId String
+  offerId          String?
+  viewedAt         DateTime @default(now())
+
+  recruiter      User           @relation("RecruiterViews", fields: [recruiterUserId], references: [id])
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id])
+  offer          Offer?         @relation(fields: [offerId], references: [id])
+
+  @@index([recruiterUserId])
+  @@index([studentProfileId])
+}
+
+model SearchQuery {
+  id           String   @id @default(uuid())
+  studentId    String
+  query        String
+  filters      Json?
+  resultsCount Int?
+  searchedAt   DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@index([searchedAt])
+}
+
+model RecommendationScore {
+  id            String   @id @default(uuid())
+  studentId     String
+  offerId       String
+
+  contentScore  Float
+  semanticScore Float    @default(0)
+  cfScore       Float    @default(0)
+  finalScore    Float
+
+  breakdown    Json?
+  modelVersion String   @default("v0")
+  computedAt   DateTime @default(now())
+
+  student User  @relation(fields: [studentId], references: [id])
+  offer   Offer @relation(fields: [offerId], references: [id])
+
+  @@unique([studentId, offerId])
+  @@index([studentId, finalScore(sort: Desc)])
+  @@index([offerId, finalScore(sort: Desc)])
+  @@index([computedAt])
+}
+
+// ─────────────────────────────────────────
+// ONBOARD PUBLIC SESSION DATA (continued)
+// ─────────────────────────────────────────
+
 model PublicInterview {
   id                    String   @id @default(uuid())
   sessionKey            String
@@ -473,17 +642,6 @@ model PublicInterview {
   pdfUrl                String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-
-  @@index([sessionKey])
-  @@index([createdAt])
-}
-
-model PublicCoverLetter {
-  id         String   @id @default(uuid())
-  sessionKey String
-  fileUrl    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 
   @@index([sessionKey])
   @@index([createdAt])

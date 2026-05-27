@@ -3,8 +3,11 @@ import {
   Briefcase,
   Database,
   FileText,
+  LayoutDashboard,
   MessageSquareText,
+  Shield,
   Target,
+  Users,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +33,29 @@ export const PRIMARY_ITEMS: SidebarMenuEntry[] = [
     title: "Jobmatcher",
     url: "/services/jobmatcher",
     icon: Target,
+  },
+];
+
+export const ADMIN_ITEMS: SidebarMenuEntry[] = [
+  {
+    title: "Overview",
+    url: "/services/admin",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Users",
+    url: "/services/admin/users",
+    icon: Users,
+  },
+  {
+    title: "Offers",
+    url: "/services/admin/offers",
+    icon: Briefcase,
+  },
+  {
+    title: "Recommendations",
+    url: "/services/admin/recommendations",
+    icon: Shield,
   },
 ];
 
