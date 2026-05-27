@@ -58,6 +58,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const offerIds = scoreRows.map(s => s.offerId)
         const offers = await this.loadOffersByIds(offerIds)
         const bookmarkedIds = await this.getBookmarkedOfferIds(studentUserId, offerIds)
+        const viewCounts = await this.views.countByStudent(studentUserId)
 
         // Pair scores with their offer, drop missing/deleted/expired offers
         const pairs = scoreRows
@@ -69,7 +70,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         // Apply real-time modifiers and re-sort
         const adjusted = pairs.map(({ score, offer }) => ({
             offer,
-            score: this.adjustScore(score, offer, studentUserId, bookmarkedIds.has(offer.id)),
+            score: this.adjustScore(score, offer, bookmarkedIds.has(offer.id), viewCounts.get(offer.id) ?? 0),
             breakdown: score.breakdown,
             bookmarked: bookmarkedIds.has(offer.id),
         }))
@@ -121,8 +122,8 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
     private adjustScore(
         score: RecommendationScore,
         offer: Offer,
-        _studentUserId: string,
         isBookmarked: boolean,
+        viewCount: number,
     ): number {
         const ageDays = offer.createdAt ? (Date.now() - offer.createdAt.getTime()) / 86_400_000 : 0
         const freshness = Math.max(0.5, Math.exp(-ageDays / 14))
@@ -130,8 +131,8 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const deadlineUrgency = this.deadlineFactor(offer.applicationDeadline)
         const bookmarkBoost = isBookmarked ? 0.1 : 0
 
-        // Already-viewed penalty turns on once the view-count cache exists;
-        const viewedPenalty = 1.0
+        // Demote offers the student already viewed 3+ times without acting on them.
+        const viewedPenalty = viewCount >= 3 ? 0.7 : 1.0
 
         return score.finalScore * freshness * viewedPenalty * deadlineUrgency + bookmarkBoost
     }

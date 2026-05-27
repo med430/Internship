@@ -36,6 +36,16 @@ export class OfferViewRepositoryImpl
         return this.prisma.offerView.count({ where: { studentId, offerId } })
     }
 
+    // Single grouped query — returns a Map keyed by offerId so the re-rank pass can look up counts in O(1).
+    async countByStudent(studentId: string): Promise<Map<string, number>> {
+        const groups = await this.prisma.offerView.groupBy({
+            by: ['offerId'],
+            where: { studentId },
+            _count: { _all: true },
+        })
+        return new Map(groups.map(g => [g.offerId, g._count._all]))
+    }
+
     async deleteOlderThan(cutoff: Date): Promise<number> {
         const result = await this.prisma.offerView.deleteMany({
             where: { viewedAt: { lt: cutoff } },

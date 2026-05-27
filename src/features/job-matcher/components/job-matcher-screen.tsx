@@ -31,6 +31,7 @@ export function JobMatcherScreen() {
     topOfResultsRef,
     shouldShowCVPrompt,
     handleSave,
+    handleView,
     handleRefresh,
     handleApplyFilters,
     handleResetFilters,
@@ -75,6 +76,7 @@ export function JobMatcherScreen() {
         savedJobs={savedJobs}
         topOfResultsRef={topOfResultsRef}
         onSave={handleSave}
+        onView={handleView}
         onRefresh={handleRefresh}
         onOpenCVSelector={() => setShowCVSelector(true)}
         onPageChange={setPage}
