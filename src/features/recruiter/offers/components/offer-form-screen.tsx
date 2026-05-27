@@ -81,7 +81,6 @@ export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
   const [requiredSkills, setRequiredSkills] = useState<SkillEntry[]>([]);
   const [pendingSkill, setPendingSkill] = useState("");
   const [pendingLevel, setPendingLevel] = useState("INTERMEDIATE");
-  const router = useRouter();
 
   // Fetch available skills from backend on mount
   useEffect(() => {
