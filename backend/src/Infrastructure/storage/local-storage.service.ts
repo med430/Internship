@@ -2,6 +2,7 @@
 
 import { Injectable } from '@nestjs/common'
 import { existsSync, unlinkSync } from 'fs'
+import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { FileStorageService } from '../../Application/Services/FileStorageService/FileStorageService'
 
@@ -12,8 +13,20 @@ export class LocalFileStorageService extends FileStorageService {
         file: Express.Multer.File,
         folder: 'cvs' | 'letters'
     ): Promise<string> {
-        if (!file || !file.filename) throw new Error('Invalid file')
-        return `/uploads/${folder}/${file.filename}`
+        if (!file?.buffer) throw new Error('Invalid file')
+
+        const uploadDir = join(process.cwd(), 'uploads', folder)
+        await mkdir(uploadDir, { recursive: true })
+
+        const safeName =
+            file.originalname?.replace(/[^a-zA-Z0-9._-]/g, '_') ||
+            `upload_${Date.now()}.pdf`
+        const filename = `${Date.now()}_${safeName}`
+        const fullPath = join(uploadDir, filename)
+
+        await writeFile(fullPath, file.buffer)
+
+        return `/uploads/${folder}/${filename}`
     }
 
     async uploadBuffer(_buffer: Buffer, _folder: 'pdfs', _filename: string): Promise<string> {

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -20,7 +21,11 @@ export default async function ServicesLayout({
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  // If Supabase session is missing, allow backend JWT (interview_token) to authenticate server-side pages.
+  const cookieStore = await cookies();
+  const interviewToken = cookieStore.get("interview_token")?.value;
+
+  if ((error || !user) && !interviewToken) {
     redirect("/login");
   }
 

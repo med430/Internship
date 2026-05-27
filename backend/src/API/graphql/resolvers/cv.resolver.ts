@@ -3,6 +3,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { CV } from '../../../Domain/entities/cv.entity';
 import { GetCVQuery } from '../../../Application/Features/CvFeature/Queries/get-cv.query';
 import { GetCVsQuery } from '../../../Application/Features/CvFeature/Queries/get-cvs.query';
+import { GetStudentProfileQuery } from '../../../Application/Features/StudentProfileFeature/Queries/get-student-profile.query';
 import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/get-user.query';
 import { User } from '../../../Domain/entities/user.entity';
 
@@ -25,6 +26,12 @@ export class CVResolver {
 
   @ResolveField('student')
   async student(@Parent() cv: CV): Promise<User | null> {
-    return this.queryBus.execute(new GetUserQuery(cv.studentId));
+    const profile = await this.queryBus.execute(
+      new GetStudentProfileQuery(cv.studentId),
+    );
+
+    if (!profile) return null;
+
+    return this.queryBus.execute(new GetUserQuery(profile.userId));
   }
 }

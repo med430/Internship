@@ -39,6 +39,8 @@ export default function LogoLink({
         alt="Stagio"
         width={width}
         height={height}
+        loading="eager"
+        priority
         style={{ width: "auto", height: `${height}px` }}
         className="object-contain"
       />

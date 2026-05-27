@@ -12,6 +12,9 @@ export class GetApplicationsQueryHandler implements IQueryHandler<GetApplication
   ) {}
 
   async execute(query: GetApplicationsQuery): Promise<Application[]> {
-    return this.repository.findPaginated(query.pageNumber, query.pageSize);
+    const pageNumber = Number(query.pageNumber || 1);
+    const pageSize = Number(query.pageSize || 200);
+
+    return this.repository.findPaginated(pageNumber, pageSize);
   }
 }

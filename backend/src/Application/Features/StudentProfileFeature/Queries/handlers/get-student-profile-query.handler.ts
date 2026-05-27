@@ -14,6 +14,9 @@ export class GetStudentProfileQueryHandler implements IQueryHandler<GetStudentPr
   async execute(
     query: GetStudentProfileQuery,
   ): Promise<StudentProfile | null> {
+    const byId = await this.studentProfileRepository.findById(query.id);
+    if (byId) return byId;
+
     return this.studentProfileRepository.findByUserId(query.id);
   }
 }

@@ -177,6 +177,43 @@ export function SignupForm({
                 </FieldDescription>
               </Field>
               <Field>
+                <Field className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="name">First name</FieldLabel>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      disabled={isLoading}
+                      autoComplete="given-name"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="lastname">Last name</FieldLabel>
+                    <Input
+                      id="lastname"
+                      name="lastname"
+                      type="text"
+                      required
+                      disabled={isLoading}
+                      autoComplete="family-name"
+                    />
+                  </Field>
+                </Field>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  disabled={isLoading}
+                  autoComplete="username"
+                />
+              </Field>
+              <Field>
                 <Field className="grid grid-cols-2 gap-4">
                   <Field>
                     <FieldLabel htmlFor="password">Password</FieldLabel>

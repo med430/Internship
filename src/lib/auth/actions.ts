@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { resolveRequestOrigin } from "./internal/form-origin";
 import { validatePasswordPolicy } from "./internal/password-rules";
 import {
@@ -47,8 +48,11 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const name = formData.get("name") as string;
+  const lastname = formData.get("lastname") as string;
+  const username = formData.get("username") as string;
 
-  if (!email || !password || !confirmPassword) {
+  if (!email || !password || !confirmPassword || !name || !lastname || !username) {
     return { success: false, error: "All fields are required" };
   }
 
@@ -74,6 +78,8 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     },
   });
 
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
   if (error) {
     if (
       error.message.toLowerCase().includes("already registered") ||
@@ -95,10 +101,69 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
         };
       }
 
+      try {
+        const backendResponse = await fetch(
+          `${apiBaseUrl}/auth/register/student`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              password,
+              name,
+              lastname,
+              username,
+            }),
+            cache: "no-store",
+          },
+        );
+
+        if (!backendResponse.ok && backendResponse.status !== 409) {
+          const text = await backendResponse.text().catch(() => "");
+          return {
+            success: false,
+            error: text || "Failed to register account on backend",
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          error: "Unable to reach backend to complete registration",
+        };
+      }
+
       return { success: true };
     }
 
     return { success: false, error: error.message };
+  }
+
+  try {
+    const backendResponse = await fetch(`${apiBaseUrl}/auth/register/student`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        lastname,
+        username,
+      }),
+      cache: "no-store",
+    });
+
+    if (!backendResponse.ok && backendResponse.status !== 409) {
+      const text = await backendResponse.text().catch(() => "");
+      return {
+        success: false,
+        error: text || "Failed to register account on backend",
+      };
+    }
+  } catch {
+    return {
+      success: false,
+      error: "Unable to reach backend to complete registration",
+    };
   }
 
   return { success: true };
@@ -121,6 +186,49 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  // Retrieve backend JWT used by protected Nest endpoints.
+  try {
+    const backendResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        cache: "no-store",
+      },
+    );
+
+    if (!backendResponse.ok) {
+      const text = await backendResponse.text().catch(() => "");
+      return {
+        success: false,
+        error: text || "Backend login failed. Please ensure the backend is running.",
+      };
+    }
+
+    const backendPayload = (await backendResponse.json()) as { token?: string };
+    if (!backendPayload.token) {
+      return {
+        success: false,
+        error: "Backend login did not return a token",
+      };
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set("interview_token", backendPayload.token, {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+  } catch {
+    return {
+      success: false,
+      error: "Backend login failed. Please ensure the backend is running.",
+    };
   }
 
   redirect("/services/dashboard");
@@ -194,6 +302,12 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.set("interview_token", "", {
+    path: "/",
+    sameSite: "lax",
+    expires: new Date(0),
+  });
   redirect("/login");
 }
 

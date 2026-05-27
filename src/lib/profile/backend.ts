@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import type { Database } from "@/types/database.types";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -14,11 +15,20 @@ async function getAccessToken() {
     error,
   } = await supabase.auth.getSession();
 
-  if (error || !session?.access_token) {
-    return null;
+  if (!error && session?.access_token) {
+    return session.access_token;
   }
 
-  return session.access_token;
+  // Fall back to backend-issued JWT stored in cookie (server-side).
+  try {
+    const cookieStore = cookies();
+    const interviewToken = cookieStore.get("interview_token")?.value;
+    if (interviewToken) return interviewToken;
+  } catch {
+    // ignore
+  }
+
+  return null;
 }
 
 async function readResponseError(response: Response) {
