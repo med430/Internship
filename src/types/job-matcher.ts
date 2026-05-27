@@ -78,13 +78,19 @@ export interface JobFilterRequest {
   posted_within_days?: number;
   resume_content?: string;
   limit?: number;
+  // Opaque base64 cursor from the previous response's `next_cursor`. Omit to fetch the first page.
+  cursor?: string;
+  // Ask the authenticated recommendation feed for active bookmarks only.
+  savedOnly?: boolean;
 }
 
 export interface JobFilterResponse {
   success: boolean;
   jobs: JobDocument[];
   total_found: number;
-  filter_stats: {
+  next_cursor?: string | null;
+  source?: "recommendation" | "newest-fallback";
+  filter_stats?: {
     jobs_found: number;
     used_resume_matching: boolean;
     filters_applied: Record<string, unknown>;

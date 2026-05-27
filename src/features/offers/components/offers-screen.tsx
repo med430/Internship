@@ -1,318 +1,481 @@
+// Browseable offers feed using the same card as the job matcher, paginated by cursor with infinite scroll.
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bookmark, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { CVSelector, type CVSource } from "@/components/shared/cv-selector";
-import {
-	CoverLetterSelector,
-	type CoverLetterSource,
-} from "@/components/shared/cover-letter-selector";
-import { fetchOffers, type Offer } from "@/lib/api/offers";
-import { createApplication } from "@/lib/api/applications";
-import { fetchWithAuth } from "@/lib/api/auth";
-import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+
+import JobCard from "@/components/job-matcher/job-card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { jobFilterAPI } from "@/lib/api/job-filter-client";
 import { tracking } from "@/lib/api/tracking-client";
-import {
-	Pagination,
-	PaginationContent,
-	PaginationEllipsis,
-	PaginationItem,
-	PaginationLink,
-	PaginationNext,
-	PaginationPrevious,
-} from "@/components/ui/pagination";
+import { convertJobToCardProps } from "@/features/job-matcher/lib/utils";
+import type { JobDocument } from "@/types/job-matcher";
 
 const PAGE_SIZE = 12;
+const SAVED_PAGE_SIZE = 12;
+const SKELETON_COUNT = 6;
+const PREFETCH_ROOT_MARGIN = "800px";
+const UNBOOKMARK_UNDO_MS = 6000;
 
-function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
-	if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-	if (currentPage <= 3) return [1, 2, 3, 4, "ellipsis", totalPages];
-	if (currentPage >= totalPages - 2) return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-	return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
-}
+type OffersTab = "all" | "saved";
 
-type ApplyModalState = {
-	open: boolean;
-	offer: Offer | null;
-};
-
-async function uploadCvIfNeeded(source: CVSource): Promise<string> {
-	if (source.type === "database") {
-		return source.cv.id;
-	}
-
-	const apiUrl = getClientApiBaseUrl();
-	const form = new FormData();
-	form.append("cv", source.file);
-
-	const response = await fetchWithAuth(`${apiUrl}/cvs`, {
-		method: "POST",
-		body: form,
-	});
-
-	if (!response.ok) {
-		const text = await response.text().catch(() => "");
-		throw new Error(text || "Failed to upload CV");
-	}
-
-	const payload = (await response.json()) as { id?: string };
-	if (!payload.id) {
-		throw new Error("Uploaded CV id not returned");
-	}
-
-	return payload.id;
-}
-
-function resolveCoverLetterId(source: CoverLetterSource | null): string | undefined {
-	if (!source) {
-		return undefined;
-	}
-
-	if (source.type === "database") {
-		return source.letter.id;
-	}
-
-	// Uploaded cover-letter file flow can be added later if required.
-	return undefined;
-}
-
-export function OffersScreen() {
-	const [offers, setOffers] = useState<Offer[]>([]);
-	const [loadingOffers, setLoadingOffers] = useState(true);
-	const [applyState, setApplyState] = useState<ApplyModalState>({
-		open: false,
-		offer: null,
-	});
-	const [selectedCv, setSelectedCv] = useState<CVSource | null>(null);
-	const [selectedCoverLetter, setSelectedCoverLetter] =
-		useState<CoverLetterSource | null>(null);
-	const [submittingApplication, setSubmittingApplication] = useState(false);
-	const [page, setPage] = useState(1);
-
-	useEffect(() => {
-		let mounted = true;
-
-		const run = async () => {
-			setLoadingOffers(true);
-			try {
-				const data = await fetchOffers(1, 100);
-				if (mounted) {
-					setOffers(data);
-				}
-			} catch (error) {
-				toast.error(error instanceof Error ? error.message : "Failed to load offers");
-			} finally {
-				if (mounted) {
-					setLoadingOffers(false);
-				}
-			}
-		};
-
-		run();
-		return () => {
-			mounted = false;
-		};
-	}, []);
-
-	const sortedOffers = useMemo(
-		() => [...offers].sort((a, b) => a.title.localeCompare(b.title)),
-		[offers],
-	);
-
-	const totalPages = Math.ceil(sortedOffers.length / PAGE_SIZE);
-	const paginated = useMemo(
-		() => sortedOffers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-		[sortedOffers, page],
-	);
-
-	useEffect(() => {
-		if (paginated.length === 0) return;
-		tracking.trackImpressions(
-			paginated.map((offer, index) => ({
-				offerId: offer.id,
-				position: (page - 1) * PAGE_SIZE + index,
-				source: "offers",
-			})),
-		);
-	}, [paginated, page]);
-
-	const handleOfferNavigation = (offerId: string) => {
-		tracking.markOfferViewSource(offerId, "offers");
-	};
-
-	const openApplyModal = (offer: Offer) => {
-		tracking.trackView(offer.id, "offers_apply");
-		setSelectedCv(null);
-		setSelectedCoverLetter(null);
-		setApplyState({ open: true, offer });
-	};
-
-	const closeApplyModal = () => {
-		setApplyState({ open: false, offer: null });
-		setSubmittingApplication(false);
-	};
-
-	const submitApplication = async () => {
-		if (!applyState.offer) {
-			return;
-		}
-
-		if (!selectedCv) {
-			toast.error("Please select a CV before applying");
-			return;
-		}
-
-		setSubmittingApplication(true);
-		try {
-			const cvId = await uploadCvIfNeeded(selectedCv);
-			const coverLetterId = resolveCoverLetterId(selectedCoverLetter);
-
-			await createApplication({
-				offerId: applyState.offer.id,
-				cvId,
-				...(coverLetterId ? { coverLetterId } : {}),
-			});
-
-			toast.success("Application submitted successfully");
-			closeApplyModal();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to submit application",
-			);
-			setSubmittingApplication(false);
-		}
-	};
-
+function SkeletonCard() {
 	return (
-		<div className="p-6 space-y-6">
-			<div>
-				<h1 className="text-2xl font-semibold">Offers</h1>
-				<p className="text-sm text-muted-foreground mt-1">
-					Browse recruiter offers and apply with your saved documents.
-				</p>
-			</div>
-
-			{loadingOffers ? (
-				<div className="text-sm text-muted-foreground">Loading offers...</div>
-			) : sortedOffers.length === 0 ? (
-				<Card>
-					<CardContent className="py-10 text-center text-sm text-muted-foreground">
-						No offers available right now.
-					</CardContent>
-				</Card>
-			) : (
-				<div className="grid gap-4">
-					{paginated.map((offer) => (
-						<Card key={offer.id}>
-							<CardHeader>
-								<CardTitle className="text-lg">
-									<Link
-										href={`/services/offers/${offer.id}`}
-										className="hover:underline"
-										onClick={() => handleOfferNavigation(offer.id)}
-									>
-										{offer.title}
-									</Link>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								<div className="text-sm text-muted-foreground">
-									{offer.company} • {offer.location || "Remote"}
-								</div>
-								<p className="text-sm whitespace-pre-wrap line-clamp-3">{offer.description}</p>
-								<div className="flex items-center justify-end gap-2">
-									<Button variant="outline" asChild>
-										<Link
-											href={`/services/offers/${offer.id}`}
-											onClick={() => handleOfferNavigation(offer.id)}
-										>
-											View details
-										</Link>
-									</Button>
-									<Button onClick={() => openApplyModal(offer)}>Apply</Button>
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			)}
-
-			{/* Pagination */}
-			{!loadingOffers && totalPages > 1 && (
-				<div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-5 py-3 shadow-sm">
-					<p className="text-xs text-muted-foreground">
-						Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sortedOffers.length)} of {sortedOffers.length} offers
-					</p>
-					<Pagination className="w-fit mx-0">
-						<PaginationContent>
-							<PaginationItem>
-								<PaginationPrevious onClick={() => setPage(p => Math.max(1, p - 1))} className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-							</PaginationItem>
-							{getPaginationItems(page, totalPages).map((item, i) =>
-								item === "ellipsis" ? (
-									<PaginationItem key={"e-" + i}><PaginationEllipsis /></PaginationItem>
-								) : (
-									<PaginationItem key={item}>
-										<PaginationLink isActive={item === page} onClick={() => setPage(item)} className="cursor-pointer">{item}</PaginationLink>
-									</PaginationItem>
-								)
-							)}
-							<PaginationItem>
-								<PaginationNext onClick={() => setPage(p => Math.min(totalPages, p + 1))} className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-							</PaginationItem>
-						</PaginationContent>
-					</Pagination>
-				</div>
-			)}
-
-			<Dialog
-				open={applyState.open}
-				onOpenChange={(open) => {
-					if (!open) {
-						closeApplyModal();
-					}
-				}}
-			>
-				<DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle>Apply to {applyState.offer?.title || "Offer"}</DialogTitle>
-						<DialogDescription>
-							Select a CV and optional cover letter to submit your application.
-						</DialogDescription>
-					</DialogHeader>
-
-					<div className="space-y-6">
-						<CVSelector onCVSelect={setSelectedCv} />
-						<CoverLetterSelector onSelect={setSelectedCoverLetter} />
-
-						<div className="flex justify-end gap-2">
-							<Button
-								variant="outline"
-								onClick={closeApplyModal}
-								disabled={submittingApplication}
-							>
-								Cancel
-							</Button>
-							<Button onClick={submitApplication} disabled={submittingApplication}>
-								{submittingApplication ? "Submitting..." : "Submit Application"}
-							</Button>
-						</div>
+		<div className="rounded-xl border border-border/60 bg-card animate-pulse">
+			<div className="flex items-start justify-between gap-3 p-5 pb-3">
+				<div className="flex items-center gap-3 min-w-0 flex-1">
+					<div className="w-10 h-10 rounded-lg bg-muted" />
+					<div className="flex-1 space-y-2">
+						<div className="h-3 w-24 rounded bg-muted" />
+						<div className="h-2.5 w-16 rounded bg-muted" />
 					</div>
-				</DialogContent>
-			</Dialog>
+				</div>
+				<div className="h-6 w-20 rounded-full bg-muted" />
+			</div>
+			<div className="px-5 space-y-2">
+				<div className="h-4 w-3/4 rounded bg-muted" />
+				<div className="h-3 w-1/2 rounded bg-muted" />
+			</div>
+			<div className="px-5 mt-3 space-y-2">
+				<div className="h-3 w-full rounded bg-muted" />
+				<div className="h-3 w-5/6 rounded bg-muted" />
+			</div>
+			<div className="flex gap-1.5 px-5 mt-4">
+				<div className="h-5 w-14 rounded-full bg-muted" />
+				<div className="h-5 w-20 rounded-full bg-muted" />
+			</div>
+			<div className="flex items-center gap-2 p-4 mt-4 border-t border-border/40">
+				<div className="h-9 w-9 rounded-lg bg-muted" />
+				<div className="flex-1" />
+			</div>
 		</div>
 	);
 }
 
-export default OffersScreen;
+function mergeUniqueJobs(existing: JobDocument[], incoming: JobDocument[]): JobDocument[] {
+	const seen = new Set(existing.map((job) => job.job_id));
+	const fresh = incoming.filter((job) => !seen.has(job.job_id));
+	return fresh.length > 0 ? [...fresh, ...existing] : existing;
+}
 
+function appendUniqueJobs(existing: JobDocument[], incoming: JobDocument[]): JobDocument[] {
+	const seen = new Set(existing.map((job) => job.job_id));
+	const fresh = incoming.filter((job) => !seen.has(job.job_id));
+	return fresh.length > 0 ? [...existing, ...fresh] : existing;
+}
+
+export function OffersScreen() {
+	const [activeTab, setActiveTab] = useState<OffersTab>("all");
+	const [jobs, setJobs] = useState<JobDocument[]>([]);
+	const [savedJobs, setSavedJobs] = useState<JobDocument[]>([]);
+	const [cursor, setCursor] = useState<string | null>(null);
+	const [savedCursor, setSavedCursor] = useState<string | null>(null);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const [savedLoadingMore, setSavedLoadingMore] = useState(false);
+	const [savedLoading, setSavedLoading] = useState(false);
+	const [savedLoaded, setSavedLoaded] = useState(false);
+	const [done, setDone] = useState(false);
+	const [savedDone, setSavedDone] = useState(false);
+	const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+	const [pendingUnsave, setPendingUnsave] = useState<Set<string>>(new Set());
+
+	const sentinelRef = useRef<HTMLDivElement | null>(null);
+	const fetchingRef = useRef(false);
+	const savedFetchingRef = useRef(false);
+	const abortRef = useRef<AbortController | null>(null);
+	const pendingUnbookmarkTimersRef = useRef<Map<string, number>>(new Map());
+
+	// Pulls one page of the ranked feed and appends it, advancing the cursor.
+	const loadPage = useCallback(async (cursorValue: string | null) => {
+		if (fetchingRef.current) return;
+		fetchingRef.current = true;
+		abortRef.current?.abort();
+		const controller = new AbortController();
+		abortRef.current = controller;
+		try {
+			const response = await jobFilterAPI.filterJobs(
+				{ limit: PAGE_SIZE, ...(cursorValue ? { cursor: cursorValue } : {}) },
+				{ signal: controller.signal },
+			);
+
+			const incoming = response.jobs ?? [];
+			setJobs((prev) => {
+				const known = new Set(prev.map((j) => j.job_id));
+				const fresh = incoming.filter((j) => !known.has(j.job_id));
+
+				if (fresh.length > 0) {
+					tracking.trackImpressions(
+						fresh.map((job, index) => ({
+							offerId: job.job_id,
+							position: prev.length + index,
+							source: "offers",
+						})),
+					);
+				}
+
+				setBookmarked((existing) => {
+					const merged = new Set(existing);
+					fresh.forEach((j) => { if (j.bookmarked) merged.add(j.job_id); });
+					return merged;
+				});
+
+				const freshBookmarked = fresh.filter((j) => j.bookmarked);
+				if (freshBookmarked.length > 0) {
+					setSavedJobs((existing) => mergeUniqueJobs(existing, freshBookmarked));
+				}
+
+				return [...prev, ...fresh];
+			});
+
+			const nextCursor = response.next_cursor ?? null;
+			setCursor(nextCursor);
+			if (!nextCursor || incoming.length === 0) setDone(true);
+		} catch (err) {
+			if ((err as Error).name === "AbortError") return;
+			toast.error(err instanceof Error ? err.message : "Failed to load offers");
+			setDone(true);
+		} finally {
+			fetchingRef.current = false;
+		}
+	}, []);
+
+	const loadSavedOffers = useCallback(async (cursorValue: string | null) => {
+		if (savedFetchingRef.current) return;
+		savedFetchingRef.current = true;
+		if (cursorValue) {
+			setSavedLoadingMore(true);
+		} else {
+			setSavedLoading(true);
+		}
+		try {
+			const response = await jobFilterAPI.filterJobs({
+				limit: SAVED_PAGE_SIZE,
+				savedOnly: true,
+				...(cursorValue ? { cursor: cursorValue } : {}),
+			});
+			const incoming = response.jobs ?? [];
+
+			setSavedJobs((existing) => (
+				cursorValue ? appendUniqueJobs(existing, incoming) : incoming
+			));
+			setBookmarked((existing) => {
+				const merged = new Set(existing);
+				incoming.forEach((job) => merged.add(job.job_id));
+				return merged;
+			});
+
+			const basePosition = cursorValue ? savedJobs.length : 0;
+			if (incoming.length > 0) {
+				tracking.trackImpressions(
+					incoming.map((job, index) => ({
+						offerId: job.job_id,
+						position: basePosition + index,
+						source: "offers_saved",
+					})),
+				);
+			}
+			const nextCursor = response.next_cursor ?? null;
+			setSavedCursor(nextCursor);
+			if (!nextCursor || incoming.length === 0) setSavedDone(true);
+			setSavedLoaded(true);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Failed to load saved offers");
+		} finally {
+			savedFetchingRef.current = false;
+			setSavedLoading(false);
+			setSavedLoadingMore(false);
+		}
+	}, [savedJobs.length]);
+
+	// Initial page on mount + abort any in-flight request when the screen unmounts.
+	useEffect(() => {
+		const timeoutId = window.setTimeout(() => {
+			void loadPage(null);
+		}, 0);
+		return () => {
+			window.clearTimeout(timeoutId);
+			abortRef.current?.abort();
+		};
+	}, [loadPage]);
+
+	// IntersectionObserver triggers the next page when the sentinel near the bottom enters the viewport.
+	useEffect(() => {
+		const sentinel = sentinelRef.current;
+		if (!sentinel) return;
+		if (activeTab === "all" && done) return;
+		if (activeTab === "saved" && savedDone) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const entry = entries[0];
+				if (!entry?.isIntersecting) return;
+				if (activeTab === "all") {
+					if (fetchingRef.current || done) return;
+					setLoadingMore(true);
+					loadPage(cursor).finally(() => setLoadingMore(false));
+					return;
+				}
+
+				if (savedFetchingRef.current || savedDone || !savedLoaded) return;
+				void loadSavedOffers(savedCursor);
+			},
+			{ rootMargin: PREFETCH_ROOT_MARGIN },
+		);
+		observer.observe(sentinel);
+		return () => observer.disconnect();
+	}, [
+		activeTab,
+		cursor,
+		done,
+		loadPage,
+		loadSavedOffers,
+		savedCursor,
+		savedDone,
+		savedLoaded,
+	]);
+
+	useEffect(() => {
+		if (activeTab !== "saved" || savedLoaded || savedLoading) return;
+		const timeoutId = window.setTimeout(() => {
+			void loadSavedOffers(null);
+		}, 0);
+		return () => window.clearTimeout(timeoutId);
+	}, [activeTab, loadSavedOffers, savedLoaded, savedLoading]);
+
+	useEffect(() => {
+		const timers = pendingUnbookmarkTimersRef.current;
+		return () => {
+			timers.forEach((timeoutId, offerId) => {
+				window.clearTimeout(timeoutId);
+				tracking.trackUnbookmark(offerId);
+			});
+			timers.clear();
+		};
+	}, []);
+
+	const handleView = useCallback((offerId: string) => {
+		tracking.markOfferViewSource(offerId, "offers");
+	}, []);
+
+	const cancelPendingUnbookmark = useCallback((offerId: string, notify = false) => {
+		const timeoutId = pendingUnbookmarkTimersRef.current.get(offerId);
+		if (timeoutId === undefined) return false;
+
+		window.clearTimeout(timeoutId);
+		pendingUnbookmarkTimersRef.current.delete(offerId);
+		setPendingUnsave((prev) => {
+			const next = new Set(prev);
+			next.delete(offerId);
+			return next;
+		});
+		setBookmarked((prev) => {
+			const next = new Set(prev);
+			next.add(offerId);
+			return next;
+		});
+		if (notify) toast.success("Kept in saved offers");
+		return true;
+	}, []);
+
+	const scheduleUnbookmark = useCallback((offerId: string) => {
+		if (pendingUnbookmarkTimersRef.current.has(offerId)) return;
+
+		setPendingUnsave((prev) => {
+			const next = new Set(prev);
+			next.add(offerId);
+			return next;
+		});
+
+		const toastId = toast("Removed from saved offers", {
+			description: "Undo before it is removed from your saved tab.",
+			action: {
+				label: "Undo",
+				onClick: () => {
+					cancelPendingUnbookmark(offerId, true);
+					toast.dismiss(toastId);
+				},
+			},
+			duration: UNBOOKMARK_UNDO_MS,
+		});
+
+		const timeoutId = window.setTimeout(() => {
+			pendingUnbookmarkTimersRef.current.delete(offerId);
+			setPendingUnsave((prev) => {
+				const next = new Set(prev);
+				next.delete(offerId);
+				return next;
+			});
+			setBookmarked((prev) => {
+				const next = new Set(prev);
+				next.delete(offerId);
+				return next;
+			});
+			tracking.trackUnbookmark(offerId);
+			toast.dismiss(toastId);
+		}, UNBOOKMARK_UNDO_MS);
+		pendingUnbookmarkTimersRef.current.set(offerId, timeoutId);
+	}, [cancelPendingUnbookmark]);
+
+	const handleSave = useCallback((offerId: string) => {
+		if (cancelPendingUnbookmark(offerId, true)) return;
+
+		if (bookmarked.has(offerId)) {
+			scheduleUnbookmark(offerId);
+			return;
+		}
+
+		const knownJob = jobs.find((job) => job.job_id === offerId)
+			?? savedJobs.find((job) => job.job_id === offerId);
+		if (knownJob) {
+			setSavedJobs((existing) => mergeUniqueJobs(existing, [{ ...knownJob, bookmarked: true }]));
+		}
+
+		setBookmarked((prev) => {
+			const next = new Set(prev);
+			next.add(offerId);
+			return next;
+		});
+		tracking.trackBookmark(offerId);
+		toast.success("Saved offer");
+	}, [
+		bookmarked,
+		cancelPendingUnbookmark,
+		jobs,
+		savedJobs,
+		scheduleUnbookmark,
+	]);
+
+	const savedVisibleJobs = useMemo(
+		() => savedJobs.filter((job) => bookmarked.has(job.job_id) || pendingUnsave.has(job.job_id)),
+		[bookmarked, pendingUnsave, savedJobs],
+	);
+	const visibleJobs = activeTab === "saved" ? savedVisibleJobs : jobs;
+	const savedCount = Math.max(0, bookmarked.size - pendingUnsave.size);
+	const loadingInitial = activeTab === "all"
+		? jobs.length === 0 && !done
+		: savedVisibleJobs.length === 0 && (!savedLoaded || savedLoading);
+	const currentLoadingMore = activeTab === "all" ? loadingMore : savedLoadingMore;
+	const currentDone = activeTab === "all" ? done : savedDone;
+
+	if (loadingInitial) {
+		return (
+			<div className="p-6 space-y-6">
+				<OffersHeader
+					activeTab={activeTab}
+					onTabChange={setActiveTab}
+					savedCount={savedCount}
+				/>
+				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+					{Array.from({ length: SKELETON_COUNT }).map((_, i) => <SkeletonCard key={i} />)}
+				</div>
+			</div>
+		);
+	}
+
+	if (visibleJobs.length === 0) {
+		return (
+			<div className="p-6 space-y-6">
+				<OffersHeader
+					activeTab={activeTab}
+					onTabChange={setActiveTab}
+					savedCount={savedCount}
+				/>
+				<Card>
+					<CardContent className="py-10 text-center text-sm text-muted-foreground">
+						{activeTab === "saved"
+							? "No saved offers yet."
+							: "No offers available right now."}
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
+	return (
+		<div className="p-6 space-y-6">
+			<OffersHeader
+				activeTab={activeTab}
+				onTabChange={setActiveTab}
+				savedCount={savedCount}
+			/>
+
+			<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+				{visibleJobs.map((job) => {
+					const props = convertJobToCardProps(job);
+					const isPendingUnsave = pendingUnsave.has(job.job_id);
+					return (
+						<JobCard
+							key={job.job_id}
+							{...props}
+							isSaved={bookmarked.has(job.job_id) && !isPendingUnsave}
+							onSave={handleSave}
+							onView={handleView}
+						/>
+					);
+				})}
+				{currentLoadingMore && Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+					<SkeletonCard key={`skeleton-${i}`} />
+				))}
+			</div>
+
+			{(activeTab === "all" || visibleJobs.length > 0) && (
+				<div
+					ref={sentinelRef}
+					className="flex items-center justify-center py-8 text-xs text-muted-foreground"
+					aria-hidden={currentDone && !currentLoadingMore}
+				>
+					{currentLoadingMore ? (
+						<span className="inline-flex items-center gap-2">
+							<Loader2 className="w-4 h-4 animate-spin" />
+							Loading more…
+						</span>
+					) : currentDone ? (
+						<span>{activeTab === "saved" ? "All saved offers loaded." : "You've reached the end."}</span>
+					) : (
+						<span>&nbsp;</span>
+					)}
+				</div>
+			)}
+		</div>
+	);
+}
+
+function OffersHeader({
+	activeTab,
+	onTabChange,
+	savedCount,
+}: {
+	activeTab: OffersTab;
+	onTabChange: (tab: OffersTab) => void;
+	savedCount: number;
+}) {
+	return (
+		<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+			<div>
+				<h1 className="text-2xl font-semibold">Offers</h1>
+				<p className="text-sm text-muted-foreground mt-1">
+					Browse recruiter offers ranked for you. Scroll to load more.
+				</p>
+			</div>
+			<Tabs value={activeTab} onValueChange={(value) => onTabChange(value as OffersTab)}>
+				<TabsList>
+					<TabsTrigger value="all">All offers</TabsTrigger>
+					<TabsTrigger value="saved" className="gap-1.5">
+						<Bookmark className="w-4 h-4" />
+						Saved
+						{savedCount > 0 && (
+							<span className="ml-1 rounded-full bg-background px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+								{savedCount}
+							</span>
+						)}
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
+		</header>
+	);
+}
+
+export default OffersScreen;

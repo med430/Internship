@@ -41,6 +41,10 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const limit = Math.max(1, Math.min(query.limit ?? 20, 50))
         const cursor = decodeCursor(query.cursor)
 
+        if (query.savedOnly) {
+            return this.bookmarkedFeed(query.studentUserId, limit, cursor)
+        }
+
         const scores = await this.scores.findTopForStudent(query.studentUserId, RANKED_FEED_CANDIDATE_LIMIT)
 
         if (scores.length === 0) {
@@ -118,6 +122,52 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const nextCursor = slice.length === limit && last ? encodeCursor({ score: last.score, id: last.offer.id }) : null
 
         return { items: slice, nextCursor, source: 'newest-fallback' }
+    }
+
+    // Saved tab: active bookmarks only, reusing the same JobDocument mapper as the main feed.
+    private async bookmarkedFeed(
+        studentUserId: string,
+        limit: number,
+        cursor: FeedCursor | null,
+    ): Promise<RecommendedOffersPage> {
+        const bookmarks = await this.bookmarks.findActiveByStudent(studentUserId)
+        if (bookmarks.length === 0) {
+            return { items: [], nextCursor: null, source: 'recommendation' }
+        }
+
+        const offerIds = bookmarks.map(b => b.offerId)
+        const [offers, scoreRows, viewCounts] = await Promise.all([
+            this.loadOffersByIds(offerIds),
+            this.scores.findTopForStudent(studentUserId, RANKED_FEED_CANDIDATE_LIMIT),
+            this.views.countByStudent(studentUserId),
+        ])
+        const scoreByOfferId = new Map(scoreRows.map(s => [s.offerId, s]))
+
+        const items: RecommendedOfferDto[] = bookmarks
+            .flatMap(bookmark => {
+                const offer = offers.get(bookmark.offerId)
+                if (!offer || offer.deletedAt || !this.notPastDeadline(offer)) return []
+
+                const score = scoreByOfferId.get(offer.id)
+                return [{
+                    offer,
+                    score: score
+                        ? this.adjustScore(score, offer, true, viewCounts.get(offer.id) ?? 0)
+                        : 0,
+                    ...(score?.breakdown ? { breakdown: score.breakdown } : {}),
+                    bookmarked: true,
+                }]
+            })
+            .sort((a, b) => b.score - a.score || (a.offer.id < b.offer.id ? 1 : -1))
+
+        const startIdx = cursor
+            ? items.findIndex(x => x.score < cursor.score || (x.score === cursor.score && x.offer.id < cursor.id))
+            : 0
+        const slice = items.slice(Math.max(0, startIdx), Math.max(0, startIdx) + limit)
+        const last = slice[slice.length - 1]
+        const nextCursor = slice.length === limit && last ? encodeCursor({ score: last.score, id: last.offer.id }) : null
+
+        return { items: slice, nextCursor, source: 'recommendation' }
     }
 
     // Real-time score adjustment — fresher offers, less-viewed offers, urgent deadlines float up; bookmarked offers get a small bump.

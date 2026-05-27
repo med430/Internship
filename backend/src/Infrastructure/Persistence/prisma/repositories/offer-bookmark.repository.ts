@@ -25,6 +25,7 @@ export class OfferBookmarkRepositoryImpl
                 removedAt: entity.removedAt ?? null,
             },
             update: {
+                createdAt: entity.createdAt,
                 removedAt: entity.removedAt ?? null,
             },
         })
@@ -47,8 +48,8 @@ export class OfferBookmarkRepositoryImpl
     }
 
     async softRemove(studentId: string, offerId: string): Promise<void> {
-        await this.prisma.offerBookmark.update({
-            where: { studentId_offerId: { studentId, offerId } },
+        await this.prisma.offerBookmark.updateMany({
+            where: { studentId, offerId, removedAt: null },
             data:  { removedAt: new Date() },
         })
     }

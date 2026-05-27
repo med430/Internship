@@ -77,6 +77,7 @@ export class OnboardController {
             bearerToken: this.extractBearerToken(req.header('authorization')),
             limit: typeof body.limit === 'number' ? body.limit : 20,
             cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+            savedOnly: body.savedOnly === true,
         })
 
         if (outcome.kind === 'authenticated') {
@@ -100,6 +101,7 @@ export class OnboardController {
             bearerToken: this.extractBearerToken(req.header('authorization')),
             limit: typeof body.limit === 'number' ? body.limit : 20,
             cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+            savedOnly: body.savedOnly === true,
         })
 
         if (outcome.kind === 'authenticated') {

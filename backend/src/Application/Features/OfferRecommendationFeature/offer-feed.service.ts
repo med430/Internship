@@ -10,6 +10,7 @@ export interface FeedRequest {
     bearerToken?: string | null
     limit?: number
     cursor?: string
+    savedOnly?: boolean
 }
 
 export type FeedOutcome =
@@ -30,7 +31,7 @@ export class OfferFeedService {
         if (!user) return { kind: 'anonymous' }
 
         const page = await this.queryBus.execute<GetRecommendedOffersQuery, RecommendedOffersPage>(
-            new GetRecommendedOffersQuery(user.id, req.limit ?? 20, req.cursor),
+            new GetRecommendedOffersQuery(user.id, req.limit ?? 20, req.cursor, req.savedOnly === true),
         )
         return { kind: 'authenticated', page }
     }

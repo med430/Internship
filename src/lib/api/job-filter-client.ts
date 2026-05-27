@@ -5,7 +5,10 @@ import { ERROR_MESSAGES } from "@/lib/errors/messages";
 import { getApiErrorMessage } from "@/lib/api/error-utils";
 
 export const jobFilterAPI = {
-  async filterJobs(request: JobFilterRequest): Promise<JobFilterResponse> {
+  async filterJobs(
+    request: JobFilterRequest,
+    options?: { signal?: AbortSignal },
+  ): Promise<JobFilterResponse> {
     const response = await fetchWithAuth(`${API_BASE_URL}/jobs/filter`, {
       method: "POST",
       mode: "cors",
@@ -13,6 +16,7 @@ export const jobFilterAPI = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
+      signal: options?.signal,
     });
 
     if (!response.ok) {

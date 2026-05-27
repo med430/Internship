@@ -5,5 +5,6 @@ export class GetRecommendedOffersQuery {
         public readonly studentUserId: string,
         public readonly limit: number,
         public readonly cursor?: string,
+        public readonly savedOnly = false,
     ) {}
 }
