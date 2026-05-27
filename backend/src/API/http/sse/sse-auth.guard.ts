@@ -1,19 +1,9 @@
-import {
-    CanActivate,
-    ExecutionContext,
-    Inject,
-    Injectable,
-    UnauthorizedException,
-} from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
-import { IUserRepository } from '../../../Application/repositories/user.repository'
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
+import { SupabaseAuthBridge } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
 
 @Injectable()
 export class SseAuthGuard implements CanActivate {
-    constructor(
-        private readonly jwtService: JwtService,
-        @Inject(IUserRepository) private readonly userRepo: IUserRepository,
-    ) {}
+    constructor(private readonly bridge: SupabaseAuthBridge) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const req = context.switchToHttp().getRequest()
@@ -21,14 +11,10 @@ export class SseAuthGuard implements CanActivate {
 
         if (!token) throw new UnauthorizedException()
 
-        try {
-            const payload = this.jwtService.verify<{ userId: string }>(token)
-            const user = await this.userRepo.findById(payload.userId)
-            if (!user || user.deletedAt) throw new UnauthorizedException()
-            req.user = user
-            return true
-        } catch {
-            throw new UnauthorizedException()
-        }
+        const user = await this.bridge.resolve(token)
+        if (!user) throw new UnauthorizedException()
+
+        req.user = user
+        return true
     }
 }

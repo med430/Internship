@@ -22,13 +22,16 @@ import { TrackingController } from "./tracking/tracking.controller";
 import { AdminRecommendationsController } from "./admin/admin-recommendations.controller";
 import { AdminController } from "./admin/admin.controller";
 import { ChatController } from "./chat/chat.controller";
+import { NotificationController } from "./notifications/notification.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
+import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -47,8 +50,9 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
         TrackingController,
         AdminRecommendationsController,
         AdminController,
-        ChatController],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
+        ChatController,
+        NotificationController],
+    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

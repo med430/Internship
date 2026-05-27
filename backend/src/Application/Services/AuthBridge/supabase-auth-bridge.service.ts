@@ -1,9 +1,9 @@
-// Verifies a Supabase JWT and resolves the matching User row — auto-provisions on first hit.
+// Verifies a Supabase JWT (ES256) and resolves the matching User row — auto-provisions on first hit.
 
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
-import * as jwt from 'jsonwebtoken'
+import { importJWK, jwtVerify } from 'jose'
 import { IUserRepository } from '../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../repositories/student-profile.repository'
 import { User } from '../../../Domain/entities/user.entity'
@@ -30,47 +30,76 @@ export interface ResolvedUser {
 }
 
 @Injectable()
-export class SupabaseAuthBridge {
+export class SupabaseAuthBridge implements OnModuleInit {
     private readonly logger = new Logger(SupabaseAuthBridge.name)
-    private readonly jwtSecret: string
+    private readonly jwksUrl: string
+    private publicKey?: CryptoKey
 
     constructor(
         cfg: ConfigService,
         @Inject(IUserRepository)            private readonly users:    IUserRepository,
         @Inject(IStudentProfileRepository)  private readonly profiles: IStudentProfileRepository,
     ) {
-        this.jwtSecret = cfg.get<string>('SUPABASE_JWT_SECRET') ?? ''
-        if (!this.jwtSecret) {
-            this.logger.warn('SUPABASE_JWT_SECRET is not set — JWT verification will fail')
+        const supabaseUrl = cfg.get<string>('NEXT_PUBLIC_SUPABASE_URL') ?? ''
+        this.jwksUrl = `${supabaseUrl}/auth/v1/.well-known/jwks.json`
+    }
+
+    async onModuleInit() {
+        try {
+            const res = await fetch(this.jwksUrl)
+            const { keys } = await res.json() as { keys: JsonWebKey[] }
+            if (!keys?.length) throw new Error('JWKS returned no keys')
+            this.publicKey = await importJWK(keys[0], 'ES256') as CryptoKey
+            this.logger.log('Supabase ES256 public key loaded')
+        } catch (err) {
+            this.logger.error(`Failed to load Supabase public key: ${(err as Error).message}`)
         }
     }
 
-    // Verifies the JWT using the Supabase JWT secret, finds our User by sub, creates one if missing.
-    // Returns null for missing, malformed, expired, or forged tokens.
     async resolve(token: string | null | undefined): Promise<ResolvedUser | null> {
-        const payload = this.verify(token)
+        const payload = await this.verify(token)
         if (!payload?.sub) return null
 
-        const existing = await this.users.findById(payload.sub)
-        if (existing) {
-            return { id: existing.id, email: existing.email, role: existing.role, isNew: false }
+        // 1. User provisioned by this bridge — ID == Supabase sub
+        const byId = await this.users.findById(payload.sub)
+        if (byId) {
+            return { id: byId.id, email: byId.email, role: byId.role, isNew: false }
         }
 
+        // 2. User registered via /auth/register/* — ID is a randomUUID, match by email
+        if (payload.email) {
+            const byEmail = await this.users.findByEmail(payload.email)
+            if (byEmail && !byEmail.deletedAt) {
+                return { id: byEmail.id, email: byEmail.email, role: byEmail.role, isNew: false }
+            }
+        }
+
+        // 3. First-ever login — auto-provision with Supabase sub as ID
         return this.provision(payload)
     }
 
-    // Performs signature verification using the Supabase JWT secret (HS256).
-    private verify(token: string | null | undefined): SupabaseJwtPayload | null {
+    private async verify(token: string | null | undefined): Promise<SupabaseJwtPayload | null> {
         if (!token) return null
+        if (!this.publicKey) return null
+
+        // Peek at the header without verifying — skip non-ES256 tokens silently
         try {
-            return jwt.verify(token, this.jwtSecret) as SupabaseJwtPayload
+            const headerJson = Buffer.from(token.split('.')[0], 'base64url').toString('utf8')
+            const { alg } = JSON.parse(headerJson) as { alg?: string }
+            if (alg !== 'ES256') return null
+        } catch {
+            return null
+        }
+
+        try {
+            const { payload } = await jwtVerify(token, this.publicKey)
+            return payload as SupabaseJwtPayload
         } catch (err) {
             this.logger.debug(`token rejected: ${(err as Error).message}`)
             return null
         }
     }
 
-    // Creates a User row with id = Supabase sub plus a paired StudentProfile when the role is STUDENT.
     private async provision(payload: SupabaseJwtPayload): Promise<ResolvedUser> {
         const role = this.extractRole(payload)
         const email = payload.email ?? `${payload.sub}@unknown.local`
@@ -98,7 +127,6 @@ export class SupabaseAuthBridge {
         return { id: saved.id, email: saved.email, role: saved.role, isNew: true }
     }
 
-    // Reads our app role from app_metadata first (server-set), then user_metadata, defaults to STUDENT.
     private extractRole(payload: SupabaseJwtPayload): Role {
         const raw = (payload.app_metadata?.role ?? payload.user_metadata?.role ?? '').toUpperCase()
         if (raw === 'RECRUITER') return Role.RECRUITER
@@ -106,12 +134,10 @@ export class SupabaseAuthBridge {
         return Role.STUDENT
     }
 
-    // Falls back to the local part of the email when no display name was provided.
     private deriveNameFromEmail(email: string): string {
         return (email.split('@')[0] ?? 'user').slice(0, 60)
     }
 
-    // Username must be globally unique; we append a short slice of the Supabase sub to stay safe.
     private deriveUsernameFromEmail(email: string, sub: string): string {
         const base = (email.split('@')[0] ?? 'user').replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24) || 'user'
         const suffix = sub.replace(/-/g, '').slice(0, 6)

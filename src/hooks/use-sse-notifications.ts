@@ -4,10 +4,17 @@ import { useEffect } from "react";
 import { getAccessToken } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 import { useNotificationStore } from "@/lib/stores/notification-store";
+import type { NotificationRecord } from "@/lib/api/notifications";
 
 export function useSseNotifications() {
-  const addNotification = useNotificationStore((state) => state.addNotification);
+  const { addNotification, fetchNotifications } = useNotificationStore();
 
+  // Load persisted history once on mount
+  useEffect(() => {
+    void fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Open SSE stream for real-time delivery
   useEffect(() => {
     let es: EventSource | null = null;
     let cancelled = false;
@@ -23,20 +30,26 @@ export function useSseNotifications() {
         es.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data as string) as {
+              id?: string;
               type?: string;
               title?: string;
               message?: string;
-              applicationId?: string;
+              link?: string;
             };
-            addNotification({
-              id: crypto.randomUUID(),
+
+            const notification: NotificationRecord = {
+              id: data.id ?? crypto.randomUUID(),
+              userId: "",
+              type: data.type ?? "info",
               title: data.title ?? "Notification",
               message: data.message ?? "",
-              type: data.type ?? "info",
-              link: data.applicationId ? "/services/dashboard" : undefined,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            });
+              link: data.link ?? null,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              deletedAt: null,
+            };
+
+            addNotification(notification);
           } catch {
             // ignore malformed events
           }

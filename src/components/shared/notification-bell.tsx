@@ -22,15 +22,10 @@ export function NotificationBell() {
     notifications,
     unreadCount,
     isLoading,
-    fetchNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
   } = useNotificationStore();
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
 
   const handleNotificationClick = async (
     notificationId: string,
@@ -138,7 +133,7 @@ export function NotificationBell() {
                   key={notification.id}
                   className={cn(
                     "px-4 py-3 cursor-pointer transition-colors hover:bg-accent",
-                    !notification.is_read && "bg-muted/30",
+                    !notification.isRead && "bg-muted/30",
                   )}
                   onClick={() =>
                     handleNotificationClick(notification.id, notification.link)
@@ -158,11 +153,11 @@ export function NotificationBell() {
                             {notification.message}
                           </p>
                           <p className="text-xs text-muted-foreground/70 mt-1.5">
-                            {formatTime(notification.created_at)}
+                            {formatTime(notification.createdAt)}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
-                          {!notification.is_read && (
+                          {!notification.isRead && (
                             <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
                           )}
                           <Button

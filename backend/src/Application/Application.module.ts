@@ -95,8 +95,13 @@ import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/sen
 import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
 import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
 import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
+import { NotificationPersistenceModule } from '../Infrastructure/notifications/notification-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
+import { GetNotificationsHandler } from './Features/NotificationFeature/Queries/handlers/get-notifications.handler';
+import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
+import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
+import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
 
 const CommandHandlers = [
   LoginHandler,
@@ -139,6 +144,13 @@ const CommandHandlers = [
   UpdateUserRoleHandler,
   CreateConversationHandler,
   SendMessageHandler,
+];
+
+const NotificationHandlers = [
+  GetNotificationsHandler,
+  MarkNotificationReadHandler,
+  MarkAllNotificationsReadHandler,
+  DeleteNotificationHandler,
 ];
 
 const QueryHandlers = [
@@ -200,6 +212,7 @@ const QueryHandlers = [
     FileStorageModule,
     PersistenceModule,
     ChatPersistenceModule,
+    NotificationPersistenceModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ← ajout
@@ -215,6 +228,7 @@ const QueryHandlers = [
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
+    ...NotificationHandlers,
     JwtStrategy,
     InterviewAiService,
     ContentScoringService,
@@ -238,6 +252,7 @@ const QueryHandlers = [
     PassportModule,
     FileStorageModule,
     PersistenceModule,
+    NotificationPersistenceModule,
     InterviewAiService,
     ContentScoringService,
     ScoringService,
