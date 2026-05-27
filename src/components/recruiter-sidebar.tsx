@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, CalendarDays, ClipboardList, PlusSquare, UserCog } from "lucide-react";
+import { Briefcase, CalendarDays, ClipboardList, Globe, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Offers", url: "/recruiter/offers", icon: Briefcase },
-  { title: "New Offer", url: "/recruiter/offers/new", icon: PlusSquare },
-  { title: "Applications", url: "/recruiter/applications", icon: ClipboardList },
-  { title: "Calendar", url: "/recruiter/calendar", icon: CalendarDays },
-  { title: "Profile", url: "/recruiter/profile", icon: UserCog },
+  { title: "Dashboard",     url: "/recruiter/dashboard",    icon: LayoutDashboard },
+  { title: "My Offers",     url: "/recruiter/offers",       icon: Briefcase },
+  { title: "Browse Offers", url: "/recruiter/browse",       icon: Globe },
+  { title: "Applications",  url: "/recruiter/applications", icon: ClipboardList },
+  { title: "Calendar",      url: "/recruiter/calendar",     icon: CalendarDays },
 ];
 
 export function RecruiterSidebar() {

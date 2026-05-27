@@ -1,6 +1,13 @@
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 
+export type ApplicationStatus =
+	| "SUBMITTED"
+	| "IN_REVIEW"
+	| "ACCEPTED"
+	| "REJECTED"
+	| "WITHDRAWN";
+
 export type StudentApplication = {
 	id: string;
 	student: {
@@ -16,6 +23,8 @@ export type StudentApplication = {
 		company: string;
 		location: string;
 		domain: string;
+		type?: string;
+		workMode?: string;
 	} | null;
 	cv: {
 		id: string;
@@ -23,7 +32,7 @@ export type StudentApplication = {
 	coverLetter?: {
 		id: string;
 	} | null;
-	status: string;
+	status: ApplicationStatus;
 	matchScore?: number;
 	createdAt: string;
 };
@@ -106,6 +115,8 @@ export async function fetchMyApplications(
 							company
 							location
 							domain
+							type
+							workMode
 						}
 						cv {
 							id

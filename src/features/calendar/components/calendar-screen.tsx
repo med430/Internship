@@ -57,15 +57,22 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
 
   useEffect(() => { void load(); }, [load]);
 
-  const events = slots.map((slot) => ({
-    id: slot.id,
-    title: slot.offerTitle ?? slot.company ?? "Interview",
-    start: slot.startAt,
-    end: slot.endAt,
-    backgroundColor: STATUS_COLORS[slot.status],
-    borderColor: STATUS_COLORS[slot.status],
-    extendedProps: { slot },
-  }));
+  const events = slots.map((slot) => {
+    const base = slot.offerTitle ?? slot.company ?? "Interview";
+    const title =
+      role === "RECRUITER" && slot.studentName
+        ? `${base} · ${slot.studentName}`
+        : base;
+    return {
+      id: slot.id,
+      title,
+      start: slot.startAt,
+      end: slot.endAt,
+      backgroundColor: STATUS_COLORS[slot.status],
+      borderColor: STATUS_COLORS[slot.status],
+      extendedProps: { slot },
+    };
+  });
 
   const handleEventClick = (info: EventClickArg) => {
     const slot = (info.event.extendedProps as { slot: InterviewSlot }).slot;
@@ -168,13 +175,13 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
           {/* Right panel */}
           <div className="space-y-4">
 
-            {/* Pending responses (student only) */}
-            {role === "STUDENT" && pending.length > 0 && (
+            {/* Pending responses */}
+            {pending.length > 0 && (
               <Card className="border-amber-500/20 bg-amber-50/50 dark:bg-amber-950/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Pending ({pending.length})
+                    {role === "RECRUITER" ? "Awaiting candidate" : "Pending"} ({pending.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -184,7 +191,14 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
                       onClick={() => { setSelected(slot); setShowCounter(false); }}
                       className="w-full text-left rounded-xl border border-amber-200/60 bg-white/70 dark:bg-white/5 px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                     >
-                      <div className="font-medium text-slate-900 dark:text-white">{slot.offerTitle ?? "Interview"}</div>
+                      <div className="font-medium text-slate-900 dark:text-white truncate">
+                        {slot.offerTitle ?? "Interview"}
+                      </div>
+                      {role === "RECRUITER" && slot.studentName && (
+                        <div className="text-xs text-amber-700 dark:text-amber-400 truncate">
+                          {slot.studentName}
+                        </div>
+                      )}
                       <div className="text-xs text-slate-500 dark:text-slate-400">
                         {new Date(slot.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </div>
@@ -205,15 +219,28 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {upcoming.map(slot => (
-                    <div key={slot.id} className="rounded-xl border border-emerald-200/60 bg-white/70 dark:bg-white/5 px-3 py-2 text-sm">
-                      <div className="font-medium text-slate-900 dark:text-white">{slot.offerTitle ?? "Interview"}</div>
+                    <button
+                      key={slot.id}
+                      onClick={() => { setSelected(slot); setShowCounter(false); }}
+                      className="w-full text-left rounded-xl border border-emerald-200/60 bg-white/70 dark:bg-white/5 px-3 py-2 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    >
+                      <div className="font-medium text-slate-900 dark:text-white truncate">
+                        {slot.offerTitle ?? "Interview"}
+                      </div>
+                      {role === "RECRUITER" && slot.studentName && (
+                        <div className="text-xs text-emerald-700 dark:text-emerald-400 truncate">
+                          {slot.studentName}
+                        </div>
+                      )}
+                      {role === "STUDENT" && slot.company && (
+                        <div className="text-xs text-emerald-700 dark:text-emerald-400 truncate">
+                          {slot.company}
+                        </div>
+                      )}
                       <div className="text-xs text-slate-500 dark:text-slate-400">
                         {new Date(slot.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </div>
-                      {slot.studentName && (
-                        <div className="text-xs text-slate-400">{slot.studentName}</div>
-                      )}
-                    </div>
+                    </button>
                   ))}
                 </CardContent>
               </Card>
@@ -244,7 +271,19 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
                 </button>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-xl bg-slate-50 dark:bg-white/5 px-4 py-3 space-y-1 text-sm">
+                <div className="rounded-xl bg-slate-50 dark:bg-white/5 px-4 py-3 space-y-2 text-sm">
+                  {/* Candidate info (recruiter view) */}
+                  {role === "RECRUITER" && selected.studentName && (
+                    <div className="flex justify-between items-start pb-2 border-b border-slate-200 dark:border-white/10">
+                      <span className="text-slate-500 shrink-0">Candidate</span>
+                      <div className="text-right">
+                        <div className="font-medium text-slate-900 dark:text-white">{selected.studentName}</div>
+                        {selected.studentEmail && (
+                          <div className="text-xs text-slate-500">{selected.studentEmail}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-slate-500">Start</span>
                     <span className="font-medium">{new Date(selected.startAt).toLocaleString("fr-FR")}</span>
@@ -256,18 +295,14 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Status</span>
                     <span className="font-semibold" style={{ color: STATUS_COLORS[selected.status] }}>
-                      {STATUS_LABELS[selected.status]}
+                      {selected.status === "PROPOSED" && role === "RECRUITER"
+                        ? "Awaiting candidate response"
+                        : STATUS_LABELS[selected.status]}
                     </span>
                   </div>
                   {selected.notes && (
-                    <div className="pt-1 border-t border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300">
+                    <div className="pt-2 border-t border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300">
                       {selected.notes}
-                    </div>
-                  )}
-                  {selected.studentName && (
-                    <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-white/10">
-                      <span className="text-slate-500">Candidate</span>
-                      <span className="font-medium">{selected.studentName}</span>
                     </div>
                   )}
                 </div>

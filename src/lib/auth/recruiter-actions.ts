@@ -58,7 +58,7 @@ export async function signUpRecruiter(formData: FormData): Promise<RecruiterAuth
       username,
       company: company ?? "",
       companyDescription: companyDescription ?? "",
-      website: website ?? "",
+      ...(website ? { website } : {}),
     }),
     cache: "no-store",
   });

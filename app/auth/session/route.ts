@@ -17,7 +17,11 @@ export async function GET() {
   }
 
   return NextResponse.json(
-    { accessToken: session.access_token, userId: session.user?.id },
+    {
+      accessToken: session.access_token,
+      userId: session.user?.id,
+      email: session.user?.email,
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

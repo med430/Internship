@@ -36,6 +36,7 @@ import { DeleteProjectHandler } from './Features/ProjectFeature/Commands/handler
 import { SoftDeleteUserHandler } from './Features/ProfileFeature/Commands/handlers/soft-delete-user.handler';
 import { UpdateStudentProfileHandler } from './Features/ProfileFeature/Commands/handlers/update-student-profile.handler';
 import { UpdateRecruiterProfileHandler } from './Features/ProfileFeature/Commands/handlers/update-recruiter-profile.handler';
+import { UploadAvatarHandler } from './Features/ProfileFeature/Commands/handlers/upload-avatar.handler';
 import { AssignSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/assign-skill.handler';
 import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/remove-skill.handler';
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
@@ -48,6 +49,7 @@ import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get
 import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/get-users-query.handler';
 import { GetOfferQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offer-query.handler';
 import { GetOffersQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offers-query.handler';
+import { GetMyOffersQueryHandler } from './Features/OfferFeature/Queries/handlers/get-my-offers.handler';
 import { GetSkillQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skill-query.handler';
 import { GetSkillsQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skills-query.handler';
 import { GetSkillAssignmentQueryHandler } from './Features/SkillAssignmentFeature/Queries/handlers/get-skill-assignment-query.handler';
@@ -131,6 +133,7 @@ const CommandHandlers = [
   SoftDeleteUserHandler,
   UpdateStudentProfileHandler,
   UpdateRecruiterProfileHandler,
+  UploadAvatarHandler,
   AssignSkillHandler,
   RemoveSkillHandler,
   UpdateSkillHandler,
@@ -158,6 +161,7 @@ const QueryHandlers = [
   // Offers
   GetOfferQueryHandler,
   GetOffersQueryHandler,
+  GetMyOffersQueryHandler,
   // Skills
   GetSkillQueryHandler,
   GetSkillsQueryHandler,

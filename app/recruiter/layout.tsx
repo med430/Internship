@@ -6,6 +6,40 @@ import { NotificationBell } from "@/components/shared/notification-bell";
 import LogoLink from "@/components/logo-link";
 import { createClient } from "@/utils/supabase/server";
 
+async function fetchRecruiterAvatar(
+  accessToken: string,
+  userEmail: string,
+): Promise<string | null> {
+  try {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const res = await fetch(`${apiBase}/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        query: `query {
+          recruiterProfiles(pageNumber: 1, pageSize: 500) {
+            user { email avatarUrl }
+          }
+        }`,
+      }),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      data?: { recruiterProfiles: { user: { email: string; avatarUrl: string | null } }[] };
+    };
+    return (
+      json.data?.recruiterProfiles.find((p) => p.user.email === userEmail)
+        ?.user.avatarUrl ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export default async function RecruiterLayout({
   children,
 }: {
@@ -13,12 +47,19 @@ export default async function RecruiterLayout({
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
   const isAuthenticated = Boolean(user);
+
+  let avatarUrl: string | null = null;
+  if (user?.email && session?.access_token) {
+    avatarUrl = await fetchRecruiterAvatar(session.access_token, user.email);
+  }
 
   const userData = {
     name: user?.user_metadata?.name ?? user?.email?.split("@")[0] ?? "Recruiter",
     email: user?.email ?? "",
+    avatar: avatarUrl ?? undefined,
   };
 
   if (!isAuthenticated) {

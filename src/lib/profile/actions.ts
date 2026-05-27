@@ -1,9 +1,6 @@
 "use server";
 
-import {
-	updateProfile as updateProfileAction,
-	uploadAvatar as uploadAvatarAction,
-} from "./actions/profile-actions";
+import { updateProfile as updateProfileAction } from "./actions/profile-actions";
 import {
 	updateEmail as updateEmailAction,
 	updatePassword as updatePasswordAction,
@@ -17,12 +14,6 @@ export async function updateProfile(
 	...args: Parameters<typeof updateProfileAction>
 ) {
 	return updateProfileAction(...args);
-}
-
-export async function uploadAvatar(
-	...args: Parameters<typeof uploadAvatarAction>
-) {
-	return uploadAvatarAction(...args);
 }
 
 export async function updateEmail(...args: Parameters<typeof updateEmailAction>) {

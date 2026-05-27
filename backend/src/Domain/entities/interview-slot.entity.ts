@@ -12,5 +12,9 @@ export class InterviewSlot {
         public readonly parentSlotId: string | null,
         public readonly createdAt?: Date,
         public readonly updatedAt?: Date,
+        public readonly offerTitle?: string,
+        public readonly company?: string,
+        public readonly studentName?: string,
+        public readonly studentEmail?: string,
     ) {}
 }

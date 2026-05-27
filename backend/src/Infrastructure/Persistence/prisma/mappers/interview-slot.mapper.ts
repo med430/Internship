@@ -7,6 +7,7 @@ import { InterviewSlotStatus } from '../../../../Domain/enums/interview-slot-sta
 @Injectable()
 export class InterviewSlotMapper implements IGenericMapper<InterviewSlot, PrismaInterviewSlot> {
     toDomain(raw: PrismaInterviewSlot): InterviewSlot {
+        const r = raw as any
         return new InterviewSlot(
             raw.id,
             raw.applicationId,
@@ -18,6 +19,10 @@ export class InterviewSlotMapper implements IGenericMapper<InterviewSlot, Prisma
             raw.parentSlotId ?? null,
             raw.createdAt,
             raw.updatedAt,
+            r.application?.offer?.title ?? undefined,
+            r.application?.offer?.company ?? undefined,
+            r.application?.student?.user?.name ?? undefined,
+            r.application?.student?.user?.email ?? undefined,
         )
     }
 

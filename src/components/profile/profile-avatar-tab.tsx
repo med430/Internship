@@ -13,17 +13,26 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { uploadAvatar } from "@/lib/profile/actions";
+import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 import type { Database } from "@/types/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   avatar_url?: string | null;
-  is_deactivated?: boolean | null;
-  deactivated_at?: string | null;
 };
 
 interface ProfileAvatarTabProps {
   profile: Profile;
+}
+
+async function getToken(): Promise<string | null> {
+  try {
+    const res = await fetch("/auth/session", { credentials: "include", cache: "no-store" });
+    if (!res.ok) return null;
+    const { accessToken } = (await res.json()) as { accessToken?: string };
+    return accessToken ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
@@ -39,50 +48,49 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
-
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("File size must be less than 5MB");
       return;
     }
 
-    // Show preview
+    // Instant local preview
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
-    };
+    reader.onload = (e) => setPreviewUrl(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Upload immediately
-    handleUpload(file);
+    void handleUpload(file);
   };
 
   const handleUpload = async (file: File) => {
     setIsUploading(true);
-
     try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const result = await uploadAvatar(formData);
+      const res = await fetch(`${getClientApiBaseUrl()}/me/avatar`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
-      if (result.success) {
-        toast.success("Avatar uploaded successfully!");
-        // Use Next.js transition for smooth update
-        startTransition(() => {
-          router.refresh();
-        });
-      } else {
-        toast.error(result.error || "Failed to upload avatar");
-        setPreviewUrl(profile.avatar_url || null);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || "Upload failed");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+
+      const { avatarUrl } = (await res.json()) as { avatarUrl: string };
+      setPreviewUrl(avatarUrl);
+      toast.success("Avatar uploaded successfully!");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "An unexpected error occurred");
       setPreviewUrl(profile.avatar_url || null);
     } finally {
       setIsUploading(false);
@@ -104,7 +112,7 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
       <CardHeader>
         <CardTitle>Profile Picture</CardTitle>
         <CardDescription>
-          Upload a profile picture (max 5MB, JPEG/PNG/WebP/GIF)
+          Upload a profile picture (max 5MB, JPEG/PNG/WebP/GIF) — stored on Cloudinary
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -120,12 +128,10 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
           </Avatar>
 
           <div className="flex-1 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                A profile picture helps personalize your account and makes it
-                easier for others to recognize you.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              A profile picture helps personalize your account and makes it
+              easier for others to recognize you.
+            </p>
 
             <div className="flex gap-2">
               <Button

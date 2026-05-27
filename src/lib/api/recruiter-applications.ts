@@ -21,7 +21,7 @@ export type RecruiterApplication = {
 	} | null;
 	cv: { id: string } | null;
 	coverLetter: { id: string } | null;
-	status: string;
+	status: "SUBMITTED" | "IN_REVIEW" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
 	createdAt: string;
 };
 
