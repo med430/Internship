@@ -36,6 +36,7 @@ import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Eve
 import { InterviewSlotController } from "./interview-slot/interview-slot.controller";
 import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
 import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
+import { INotificationEmitter } from "../../Application/Services/NotificationEmitter/notification-emitter.interface";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -58,7 +59,23 @@ import { InterviewSlotRespondedHandler } from "../../Application/Features/Interv
         NotificationController,
         InterviewSlotController,
         DocumentsController],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
+    providers: [
+        OnboardService,
+        SseService,
+        { provide: INotificationEmitter, useExisting: SseService },
+        SseAuthGuard,
+        SupabaseAuthGuard,
+        JwtAuthGuard,
+        RolesGuard,
+        SupabaseSyncMiddleware,
+        ApplicationStatusChangedHandler,
+        ApplicationSubmittedHandler,
+        ApplicationWithdrawnHandler,
+        OfferCreatedHandler,
+        OfferDeletedHandler,
+        InterviewSlotProposedHandler,
+        InterviewSlotRespondedHandler,
+    ],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

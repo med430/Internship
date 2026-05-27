@@ -1,14 +1,15 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs'
 import { Inject } from '@nestjs/common'
 import { ApplicationWithdrawnEvent } from '../../../../../Domain/events/application-withdrawn.event'
-import { SseService } from '../../../../../API/http/sse/sse.service'
+import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
 
 @EventsHandler(ApplicationWithdrawnEvent)
 export class ApplicationWithdrawnHandler implements IEventHandler<ApplicationWithdrawnEvent> {
     constructor(
-        private readonly sseService: SseService,
+        @Inject(INotificationEmitter)
+        private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
     ) {}
@@ -25,7 +26,7 @@ export class ApplicationWithdrawnHandler implements IEventHandler<ApplicationWit
             false, new Date(), null,
         ))
 
-        this.sseService.sendToUser(recruiterUserId, {
+        this.notificationEmitter.sendToUser(recruiterUserId, {
             id: saved.id,
             type: 'application-withdrawn',
             title: saved.title,

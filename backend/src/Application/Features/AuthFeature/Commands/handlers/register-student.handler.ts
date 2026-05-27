@@ -9,14 +9,14 @@ import { IStudentProfileRepository } from '../../../../repositories/student-prof
 import { User } from '../../../../../Domain/entities/user.entity'
 import { Role } from '../../../../../Domain/enums/role.enum'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
-import { RegisterResponseDTO } from '../../../../../API/http/auth/dto/register-response.dto'
+import { RegisterResult } from '../register-result'
 import { StudentProfile } from '../../../../../Domain/entities/student-profile.entity'
 
 @CommandHandler(RegisterStudentCommand)
 export class RegisterStudentHandler extends GenericCommandHandler<
 RegisterStudentCommand,
     User,
-RegisterResponseDTO
+RegisterResult
 > {
     constructor(
         @Inject(IUserRepository)
@@ -40,7 +40,7 @@ RegisterResponseDTO
         )
     }
 
-    protected async persist(user: User): Promise<RegisterResponseDTO> {
+    protected async persist(user: User): Promise<RegisterResult> {
         const existing = await this.userRepo.findByEmail(user.email)
         if (existing) throw new ConflictException('Email already in use')
 
@@ -68,7 +68,7 @@ RegisterResponseDTO
             new StudentProfile(randomUUID(), savedUser.id)
         )
 
-        return new RegisterResponseDTO(
+        return new RegisterResult(
             savedUser.id,
             savedUser.email,
             savedUser.username,

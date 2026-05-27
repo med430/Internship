@@ -23,8 +23,8 @@ export class ListOwnCoverLettersHandler implements IQueryHandler<ListOwnCoverLet
 
         // Ensure newest-first ordering by updatedAt (or createdAt)
         all = all.sort((a, b) => {
-            const aTime = new Date(a.updatedAt || a.createdAt).getTime()
-            const bTime = new Date(b.updatedAt || b.createdAt).getTime()
+            const aTime = (a.updatedAt ?? a.createdAt ?? new Date(0)).getTime()
+            const bTime = (b.updatedAt ?? b.createdAt ?? new Date(0)).getTime()
             return bTime - aTime
         })
 

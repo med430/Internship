@@ -116,8 +116,7 @@ function toList(value: unknown): string[] {
     if (!value) return []
     if (Array.isArray(value)) return value.map((i) => String(i).trim()).filter(Boolean)
     if (typeof value === 'string') {
-        return value.split(/[
-,;]+/).map((i) => i.trim()).filter(Boolean)
+        return value.split(/[\n,;]+/).map((i) => i.trim()).filter(Boolean)
     }
     return []
 }
@@ -446,7 +445,7 @@ export async function createCvPdf(
         const lineHeight = 15
         const panelHeight = Math.max(36, summaryLines.length * lineHeight + 18)
         drawCard(panelHeight)
-        drawText(ai.cv.summary, { size: 10, color: dark, lineHeight, maxWidth: BODY_W - 18 })
+        drawText(ai?.cv?.summary ?? '', { size: 10, color: dark, lineHeight, maxWidth: BODY_W - 18 })
         y -= panelHeight - 8
     }
 
@@ -456,7 +455,8 @@ export async function createCvPdf(
         for (const [index, expRaw] of profile.experiences.entries()) {
             const exp = typeof expRaw === 'string' ? { role: expRaw, company: '', location: '', period: '', highlights: [] } : expRaw
             const roleLabel = [exp.role, exp.company].filter(Boolean).join('  —  ')
-            const bullets: string[] = ai?.cv?.experienceBullets?.[index] ?? (exp.highlights || []).slice(0, 4)
+            const bulletsRaw = ai?.cv?.experienceBullets?.[index] ?? (exp.highlights || []).slice(0, 4)
+            const bullets: string[] = Array.isArray(bulletsRaw) ? bulletsRaw : [bulletsRaw]
             const roleLines = wrapText(roleLabel, bold, 11, BODY_W - 32)
             const locationLines = exp.location ? wrapText(exp.location, regular, 9, BODY_W - 32) : []
             const bulletLines = bullets.reduce((total, bullet) => total + wrapText(bullet, regular, 9.4, BODY_W - 40).length, 0)
@@ -486,7 +486,7 @@ export async function createCvPdf(
             }
             y -= 10
         }
-    } else if (ai.cv.summary) {
+    } else if (ai?.cv?.summary) {
         drawSectionHeading('Experience')
         page.drawRectangle({ x: ML, y: y - 4, width: BODY_W, height: 28, color: panel })
         drawText('No formal experience entries provided.', { size: 10, color: muted, maxWidth: BODY_W - 18 })
@@ -499,7 +499,7 @@ export async function createCvPdf(
         const educationNoteLines = wrapText(ai?.cv?.educationNote || '', regular, 9.5, BODY_W - 18)
         const educationNoteHeight = estimateCardHeight(educationNoteLines.length, 14, 18, 34)
         drawCard(educationNoteHeight)
-        drawText(ai.cv.educationNote, { size: 9.5, color: muted, lineHeight: 14, maxWidth: BODY_W - 18 })
+        drawText(ai?.cv?.educationNote ?? '', { size: 9.5, color: muted, lineHeight: 14, maxWidth: BODY_W - 18 })
         y -= 8
 
         for (const eduRaw of profile.education) {
@@ -547,7 +547,7 @@ export async function createCvPdf(
         const cardHeight = estimateCardHeight(skillSummaryLines.length + skillRows.length, 14, 22, 56)
         ensureSpace(cardHeight + 10)
         drawCard(cardHeight)
-        drawText(ai.cv.skillsHighlight, { size: 10, color: muted, lineHeight: 14, maxWidth: BODY_W - 18 })
+        drawText(ai?.cv?.skillsHighlight ?? '', { size: 10, color: muted, lineHeight: 14, maxWidth: BODY_W - 18 })
         y -= 6
 
         for (const row of skillRows) {

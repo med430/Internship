@@ -1,20 +1,18 @@
 import { Injectable } from '@nestjs/common'
 import { Subject, Observable } from 'rxjs'
 import { finalize } from 'rxjs/operators'
+import { INotificationEmitter, NotificationPayload } from '../../../Application/Services/NotificationEmitter/notification-emitter.interface'
 
-export interface SseMessage {
-    type: string
-    [key: string]: unknown
-}
+export type SseMessage = NotificationPayload
 
 @Injectable()
-export class SseService {
-    private readonly clients = new Map<string, Subject<{ data: SseMessage }>>()
+export class SseService implements INotificationEmitter {
+    private readonly clients = new Map<string, Subject<{ data: NotificationPayload }>>()
 
-    addClient(userId: string): Observable<{ data: SseMessage }> {
+    addClient(userId: string): Observable<{ data: NotificationPayload }> {
         this.clients.get(userId)?.complete()
 
-        const subject = new Subject<{ data: SseMessage }>()
+        const subject = new Subject<{ data: NotificationPayload }>()
         this.clients.set(userId, subject)
 
         return subject.asObservable().pipe(
@@ -24,7 +22,7 @@ export class SseService {
         )
     }
 
-    sendToUser(userId: string, message: SseMessage): void {
-        this.clients.get(userId)?.next({ data: message })
+    sendToUser(userId: string, payload: NotificationPayload): void {
+        this.clients.get(userId)?.next({ data: payload })
     }
 }

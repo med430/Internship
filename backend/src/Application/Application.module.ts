@@ -88,8 +88,10 @@ import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFea
 import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
 import { CreateConversationHandler } from './Features/ChatFeature/Commands/handlers/create-conversation.handler';
 import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/send-message.handler';
+import { MarkMessagesReadHandler } from './Features/ChatFeature/Commands/handlers/mark-messages-read.handler';
 import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
 import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
+import { GetConversationByIdHandler } from './Features/ChatFeature/Queries/handlers/get-conversation-by-id.handler';
 import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
 import { NotificationPersistenceModule } from '../Infrastructure/notifications/notification-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
@@ -143,6 +145,7 @@ const CommandHandlers = [
   UpdateUserRoleHandler,
   CreateConversationHandler,
   SendMessageHandler,
+  MarkMessagesReadHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
 ];
@@ -204,6 +207,7 @@ const QueryHandlers = [
   // Chat
   GetConversationsHandler,
   GetMessagesHandler,
+  GetConversationByIdHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
 ];
