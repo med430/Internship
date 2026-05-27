@@ -48,9 +48,11 @@ import type { OfferDetailDocument, OfferSkill } from "@/types/job-matcher";
 
 interface OfferDetailScreenProps {
   offerId: string;
+  from?: string;
 }
 
-export function OfferDetailScreen({ offerId }: OfferDetailScreenProps) {
+export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
+  const isPremiumView = from === "matcher";
   const router = useRouter();
   const [offer, setOffer] = useState<OfferDetailDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,7 +194,7 @@ export function OfferDetailScreen({ offerId }: OfferDetailScreenProps) {
             </div>
           </div>
 
-          {offer.match_score !== null && (
+          {isPremiumView && offer.match_score !== null && (
             <div
               className={cn(
                 "shrink-0 self-start rounded-xl border px-4 py-3 text-center",
@@ -348,7 +350,8 @@ export function OfferDetailScreen({ offerId }: OfferDetailScreenProps) {
             />
           </SidebarCard>
 
-          {offer.score_breakdown &&
+          {isPremiumView &&
+            offer.score_breakdown &&
             Object.keys(offer.score_breakdown).length > 0 && (
               <SidebarCard title="Why we matched you">
                 <div className="space-y-2.5">

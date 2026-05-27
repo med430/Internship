@@ -2,8 +2,15 @@
 
 import { JobMatcherToolbar } from "./job-matcher-toolbar";
 import { JobMatcherResults } from "./job-matcher-results";
-import { JobMatcherModals } from "./job-matcher-modals";
 import { useJobMatcherController } from "../hooks/use-job-matcher-controller";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CVSelector } from "@/components/shared/cv-selector";
 
 export function JobMatcherScreen() {
   const {
@@ -16,27 +23,27 @@ export function JobMatcherScreen() {
     backendMessage,
     searchQuery,
     setSearchQuery,
-    showFilterModal,
-    setShowFilterModal,
     showCVSelector,
     setShowCVSelector,
     selectedCVSource,
     resumeContent,
-    activeFilters,
-    activeFilterTags,
     filteredAllJobs,
     filteredTotalPages,
     paginatedJobs,
     savedJobs,
     topOfResultsRef,
     shouldShowCVPrompt,
+    typeFilter,
+    setTypeFilter,
+    modeFilter,
+    setModeFilter,
+    paidOnly,
+    setPaidOnly,
+    hasDisplayFilters,
+    clearDisplayFilters,
     handleSave,
     handleView,
     handleRefresh,
-    handleApplyFilters,
-    handleResetFilters,
-    removeFilter,
-    addQuickFilter,
     handleCVSelect,
     handleRemoveCV,
     handleStartMatching,
@@ -46,18 +53,21 @@ export function JobMatcherScreen() {
     <div className="min-h-screen bg-background">
       <JobMatcherToolbar
         searchQuery={searchQuery}
-        activeFilterTags={activeFilterTags}
         selectedCVSource={selectedCVSource}
         isExtractingCV={isExtractingCV}
         isLoading={isLoading}
         shouldShowCVPrompt={shouldShowCVPrompt}
+        typeFilter={typeFilter}
+        modeFilter={modeFilter}
+        paidOnly={paidOnly}
+        hasDisplayFilters={hasDisplayFilters}
         onSearchChange={setSearchQuery}
         onOpenCVSelector={() => setShowCVSelector(true)}
         onRefresh={handleRefresh}
-        onOpenFilterModal={() => setShowFilterModal(true)}
-        onResetFilters={handleResetFilters}
-        onRemoveFilter={removeFilter}
-        onAddQuickFilter={addQuickFilter}
+        onTypeFilterChange={setTypeFilter}
+        onModeFilterChange={setModeFilter}
+        onPaidOnlyChange={setPaidOnly}
+        onClearDisplayFilters={clearDisplayFilters}
         onRemoveCV={handleRemoveCV}
       />
 
@@ -83,15 +93,22 @@ export function JobMatcherScreen() {
         onStartMatching={handleStartMatching}
       />
 
-      <JobMatcherModals
-        showCVSelector={showCVSelector}
-        showFilterModal={showFilterModal}
-        activeFilters={activeFilters}
-        onCVSelectorChange={setShowCVSelector}
-        onFilterModalChange={setShowFilterModal}
-        onCVSelect={handleCVSelect}
-        onApplyFilters={handleApplyFilters}
-      />
+      {/* CV Selector modal */}
+      <Dialog open={showCVSelector} onOpenChange={setShowCVSelector}>
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto border-border bg-popover/95">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Select Your CV</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Upload your CV or select from your saved CVs to get personalized job matches
+            </DialogDescription>
+          </DialogHeader>
+          <CVSelector
+            onCVSelect={handleCVSelect}
+            label=""
+            description="Choose your CV to start finding jobs tailored to your experience and skills"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

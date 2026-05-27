@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useOffers } from "../hooks/use-offers";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
+  Eye,
   MapPin,
   Pencil,
   PlusCircle,
@@ -19,8 +20,11 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
+  TrendingUp,
+  Users,
   Wifi,
 } from "lucide-react";
+import { fetchOfferAnalytics, type OfferAnalyticsItem } from "@/lib/api/recruiter-stats-client";
 import OfferFilterModal, { type OfferFilters } from "@/components/offer-filter-modal";
 import { applyOfferFilters, getOfferFilterTags } from "@/lib/utils/offer-filters";
 import {
@@ -73,6 +77,16 @@ export function RecruiterOffersScreen() {
   const [filters, setFilters] = useState<OfferFilters>({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
+
+  const [analyticsMap, setAnalyticsMap] = useState<Map<string, OfferAnalyticsItem>>(new Map());
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOfferAnalytics()
+      .then((items) => setAnalyticsMap(new Map(items.map((a) => [a.offerId, a]))))
+      .catch(() => null)
+      .finally(() => setAnalyticsLoading(false));
+  }, []);
 
   const activeFilterTags = useMemo(() => getOfferFilterTags(filters), [filters]);
 
@@ -289,6 +303,37 @@ export function RecruiterOffersScreen() {
                   <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                     {o.description || "No description provided."}
                   </p>
+                </div>
+
+                {/* Analytics row */}
+                <div className="px-5 pb-3 flex items-center gap-3">
+                  {analyticsLoading ? (
+                    <>
+                      <Skeleton className="h-4 w-16 rounded" />
+                      <Skeleton className="h-4 w-20 rounded" />
+                      <Skeleton className="h-4 w-16 rounded" />
+                    </>
+                  ) : (() => {
+                    const a = analyticsMap.get(o.id);
+                    return (
+                      <>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <Eye className="h-3 w-3" />
+                          {a?.viewCount ?? 0} views
+                        </span>
+                        <span className="text-slate-200 dark:text-slate-700">·</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <TrendingUp className="h-3 w-3" />
+                          {a?.impressionCount ?? 0} impressions
+                        </span>
+                        <span className="text-slate-200 dark:text-slate-700">·</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <Users className="h-3 w-3" />
+                          {a?.applicationCount ?? 0} applicants
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Footer */}
