@@ -92,7 +92,10 @@ import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.m
 import { NotificationPersistenceModule } from '../Infrastructure/notifications/notification-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
-import { GetNotificationsHandler } from './Features/NotificationFeature/Queries/handlers/get-notifications.handler';
+import { GetNotificationsHandler } from './Features/NotificationFeature/Queries/handlers/get-notifications.handler'
+import { ProposeInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/propose-interview-slot.handler'
+import { RespondToInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/respond-to-interview-slot.handler'
+import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Queries/handlers/get-my-interview-slots.handler';
 import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
 import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
@@ -137,6 +140,8 @@ const CommandHandlers = [
   UpdateUserRoleHandler,
   CreateConversationHandler,
   SendMessageHandler,
+  ProposeInterviewSlotHandler,
+  RespondToInterviewSlotHandler,
 ];
 
 const NotificationHandlers = [
@@ -195,6 +200,8 @@ const QueryHandlers = [
   // Chat
   GetConversationsHandler,
   GetMessagesHandler,
+  // Interview slots
+  GetMyInterviewSlotsHandler,
 ];
 
 @Global()

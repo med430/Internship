@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Briefcase, CalendarDays, CheckCircle2, FileText, MapPin, Mail, Sparkles, UserRound } from "lucide-react";
+import { Briefcase, CalendarDays, CheckCircle2, FileText, MapPin, Mail, Sparkles, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import {
   updateRecruiterApplicationStatus,
   type RecruiterApplication,
 } from "@/lib/api/recruiter-applications";
+import { proposeInterviewSlot } from "@/lib/api/interview-slots";
 
 function statusTone(status: string) {
   switch (status) {
@@ -29,6 +30,10 @@ export function RecruiterApplicationsScreen() {
   const [applications, setApplications] = useState<RecruiterApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [schedulingAppId, setSchedulingAppId] = useState<string | null>(null);
+  const [slotStart, setSlotStart] = useState("");
+  const [slotEnd, setSlotEnd] = useState("");
+  const [slotNotes, setSlotNotes] = useState("");
 
   const loadApplications = async () => {
     setLoading(true);
@@ -61,6 +66,30 @@ export function RecruiterApplicationsScreen() {
       await loadApplications();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Action failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openScheduleModal = (appId: string) => {
+    setSchedulingAppId(appId);
+    setSlotStart("");
+    setSlotEnd("");
+    setSlotNotes("");
+  };
+
+  const submitSlot = async () => {
+    if (!schedulingAppId || !slotStart || !slotEnd) {
+      toast.error("Please set a start and end date/time");
+      return;
+    }
+    setBusyId(schedulingAppId);
+    try {
+      await proposeInterviewSlot({ applicationId: schedulingAppId, startAt: slotStart, endAt: slotEnd, notes: slotNotes || undefined });
+      toast.success("Interview date proposed to the candidate");
+      setSchedulingAppId(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to propose date");
     } finally {
       setBusyId(null);
     }
@@ -179,6 +208,17 @@ export function RecruiterApplicationsScreen() {
                         <CheckCircle2 className="h-4 w-4" />
                         Accept
                       </Button>
+                      {application.status === "ACCEPTED" && (
+                        <Button
+                          variant="outline"
+                          onClick={() => openScheduleModal(application.id)}
+                          disabled={busyId === application.id}
+                          className="border-sky-500/30 text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-900/20"
+                        >
+                          <CalendarDays className="h-4 w-4" />
+                          Schedule interview
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -187,6 +227,57 @@ export function RecruiterApplicationsScreen() {
           </div>
         )}
       </div>
+
+      {/* Schedule modal */}
+      {schedulingAppId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/50 bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Schedule interview</h2>
+              <button onClick={() => setSchedulingAppId(null)} className="rounded-full p-1 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Start date &amp; time</label>
+                <input
+                  type="datetime-local"
+                  value={slotStart}
+                  onChange={e => setSlotStart(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">End date &amp; time</label>
+                <input
+                  type="datetime-local"
+                  value={slotEnd}
+                  onChange={e => setSlotEnd(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Note (optional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Location, video call link, instructions..."
+                  value={slotNotes}
+                  onChange={e => setSlotNotes(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setSchedulingAppId(null)}>Cancel</Button>
+              <Button onClick={() => void submitSlot()} disabled={!!busyId}>
+                <CalendarDays className="h-4 w-4 mr-1" />
+                Send proposal
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Briefcase,
+  CalendarDays,
   GraduationCap,
   LayoutDashboard,
   Mail,
@@ -178,6 +179,19 @@ export function ServicesSidebar({ role }: ServicesSidebarProps) {
                   <Link href="/services/chat">
                     <MessageSquare className="h-5 w-5" />
                     <span>Messages</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Calendar"
+                  isActive={pathname.startsWith("/services/calendar")}
+                >
+                  <Link href="/services/calendar">
+                    <CalendarDays className="h-5 w-5" />
+                    <span>Calendar</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

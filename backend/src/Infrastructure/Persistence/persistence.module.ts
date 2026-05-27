@@ -23,7 +23,8 @@ import { OfferBookmarkMapper } from './prisma/mappers/offer-bookmark.mapper';
 import { OfferImpressionMapper } from './prisma/mappers/offer-impression.mapper';
 import { ProfileViewMapper } from './prisma/mappers/profile-view.mapper';
 import { SearchQueryMapper } from './prisma/mappers/search-query.mapper';
-import { RecommendationScoreMapper } from './prisma/mappers/recommendation-score.mapper';
+import { RecommendationScoreMapper } from './prisma/mappers/recommendation-score.mapper'
+import { InterviewSlotMapper } from './prisma/mappers/interview-slot.mapper';
 
 // Interfaces
 import { IUserRepository } from '../../Application/repositories/user.repository';
@@ -46,7 +47,8 @@ import { IOfferBookmarkRepository } from '../../Application/repositories/offer-b
 import { IOfferImpressionRepository } from '../../Application/repositories/offer-impression.repository';
 import { IProfileViewRepository } from '../../Application/repositories/profile-view.repository';
 import { ISearchQueryRepository } from '../../Application/repositories/search-query.repository';
-import { IRecommendationScoreRepository } from '../../Application/repositories/recommendation-score.repository';
+import { IRecommendationScoreRepository } from '../../Application/repositories/recommendation-score.repository'
+import { IInterviewSlotRepository } from '../../Application/repositories/interview-slot.repository';
 
 // Implementations
 import { UserRepositoryImpl } from './prisma/repositories/user.prisma.repository';
@@ -69,7 +71,8 @@ import { OfferBookmarkRepositoryImpl } from './prisma/repositories/offer-bookmar
 import { OfferImpressionRepositoryImpl } from './prisma/repositories/offer-impression.repository';
 import { ProfileViewRepositoryImpl } from './prisma/repositories/profile-view.repository';
 import { SearchQueryRepositoryImpl } from './prisma/repositories/search-query.repository';
-import { RecommendationScoreRepositoryImpl } from './prisma/repositories/recommendation-score.repository';
+import { RecommendationScoreRepositoryImpl } from './prisma/repositories/recommendation-score.repository'
+import { InterviewSlotRepositoryImpl } from './prisma/repositories/interview-slot.repository';
 
 const repositories = [
     { provide: IUserRepository,                  useClass: UserRepositoryImpl },
@@ -93,6 +96,7 @@ const repositories = [
     { provide: IProfileViewRepository,           useClass: ProfileViewRepositoryImpl },
     { provide: ISearchQueryRepository,           useClass: SearchQueryRepositoryImpl },
     { provide: IRecommendationScoreRepository,   useClass: RecommendationScoreRepositoryImpl },
+    { provide: IInterviewSlotRepository,         useClass: InterviewSlotRepositoryImpl },
 ]
 
 const mappers = [
@@ -117,6 +121,7 @@ const mappers = [
     ProfileViewMapper,
     SearchQueryMapper,
     RecommendationScoreMapper,
+    InterviewSlotMapper,
 ]
 
 @Module({
@@ -148,6 +153,7 @@ const mappers = [
         IProfileViewRepository,
         ISearchQueryRepository,
         IRecommendationScoreRepository,
+        IInterviewSlotRepository,
     ],
 })
 export class PersistenceModule {}

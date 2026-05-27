@@ -32,6 +32,9 @@ import { ApplicationSubmittedHandler } from "../../Application/Features/Applicat
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
 import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
+import { InterviewSlotController } from "./interview-slot/interview-slot.controller";
+import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
+import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -51,8 +54,9 @@ import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Eve
         AdminRecommendationsController,
         AdminController,
         ChatController,
-        NotificationController],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler],
+        NotificationController,
+        InterviewSlotController],
+    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}
