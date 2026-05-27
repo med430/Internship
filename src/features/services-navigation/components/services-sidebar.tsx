@@ -15,6 +15,7 @@ import {
   Phone,
   Sparkles,
   Video,
+  CalendarClock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -179,6 +180,19 @@ export function ServicesSidebar({ role }: ServicesSidebarProps) {
                   <Link href="/services/chat">
                     <MessageSquare className="h-5 w-5" />
                     <span>Messages</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Interviews"
+                  isActive={pathname.startsWith("/services/interviews")}
+                >
+                  <Link href="/services/interviews">
+                    <CalendarClock className="h-5 w-5" />
+                    <span>Interviews</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -18,6 +18,7 @@ export type InterviewSlot = {
   company?: string;
   studentName?: string;
   studentEmail?: string;
+  recruiterName?: string;
 };
 
 async function getToken(): Promise<string | null> {
