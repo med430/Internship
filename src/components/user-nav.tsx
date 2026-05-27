@@ -24,6 +24,7 @@ interface UserNavProps {
     avatar?: string;
     profileCompletion?: number;
     profileCompletedAt?: string | null;
+    role?: string;
   };
 }
 
@@ -80,9 +81,16 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {user.name || "User"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium leading-none">
+                {user.name || "User"}
+              </p>
+              {user.role === "ADMIN" && (
+                <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-destructive text-destructive-foreground">
+                  ADMIN
+                </span>
+              )}
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>

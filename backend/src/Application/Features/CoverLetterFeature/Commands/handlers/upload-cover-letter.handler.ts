@@ -35,6 +35,13 @@ export class UploadCoverLetterHandler implements ICommandHandler<UploadCoverLett
             fileUrl           // ← était command.fileUrl
         )
 
-        return this.letterRepo.save(letter)
+        const saved = await this.letterRepo.save(letter)
+        return {
+            id: saved.id,
+            student_id: saved.studentId,
+            file_url: saved.fileUrl,
+            created_at: saved.createdAt,
+            updated_at: saved.updatedAt,
+        }
     }
 }

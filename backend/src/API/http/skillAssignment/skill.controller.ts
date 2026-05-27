@@ -3,6 +3,9 @@ import {Controller, Patch, Delete, Body, UseGuards, Post, Param} from '@nestjs/c
 import { CommandBus } from '@nestjs/cqrs'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import {AssignSkillDTO} from "./dto/assign-skill.dto";
@@ -11,7 +14,8 @@ import {AssignSkillCommand} from "../../../Application/Features/SkillAssignmentF
 import { UpdateSkillDTO } from "./dto/update-skill.dto"
 import {RemoveSkillCommand} from "../../../Application/Features/SkillAssignmentFeature/Commands/remove-skill.command";
 @Controller('skill-assignments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class SkillAssignmentController {
 
     constructor(private readonly commandBus: CommandBus) {}

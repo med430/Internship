@@ -14,6 +14,9 @@ import { CommandBus } from '@nestjs/cqrs'
 
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { ApplyToOfferCommand } from '../../../Application/Features/ApplicationFeature/Commands/apply-offer.command'
@@ -25,6 +28,7 @@ import { ApplicationStatus } from '../../../Domain/enums/application-status.enum
 
 
 @Controller('applications')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplicationController {
 
     constructor(
@@ -33,7 +37,7 @@ export class ApplicationController {
     ) {}
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.STUDENT)
     apply(
         @Body() dto: {
             offerId: string
@@ -54,7 +58,7 @@ export class ApplicationController {
 
     // ================= ACCEPT =================
     @Patch(':id/accept')
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.RECRUITER)
     accept(
         @Param('id') id: string,
         @CurrentUser() user
@@ -70,7 +74,7 @@ export class ApplicationController {
 
     // ================= REJECT =================
     @Patch(':id/reject')
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.RECRUITER)
     reject(
         @Param('id') id: string,
         @CurrentUser() user
@@ -86,7 +90,7 @@ export class ApplicationController {
 
     // ================= DOWNLOAD CV =================
     @Get(':id/cv')
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.RECRUITER)
     async downloadCV(
         @Param('id') id: string,
         @CurrentUser() user,
@@ -101,7 +105,7 @@ export class ApplicationController {
 
     // ================= DOWNLOAD LETTER =================
     @Get(':id/cover-letter')
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.RECRUITER)
     async downloadCoverLetter(
         @Param('id') id: string,
         @CurrentUser() user,
@@ -116,7 +120,7 @@ export class ApplicationController {
 
     // ================= WITHDRAW =================
     @Patch(':id/withdraw')
-    @UseGuards(JwtAuthGuard)
+    @Roles(Role.STUDENT)
     withdraw(
         @Param('id') id: string,
         @CurrentUser() user

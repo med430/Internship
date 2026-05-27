@@ -1,10 +1,13 @@
 import {
+  ClipboardList,
   Briefcase,
   Database,
   FileText,
+  LayoutDashboard,
   MessageSquareText,
   Shield,
   Target,
+  Users,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -17,12 +20,40 @@ export interface SidebarMenuEntry {
 
 export const PRIMARY_ITEMS: SidebarMenuEntry[] = [
   {
+    title: "Offers",
+    url: "/services/offers",
+    icon: Briefcase,
+  },
+  {
+    title: "Applications",
+    url: "/services/applications",
+    icon: ClipboardList,
+  },
+  {
     title: "Jobmatcher",
     url: "/services/jobmatcher",
     icon: Target,
   },
+];
+
+export const ADMIN_ITEMS: SidebarMenuEntry[] = [
   {
-    title: "Recommendation Admin",
+    title: "Overview",
+    url: "/services/admin",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Users",
+    url: "/services/admin/users",
+    icon: Users,
+  },
+  {
+    title: "Offers",
+    url: "/services/admin/offers",
+    icon: Briefcase,
+  },
+  {
+    title: "Recommendations",
     url: "/services/admin/recommendations",
     icon: Shield,
   },
@@ -81,6 +112,14 @@ export const CAREER_GUIDE_ITEMS: SidebarMenuEntry[] = [
   {
     title: "History",
     url: "/services/career-guide/database",
+    icon: Database,
+  },
+];
+
+export const COVER_LETTER_ITEMS: SidebarMenuEntry[] = [
+  {
+    title: "My Letters",
+    url: "/services/cover-letters/database",
     icon: Database,
   },
 ];

@@ -13,6 +13,9 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
+import { Role } from '../../../Domain/enums/role.enum'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 import { StartInterviewDTO } from './dto/start-interview.dto'
@@ -20,7 +23,8 @@ import { StartInterviewCommand } from '../../../Application/Features/InterviewFe
 import { AnswerInterviewCommand } from '../../../Application/Features/InterviewFeature/Commands/answer-interview.command'
 
 @Controller('interviews')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.STUDENT)
 export class InterviewController {
     constructor(private readonly commandBus: CommandBus) {}
 

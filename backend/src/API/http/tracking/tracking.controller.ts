@@ -3,6 +3,8 @@
 import { BadRequestException, Body, Controller, HttpCode, Inject, Post, UseGuards } from '@nestjs/common'
 import { randomUUID } from 'crypto'
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
+import { RolesGuard } from '../guards/roles.guard'
+import { Roles } from '../decorators/roles.decorator'
 import { SupabaseUser } from '../decorators/supabase-user.decorator'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
 import { Role } from '../../../Domain/enums/role.enum'
@@ -19,7 +21,8 @@ import { SearchQuery } from '../../../Domain/entities/search-query.entity'
 import { ProfileView } from '../../../Domain/entities/profile-view.entity'
 
 @Controller('events')
-@UseGuards(SupabaseAuthGuard)
+@UseGuards(SupabaseAuthGuard, RolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER)
 export class TrackingController {
     constructor(
         @Inject(IOfferViewRepository)        private readonly views:       IOfferViewRepository,

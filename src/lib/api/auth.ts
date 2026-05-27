@@ -5,9 +5,37 @@ import { resolveServerSessionSnapshot } from "./auth/internal/session-snapshot";
 import { resolveAccessTokenWithRetry } from "./auth/internal/session-resolver";
 import { inspectAccessToken, isLegacyAlgorithm } from "./auth/internal/token-utils";
 
+function readBackendTokenFromStorage(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const cookieToken = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith("interview_token="))
+    ?.split("=")[1];
+
+  if (cookieToken && cookieToken.trim()) {
+    return cookieToken.trim();
+  }
+
+  const token = window.localStorage.getItem("interview_token");
+  return token && token.trim() ? token.trim() : null;
+}
+
 export async function getAccessToken(options?: {
   forceRefresh?: boolean;
 }): Promise<string> {
+  const backendToken = readBackendTokenFromStorage();
+  if (backendToken) {
+    return backendToken;
+  }
+
+  const serverSnapshot = await resolveServerSessionSnapshot();
+  if (serverSnapshot.accessToken) {
+    return serverSnapshot.accessToken;
+  }
+
   const accessToken = await resolveAccessTokenWithRetry(options);
   if (!accessToken) {
     throw new Error(ERROR_MESSAGES.UNAUTHORIZED);
@@ -73,6 +101,7 @@ export async function fetchWithAuth(
   const response = await fetch(input, {
     ...init,
     headers,
+    credentials: "include",
   });
 
   if (response.status !== 401) {
@@ -89,6 +118,7 @@ export async function fetchWithAuth(
         ...baseHeaders,
         Authorization: `Bearer ${refreshedToken}`,
       },
+      credentials: "include",
     });
 
     if (retriedResponse.status === 401) {
@@ -105,6 +135,7 @@ export async function fetchWithAuth(
             ...baseHeaders,
             Authorization: `Bearer ${serverSnapshot.accessToken}`,
           },
+          credentials: "include",
         });
 
         if (retriedResponse.status === 401) {

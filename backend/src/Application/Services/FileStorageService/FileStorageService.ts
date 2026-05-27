@@ -5,9 +5,21 @@ export abstract class FileStorageService {
         folder: 'cvs' | 'letters'
     ): Promise<string>
 
+    abstract uploadBuffer(
+        buffer: Buffer,
+        folder: 'pdfs',
+        filename: string,
+    ): Promise<string>
+
     abstract delete(fileUrl: string): Promise<void>
 
-    // Returns the URL used to access the file (Cloudinary secure_url)
+    abstract downloadFileBuffer(fileUrl: string): Promise<Buffer>
+
+    /** @deprecated use downloadFileBuffer for proxied delivery */
+    getSignedDownloadUrl(fileUrl: string): string {
+        return fileUrl
+    }
+
     getFileUrl(fileUrl: string): string {
         if (!fileUrl) throw new Error('Invalid file URL')
         return fileUrl

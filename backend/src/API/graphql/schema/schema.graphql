@@ -6,6 +6,7 @@ scalar JSON
 # =======================
 
 enum ApplicationStatus {
+    SUBMITTED
     PENDING
     ACCEPTED
     REJECTED

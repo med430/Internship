@@ -20,7 +20,10 @@ import { SseService } from "./sse/sse.service";
 import { SseAuthGuard } from "./sse/sse-auth.guard";
 import { TrackingController } from "./tracking/tracking.controller";
 import { AdminRecommendationsController } from "./admin/admin-recommendations.controller";
+import { AdminController } from "./admin/admin.controller";
+import { ChatController } from "./chat/chat.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
+import { RolesGuard } from "./guards/roles.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
@@ -42,8 +45,10 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
         OnboardController,
         SseController,
         TrackingController,
-        AdminRecommendationsController],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
+        AdminRecommendationsController,
+        AdminController,
+        ChatController],
+    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

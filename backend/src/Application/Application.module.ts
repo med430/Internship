@@ -26,8 +26,10 @@ import { DeleteCertificationHandler } from './Features/CertificationFeature/Comm
 import { UpdateCertificationHandler } from './Features/CertificationFeature/Commands/handlers/update-certification.handler';
 import { DeleteCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/delete-cover-letter.handler';
 import { UploadCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/upload-cover-letter.handler';
+import { DownloadOwnCoverLetterHandler } from './Features/CoverLetterFeature/Commands/handlers/download-own-cover-letter.handler';
 import { DeleteCVHandler } from './Features/CvFeature/Commands/handlers/delete-cv.handler';
 import { UploadCVHandler } from './Features/CvFeature/Commands/handlers/upload-cv.handler';
+import { DownloadOwnCVHandler } from './Features/CvFeature/Commands/handlers/download-own-cv.handler';
 import { CreateEducationHandler } from './Features/EducationFeature/Commands/handlers/create-education.handler';
 import { UpdateEducationHandler } from './Features/EducationFeature/Commands/handlers/update-education.handler';
 import { DeleteEducationHandler } from './Features/EducationFeature/Commands/handlers/delete-education.handler';
@@ -45,6 +47,7 @@ import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/h
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
 import { StartInterviewHandler } from './Features/InterviewFeature/Commands/handlers/start-interview.handler';
 import { AnswerInterviewHandler } from './Features/InterviewFeature/Commands/handlers/answer-interview.handler';
+import { UpdateUserRoleHandler } from './Features/UserFeature/Commands/handlers/update-user-role.handler';
 
 // ── Query handlers ─────────────────────────────────────────
 import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get-user-query.handler';
@@ -61,6 +64,8 @@ import { GetCVQueryHandler } from './Features/CvFeature/Queries/handlers/get-cv.
 import { GetCVsQueryHandler } from './Features/CvFeature/Queries/handlers/get-cvs.handler';
 import { GetCoverLetterQueryHandler } from './Features/CoverLetterFeature/Queries/handlers/get-cover-letter.handler';
 import { GetCoverLettersQueryHandler } from './Features/CoverLetterFeature/Queries/handlers/get-cover-letters.handler';
+import { ListOwnCoverLettersHandler } from './Features/CoverLetterFeature/Queries/handlers/list-own-cover-letters.handler';
+import { GetOwnCoverLetterHandler } from './Features/CoverLetterFeature/Queries/handlers/get-own-cover-letter.handler';
 import { GetStudentProfileQueryHandler } from './Features/StudentProfileFeature/Queries/handlers/get-student-profile-query.handler';
 import { GetStudentProfilesQueryHandler } from './Features/StudentProfileFeature/Queries/handlers/get-student-profiles-query.handler';
 import { GetRecruiterProfileQueryHandler } from './Features/RecruiterProfileFeature/Queries/handlers/get-recruiter-profile.handler';
@@ -87,6 +92,11 @@ import { MlClientService } from './Services/RecommendationService/ml-client.serv
 import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
 import { ComputeRecommendationsHandler } from './Features/OfferRecommendationFeature/Commands/handlers/compute-recommendations.handler';
 import { GetRecommendedOffersHandler } from './Features/OfferRecommendationFeature/Queries/handlers/get-recommended-offers.handler';
+import { CreateConversationHandler } from './Features/ChatFeature/Commands/handlers/create-conversation.handler';
+import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/send-message.handler';
+import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
+import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
+import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 
@@ -106,8 +116,10 @@ const CommandHandlers = [
   DeleteCertificationHandler,
   DeleteCoverLetterHandler,
   UploadCoverLetterHandler,
+  DownloadOwnCoverLetterHandler,
   DeleteCVHandler,
   UploadCVHandler,
+  DownloadOwnCVHandler,
   CreateEducationHandler,
   UpdateEducationHandler,
   DeleteEducationHandler,
@@ -126,6 +138,9 @@ const CommandHandlers = [
   StartInterviewHandler,
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
+  UpdateUserRoleHandler,
+  CreateConversationHandler,
+  SendMessageHandler,
 ];
 
 const QueryHandlers = [
@@ -150,6 +165,8 @@ const QueryHandlers = [
   // Cover letters
   GetCoverLetterQueryHandler,
   GetCoverLettersQueryHandler,
+  ListOwnCoverLettersHandler,
+  GetOwnCoverLetterHandler,
   // Profiles
   GetStudentProfileQueryHandler,
   GetStudentProfilesQueryHandler,
@@ -172,6 +189,9 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
+  // Chat
+  GetConversationsHandler,
+  GetMessagesHandler,
 ];
 
 @Global()
@@ -181,6 +201,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    ChatPersistenceModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ← ajout
@@ -220,6 +241,7 @@ const QueryHandlers = [
     JwtModule,
     PassportModule,
     FileStorageModule,
+    PersistenceModule,
     InterviewAiService,
     ContentScoringService,
     ScoringService,

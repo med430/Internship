@@ -1,8 +1,14 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { GqlRolesGuard } from '../guards/gql-roles.guard';
+import { Roles } from '../../http/decorators/roles.decorator';
+import { Role } from '../../../Domain/enums/role.enum';
 import { Application } from '../../../Domain/entities/application.entity';
 import { GetApplicationQuery } from '../../../Application/Features/ApplicationFeature/Queries/get-application.query';
 import { GetApplicationsQuery } from '../../../Application/Features/ApplicationFeature/Queries/get-applications.query';
+import { GetStudentProfileQuery } from '../../../Application/Features/StudentProfileFeature/Queries/get-student-profile.query';
 import { GetUserQuery } from '../../../Application/Features/UserFeature/Queries/get-user.query';
 import { GetOfferQuery } from '../../../Application/Features/OfferFeature/Queries/get-offer.query';
 import { GetCVQuery } from '../../../Application/Features/CvFeature/Queries/get-cv.query';
@@ -13,6 +19,8 @@ import { CoverLetter } from '../../../Domain/entities/coverletter.entity';
 import { GetCoverLetterQuery } from '../../../Application/Features/CoverLetterFeature/Queries/get-cover-letter.query';
 
 @Resolver('Application')
+@UseGuards(GqlAuthGuard, GqlRolesGuard)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class ApplicationResolver {
   constructor(private readonly queryBus: QueryBus) {}
 
@@ -23,17 +31,30 @@ export class ApplicationResolver {
 
   @Query('applications')
   async getApplications(
-    @Args('pageNumber') pageNumber: number,
-    @Args('pageSize') pageSize: number,
+    @Args('pageNumber') pageNumber: number = 1,
+    @Args('pageSize') pageSize: number = 200,
   ): Promise<Application[]> {
-    return this.queryBus.execute(
-      new GetApplicationsQuery(pageNumber, pageSize),
-    );
+    try {
+      const result = await this.queryBus.execute(
+        new GetApplicationsQuery(pageNumber, pageSize),
+      );
+
+      return result ?? [];
+    } catch (error) {
+      console.error('[GraphQL] applications query failed', error);
+      return [];
+    }
   }
 
   @ResolveField('student')
   async student(@Parent() application: Application): Promise<User | null> {
-    return this.queryBus.execute(new GetUserQuery(application.studentId));
+    const profile = await this.queryBus.execute(
+      new GetStudentProfileQuery(application.studentId),
+    );
+
+    if (!profile) return null;
+
+    return this.queryBus.execute(new GetUserQuery(profile.userId));
   }
 
   @ResolveField('offer')

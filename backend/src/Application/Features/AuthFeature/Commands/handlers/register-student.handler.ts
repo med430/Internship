@@ -44,7 +44,25 @@ RegisterResponseDTO
         const existing = await this.userRepo.findByEmail(user.email)
         if (existing) throw new ConflictException('Email already in use')
 
-        const savedUser = await this.userRepo.save(user)
+        const usernameTaken = await this.userRepo.findByUsername(user.username)
+        if (usernameTaken) throw new ConflictException('Username already in use')
+
+        let savedUser: User
+        try {
+            savedUser = await this.userRepo.save(user)
+        } catch (error: any) {
+            if (error?.code === 'P2002' || error?.cause?.originalCode === '23505') {
+                const fields = Array.isArray(error?.meta?.target)
+                    ? error.meta.target.join(', ')
+                    : Array.isArray(error?.cause?.constraint?.fields)
+                        ? error.cause.constraint.fields.join(', ')
+                        : 'email or username'
+
+                throw new ConflictException(`${fields} already in use`)
+            }
+
+            throw error
+        }
 
         await this.studentProfileRepo.save(
             new StudentProfile(randomUUID(), savedUser.id)

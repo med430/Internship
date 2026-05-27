@@ -3,7 +3,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
-import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose'
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
 import { IUserRepository } from '../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../repositories/student-profile.repository'
 import { User } from '../../../Domain/entities/user.entity'
@@ -11,9 +11,7 @@ import { StudentProfile } from '../../../Domain/entities/student-profile.entity'
 import { Role } from '../../../Domain/enums/role.enum'
 
 interface SupabaseJwtPayload extends JWTPayload {
-    sub?: string
     email?: string
-    role?: string
     user_metadata?: { role?: string; name?: string; lastname?: string; username?: string }
     app_metadata?:  { role?: string }
 }
@@ -28,20 +26,32 @@ export interface ResolvedUser {
 @Injectable()
 export class SupabaseAuthBridge {
     private readonly logger = new Logger(SupabaseAuthBridge.name)
-    private readonly jwks: ReturnType<typeof createRemoteJWKSet>
-    private readonly issuer: string
+    private readonly jwks: ReturnType<typeof createRemoteJWKSet> | null = null
+    private readonly symmetricKey: Uint8Array | null = null
 
     constructor(
         cfg: ConfigService,
         @Inject(IUserRepository)            private readonly users:    IUserRepository,
         @Inject(IStudentProfileRepository)  private readonly profiles: IStudentProfileRepository,
     ) {
-        const baseUrl = (cfg.get<string>('NEXT_PUBLIC_SUPABASE_URL') ?? '').replace(/\/$/, '')
-        this.issuer = `${baseUrl}/auth/v1`
-        this.jwks = createRemoteJWKSet(new URL(`${this.issuer}/.well-known/jwks.json`))
+        const supabaseUrl = cfg.get<string>('NEXT_PUBLIC_SUPABASE_URL') ?? cfg.get<string>('SUPABASE_URL') ?? ''
+        const jwtSecret   = cfg.get<string>('SUPABASE_JWT_SECRET') ?? ''
+
+        if (supabaseUrl) {
+            // JWKS works for all algorithms (ES256, RS256, HS256)
+            const jwksUrl = `${supabaseUrl.replace(/\/$/, '')}/auth/v1/.well-known/jwks.json`
+            this.jwks = createRemoteJWKSet(new URL(jwksUrl))
+            this.logger.log(`Supabase JWKS verification enabled: ${jwksUrl}`)
+        } else if (jwtSecret) {
+            // Fallback: symmetric HS256 only
+            this.symmetricKey = new TextEncoder().encode(jwtSecret)
+            this.logger.log('Supabase symmetric JWT verification enabled (HS256)')
+        } else {
+            this.logger.warn('Neither NEXT_PUBLIC_SUPABASE_URL nor SUPABASE_JWT_SECRET is set — JWT verification will fail')
+        }
     }
 
-    // Verifies the JWT against Supabase's public keys, finds our User by sub, creates one if missing.
+    // Verifies the JWT using the Supabase JWT secret, finds our User by sub, creates one if missing.
     // Returns null for missing, malformed, expired, or forged tokens.
     async resolve(token: string | null | undefined): Promise<ResolvedUser | null> {
         const payload = await this.verify(token)
@@ -55,12 +65,19 @@ export class SupabaseAuthBridge {
         return this.provision(payload)
     }
 
-    // Performs proper signature verification using ES256 keys served from Supabase's JWKS endpoint.
+    // Verifies the JWT using JWKS (supports ES256/RS256/HS256) or fallback symmetric key.
     private async verify(token: string | null | undefined): Promise<SupabaseJwtPayload | null> {
         if (!token) return null
         try {
-            const { payload } = await jwtVerify(token, this.jwks, { issuer: this.issuer })
-            return payload as SupabaseJwtPayload
+            if (this.jwks) {
+                const { payload } = await jwtVerify(token, this.jwks)
+                return payload as SupabaseJwtPayload
+            }
+            if (this.symmetricKey) {
+                const { payload } = await jwtVerify(token, this.symmetricKey)
+                return payload as SupabaseJwtPayload
+            }
+            return null
         } catch (err) {
             this.logger.debug(`token rejected: ${(err as Error).message}`)
             return null
