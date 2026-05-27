@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
@@ -200,4 +201,4 @@ const JobCard = ({
   );
 };
 
-export default JobCard;
+export default memo(JobCard);
