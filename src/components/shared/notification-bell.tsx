@@ -138,7 +138,7 @@ export function NotificationBell() {
                     !notification.isRead && "bg-muted/30",
                   )}
                   onClick={() =>
-                    handleNotificationClick(notification.id, notification.link)
+                    handleNotificationClick(notification.id, notification.link ?? undefined)
                   }
                 >
                   <div className="flex items-start gap-3">

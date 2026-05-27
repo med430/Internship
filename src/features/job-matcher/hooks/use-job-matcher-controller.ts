@@ -13,6 +13,7 @@ import {
 } from "../lib/constants";
 import { buildActiveFilterTags } from "../lib/utils";
 import { textExtractorAPI } from "@/lib/api/text-extractor-client";
+import { tracking } from "@/lib/api/tracking-client";
 
 export function useJobMatcherController() {
   const {
@@ -216,8 +217,10 @@ export function useJobMatcherController() {
       const newSet = new Set(prev);
       if (newSet.has(jobId)) {
         newSet.delete(jobId);
+        tracking.trackUnbookmark(jobId);
       } else {
         newSet.add(jobId);
+        tracking.trackBookmark(jobId);
       }
 
       localStorage.setItem(
@@ -227,6 +230,31 @@ export function useJobMatcherController() {
       return newSet;
     });
   }, []);
+
+  const handleView = useCallback((jobId: string) => {
+    tracking.trackView(jobId, "feed");
+  }, []);
+
+  // Debounced search-query tracking. Fires 400ms after the user stops typing.
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => {
+      tracking.trackSearch(searchQuery, activeFilters as Record<string, unknown>, filteredAllJobs.length);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeFilters, filteredAllJobs.length]);
+
+  // Impression batch — one event per card shown on the current page.
+  useEffect(() => {
+    if (paginatedJobs.length === 0) return;
+    tracking.trackImpressions(
+      paginatedJobs.map((job, index) => ({
+        offerId: job.job_id ?? String(index),
+        position: (page - 1) * JOBS_PER_PAGE + index,
+        source: "feed",
+      })),
+    );
+  }, [paginatedJobs, page]);
 
   const handleRefresh = useCallback(async () => {
     await filterJobs(activeFilters, resumeContent.trim() || "");
@@ -346,6 +374,7 @@ export function useJobMatcherController() {
     topOfResultsRef,
     shouldShowCVPrompt,
     handleSave,
+    handleView,
     handleRefresh,
     handleApplyFilters,
     handleResetFilters,

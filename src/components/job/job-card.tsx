@@ -39,6 +39,7 @@ const JobCard = ({
   isSaved = false,
   onLike,
   onSave,
+  onView,
 }: JobCardProps) => {
   const getMatchLevel = (score: number) => {
     if (score >= 90)
@@ -258,6 +259,7 @@ const JobCard = ({
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center"
+              onClick={() => onView?.(jobId)}
             >
               View Details
               <ExternalLink className="w-4 h-4" />

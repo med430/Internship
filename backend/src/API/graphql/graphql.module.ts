@@ -23,6 +23,7 @@ import { InterviewResolver } from './resolvers/interview.resolver';
 import { RecommendationResolver } from './resolvers/recommendation.resolver';
 import { StudentProfileResolver } from './resolvers/student-profile.resolver';
 import { RecruiterProfileResolver } from './resolvers/recruiter-profile.resolver';
+import { SubscriptionResolver } from './resolvers/subscription.resolver';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { RecruiterProfileResolver } from './resolvers/recruiter-profile.resolver
     RecommendationResolver,
     StudentProfileResolver,
     RecruiterProfileResolver,
+    SubscriptionResolver,
   ],
 })
 export class GraphQLAPIModule {}

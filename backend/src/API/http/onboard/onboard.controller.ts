@@ -4,6 +4,8 @@ import {
     Controller,
     Delete,
     Get,
+    Inject,
+    NotFoundException,
     Patch,
     Param,
     Post,
@@ -13,6 +15,7 @@ import {
     UploadedFile,
     UploadedFiles,
     UnauthorizedException,
+    UseGuards,
     UseInterceptors,
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
@@ -22,12 +25,22 @@ import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
+import { SubscriptionGuard } from '../guards/subscription.guard'
+import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
+import { SupabaseUser } from '../decorators/supabase-user.decorator'
+import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
+import { IOfferRepository } from '../../../Application/repositories/offer.repository'
+import { IOfferBookmarkRepository } from '../../../Application/repositories/offer-bookmark.repository'
+import { IRecommendationScoreRepository } from '../../../Application/repositories/recommendation-score.repository'
 
 @Controller()
 export class OnboardController {
     constructor(
         private readonly onboardService: OnboardService,
         private readonly offerFeed: OfferFeedService,
+        @Inject(IOfferRepository)               private readonly offerRepo: IOfferRepository,
+        @Inject(IOfferBookmarkRepository)       private readonly bookmarkRepo: IOfferBookmarkRepository,
+        @Inject(IRecommendationScoreRepository) private readonly scoreRepo: IRecommendationScoreRepository,
     ) {}
 
     @Get('health')
@@ -81,6 +94,7 @@ export class OnboardController {
 
     // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
+    @UseGuards(SubscriptionGuard)
     async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
         const outcome = await this.offerFeed.dispatch({
             bearerToken: this.extractBearerToken(req.header('authorization')),
@@ -127,7 +141,61 @@ export class OnboardController {
             match_score: Math.round(item.score * 100),
             score_breakdown: item.breakdown,
             bookmarked: item.bookmarked,
+            is_paid: !!offer.isPaid,
+            application_deadline: offer.applicationDeadline?.toISOString() ?? null,
+            positions_count: offer.positionsCount ?? 1,
         }
+    }
+
+    // Full offer detail for the dedicated detail page. Requires Supabase auth.
+    @Get('offers/:id')
+    @UseGuards(SupabaseAuthGuard)
+    async offerDetail(@Param('id') id: string, @SupabaseUser() user: ResolvedUser) {
+        const offer = await this.offerRepo.findById(id)
+        if (!offer || offer.deletedAt) throw new NotFoundException('offer not found')
+
+        const [bookmarks, scoreRows] = await Promise.all([
+            this.bookmarkRepo.findActiveByStudent(user.id),
+            this.scoreRepo.findTopForStudent(user.id, 200),
+        ])
+        const scoreRow = scoreRows.find(s => s.offerId === id)
+        const bookmarked = bookmarks.some(b => b.offerId === id)
+
+        return {
+            id: offer.id,
+            title: offer.title,
+            company: offer.company,
+            location: offer.location,
+            description: offer.description,
+            domain: offer.domain,
+            work_model: offer.workMode,
+            employment_type: offer.type,
+            is_paid: !!offer.isPaid,
+            stipend_min: offer.stipendMin ?? null,
+            stipend_max: offer.stipendMax ?? null,
+            salary: this.formatSalary(offer),
+            languages_required: offer.languagesRequired ?? [],
+            positions_count: offer.positionsCount ?? 1,
+            start_date: offer.startDate?.toISOString() ?? null,
+            end_date: offer.endDate?.toISOString() ?? null,
+            application_deadline: offer.applicationDeadline?.toISOString() ?? null,
+            posted_date: (offer.createdAt ?? new Date()).toISOString(),
+            skills: (offer.skillRequirements ?? []).map((sr: any) => ({
+                id: sr.skill?.id ?? sr.id,
+                name: sr.skill?.name ?? 'Unknown',
+                level: sr.level,
+                mandatory: sr.mandatory,
+            })),
+            bookmarked,
+            match_score: scoreRow ? Math.round(scoreRow.finalScore * 100) : null,
+            score_breakdown: scoreRow?.breakdown ?? null,
+        }
+    }
+
+    // Renders the stipend range or the binary paid/unpaid label as a single human-readable string.
+    private formatSalary(offer: any): string {
+        if (offer.stipendMin && offer.stipendMax) return `${offer.stipendMin}-${offer.stipendMax} TND`
+        return offer.isPaid ? 'Paid' : 'Unpaid'
     }
 
     @Get('virtual-interviewer/personas')
@@ -136,6 +204,7 @@ export class OnboardController {
     }
 
     @Post('generate_queries')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(
         FileFieldsInterceptor(
             [
@@ -179,6 +248,7 @@ export class OnboardController {
     }
 
     @Post('rewrite_cv')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
     async rewriteCv(@Req() req: Request, @Body() body: Record<string, any> = {}) {
         const questionSessionId = String(body.question_session_id || '').trim()
@@ -241,6 +311,7 @@ export class OnboardController {
     }
 
     @Post('career-guide/generate')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async generateCareerGuide(
         @Req() req: Request,
@@ -287,6 +358,7 @@ export class OnboardController {
     }
 
     @Post('portfolio/build')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async buildPortfolio(
         @Req() req: Request,
@@ -335,6 +407,7 @@ export class OnboardController {
     }
 
     @Post('onboard/interviews/start')
+    @UseGuards(SubscriptionGuard)
     async startInterview(@Req() req: Request, @Body() body: Record<string, any>) {
         return this.onboardService.startInterview(this.getSessionKey(req), {
             personaKey: body.personaKey,

@@ -1,4 +1,4 @@
-// Batch scorer: rebuilds the RecommendationScore table from current students × offers.
+// Orchestrator: loads active students × offers, fans scoring out to ScoringService, persists the rows.
 
 import { Inject, Logger } from '@nestjs/common'
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
@@ -7,14 +7,10 @@ import { IStudentProfileRepository } from '../../../../repositories/student-prof
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecommendationScoreRepository } from '../../../../repositories/recommendation-score.repository'
 import { ScoringService } from '../../../../Services/RecommendationService/scoring.service'
-import { ContentScoringService } from '../../../../Services/RecommendationService/content-scoring.service'
-import { IMlClient } from '../../../../Services/RecommendationService/ml-client.interface'
 import { StudentProfile } from '../../../../../Domain/entities/student-profile.entity'
 import { Offer } from '../../../../../Domain/entities/offer.entity'
-import { RecommendationScore } from '../../../../../Domain/entities/recommendation-score.entity'
 
 const STUDENT_BATCH_SIZE = 50
-const ML_BATCH_LIMIT = 200
 
 export interface ComputeResult {
     studentsProcessed: number
@@ -32,15 +28,13 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
         @Inject(IStudentProfileRepository)      private readonly students: IStudentProfileRepository,
         @Inject(IOfferRepository)               private readonly offers:   IOfferRepository,
         @Inject(IRecommendationScoreRepository) private readonly scores:   IRecommendationScoreRepository,
-        private readonly contentScoring: ContentScoringService,
-        private readonly scoring:        ScoringService,
-        @Inject(IMlClient)                      private readonly ml:       IMlClient,
+        private readonly scoring: ScoringService,
     ) {}
 
     // Loads active students and offers, scores every pair in batches, upserts to the score table.
     async execute(cmd: ComputeRecommendationsCommand): Promise<ComputeResult> {
         const start = Date.now()
-        const modelVersion = await this.resolveModelVersion()
+        const modelVersion = await this.scoring.resolveModelVersion()
 
         const activeOffers = (await this.offers.findAll()).filter(this.isActiveOffer)
         const allStudents = await this.loadStudents(cmd.studentUserId)
@@ -62,33 +56,12 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
         return result
     }
 
-    // Scores one batch of students in parallel, then upserts all their rows in a single transaction.
+    // Scores one batch of students in parallel, then upserts all their rows in one chunked write.
     private async processBatch(students: StudentProfile[], offers: Offer[], modelVersion: string): Promise<number> {
         const rowsPerStudent = await Promise.all(
-            students.map(s => this.scoreOneStudent(s, offers, modelVersion)),
+            students.map(s => this.scoring.scoreStudent(s, offers, modelVersion)),
         )
-        const allRows = rowsPerStudent.flat()
-        return this.scores.upsertMany(allRows)
-    }
-
-    // For one student: compute content scores for every offer, ask the ML sidecar for its scores, blend the two.
-    private async scoreOneStudent(student: StudentProfile, offers: Offer[], modelVersion: string): Promise<RecommendationScore[]> {
-        if (offers.length === 0) return []
-
-        const contentScores: Record<string, number> = {}
-        for (const offer of offers) {
-            contentScores[offer.id] = this.contentScoring.score(student, offer).score
-        }
-
-        const mlResponse = await this.ml.recommendJobs({
-            studentId: student.userId,
-            studentText: this.buildStudentText(student),
-            contentScores,
-            limit: ML_BATCH_LIMIT,
-        })
-        const mlByOffer = new Map(mlResponse?.map(m => [m.offerId, m]) ?? [])
-
-        return offers.map(offer => this.scoring.scorePair(student, offer, mlByOffer.get(offer.id) ?? null, modelVersion))
+        return this.scores.upsertMany(rowsPerStudent.flat())
     }
 
     // Returns either every student profile, or just the one scoped by the command (for single-user reruns).
@@ -105,20 +78,5 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
         if (o.deletedAt) return false
         if (!o.applicationDeadline) return true
         return o.applicationDeadline.getTime() > Date.now()
-    }
-
-    // Builds the free-text representation of the student we send to the ML sidecar for embedding lookup.
-    private buildStudentText(s: StudentProfile): string {
-        const skills = s.skills.map(sk => sk.skillId).join(',')
-        const prefs = s.preferredDomains.join(',')
-        const cities = s.preferredCities.join(',')
-        const bio = s.bio ?? ''
-        return `skills:${skills}|domains:${prefs}|cities:${cities}|year:${s.currentYear ?? ''}|prog:${s.currentProgram ?? ''}|${bio}`
-    }
-
-    // Tags every written row with the ML model's version so we can audit later which scores came from which model.
-    private async resolveModelVersion(): Promise<string> {
-        const health = await this.ml.health()
-        return health?.modelVersion ?? 'content-only'
     }
 }

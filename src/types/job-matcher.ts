@@ -15,6 +15,44 @@ export interface JobDocument {
   source_url: string;
   posted_date: string;
   match_score?: number;
+  // M5 — recommendation-pipeline extensions
+  is_paid?: boolean;
+  application_deadline?: string | null;
+  positions_count?: number;
+  bookmarked?: boolean;
+  score_breakdown?: Record<string, number | undefined>;
+}
+
+export interface OfferSkill {
+  id: string;
+  name: string;
+  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT" | string;
+  mandatory: boolean;
+}
+
+export interface OfferDetailDocument {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  domain: string;
+  work_model: string;
+  employment_type: string;
+  is_paid: boolean;
+  stipend_min: number | null;
+  stipend_max: number | null;
+  salary: string;
+  languages_required: string[];
+  positions_count: number;
+  start_date: string | null;
+  end_date: string | null;
+  application_deadline: string | null;
+  posted_date: string;
+  skills: OfferSkill[];
+  bookmarked: boolean;
+  match_score: number | null;
+  score_breakdown: Record<string, number | undefined> | null;
 }
 
 export interface JobSearchFilters {
@@ -100,7 +138,11 @@ export interface JobCardProps {
   sourceUrl: string;
   isLiked?: boolean;
   isSaved?: boolean;
+  isPaid?: boolean;
+  applicationDeadline?: Date | null;
+  workModel?: string;
   onLike?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
+  onView?: (jobId: string) => void;
   onTailorCV?: (jobId: string, description: string) => void;
 }

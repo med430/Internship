@@ -4,24 +4,29 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Activity, Shield } from "lucide-react";
+import { Loader2, RefreshCw, Activity, Shield, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   triggerRecompute,
+  triggerCleanup,
   checkMlHealth,
   type ComputeResult,
+  type CleanupResult,
   type MlHealth,
 } from "@/lib/api/admin-recommendations-client";
 
 export function AdminRecommendationsScreen() {
   const [computing, setComputing] = useState(false);
   const [healthChecking, setHealthChecking] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
   const [lastCompute, setLastCompute] = useState<ComputeResult | null>(null);
   const [lastHealth, setLastHealth] = useState<MlHealth | null>(null);
+  const [lastCleanup, setLastCleanup] = useState<CleanupResult | null>(null);
   const [computeError, setComputeError] = useState<string | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [cleanupError, setCleanupError] = useState<string | null>(null);
 
   // Click handler that triggers a full score rebuild and reports the result.
   async function onRecompute() {
@@ -37,6 +42,24 @@ export function AdminRecommendationsScreen() {
       toast.error(`Recompute failed: ${msg}`);
     } finally {
       setComputing(false);
+    }
+  }
+
+  // Click handler that runs the retention cleanup on demand and reports rows deleted per table.
+  async function onCleanup() {
+    setCleaning(true);
+    setCleanupError(null);
+    try {
+      const result = await triggerCleanup();
+      setLastCleanup(result);
+      const total = result.offerViewsDeleted + result.offerImpressionsDeleted + result.searchQueriesDeleted;
+      toast.success(`Cleanup removed ${total} aged event rows in ${result.durationMs}ms`);
+    } catch (err) {
+      const msg = (err as Error).message;
+      setCleanupError(msg);
+      toast.error(`Cleanup failed: ${msg}`);
+    } finally {
+      setCleaning(false);
     }
   }
 
@@ -76,7 +99,7 @@ export function AdminRecommendationsScreen() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -124,6 +147,55 @@ export function AdminRecommendationsScreen() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Model</span>
                     <Badge variant="secondary">{lastCompute.modelVersion}</Badge>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-4 w-4 text-primary" />
+                <CardTitle>Event cleanup</CardTitle>
+              </div>
+              <CardDescription>
+                Prunes aged OfferView (6mo), OfferImpression (3mo), and SearchQuery (6mo) rows. Bookmarks are kept.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={onCleanup} disabled={cleaning} variant="secondary" className="w-full">
+                {cleaning ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cleaning…
+                  </>
+                ) : (
+                  "Run cleanup"
+                )}
+              </Button>
+
+              {cleanupError && (
+                <p className="text-sm text-destructive">{cleanupError}</p>
+              )}
+
+              {lastCleanup && (
+                <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">OfferView deleted</span>
+                    <span className="font-medium">{lastCleanup.offerViewsDeleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">OfferImpression deleted</span>
+                    <span className="font-medium">{lastCleanup.offerImpressionsDeleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">SearchQuery deleted</span>
+                    <span className="font-medium">{lastCleanup.searchQueriesDeleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-medium">{lastCleanup.durationMs}ms</span>
                   </div>
                 </div>
               )}

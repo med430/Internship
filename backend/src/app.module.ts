@@ -1,20 +1,33 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import {HttpApiModule} from "./API/http/http.module";
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { GraphQLAPIModule } from './API/graphql/graphql.module';
+import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
-import { CallGateway } from './API/websocket/gateways/call.gateway';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ChatGateway } from './API/websocket/gateways/chat.gateway';
-import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
+import * as dotenv from 'dotenv';
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),
   resolve(process.cwd(), '..', '.env'),
 ];
+
+// Populate process.env early so the chat feature flag can drive module wiring below.
+dotenv.config({ path: envFilePaths.find(p => existsSync(p)) ?? envFilePaths[0] });
+
+import { MiddlewareConsumer, Module, NestModule, Logger } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import {HttpApiModule} from "./API/http/http.module";
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { GraphQLAPIModule } from './API/graphql/graphql.module';
+import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
+import { CallGateway } from './API/websocket/gateways/call.gateway';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ChatGateway } from './API/websocket/gateways/chat.gateway';
+import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
+import { StripeWebhookModule } from './API/webhooks/stripe/stripe-webhook.module';
+
+const chatEnabled = !!process.env.CHAT_DB_URL;
+if (!chatEnabled) {
+  new Logger('AppModule').warn('CHAT_DB_URL not set — chat feature disabled');
+}
 
 @Module({
   imports: [
@@ -22,18 +35,22 @@ const envFilePaths = [
       isGlobal: true,
       envFilePath: envFilePaths,
     }),
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('CHAT_DB_URL') ?? 'mongodb://127.0.0.1:27017/stagio',
+    ScheduleModule.forRoot(),
+    ...(chatEnabled ? [
+      MongooseModule.forRootAsync({
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          uri: config.get<string>('CHAT_DB_URL'),
+        }),
       }),
-    }),
-    ChatPersistenceModule,
+      ChatPersistenceModule,
+    ] : []),
     HttpApiModule,
     GraphQLAPIModule,
+    StripeWebhookModule,
   ],
   controllers: [AppController],
-  providers: [AppService, CallGateway, ChatGateway],
+  providers: [AppService, CallGateway, ...(chatEnabled ? [ChatGateway] : [])],
 })
 export class AppModule implements NestModule {
   // Auto-syncs any Supabase-authenticated request to a NeonDB User row. Runs before every route, never blocks.

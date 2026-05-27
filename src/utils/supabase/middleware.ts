@@ -35,7 +35,6 @@ export const updateSession = async (request: NextRequest) => {
   const protectedRoutes = ["/services", "/profile", "/settings"];
   const recruiterRoutes = ["/recruiter/offers", "/recruiter/applications"];
   const authRoutes = ["/login", "/signup", "/forgot-password"];
-  const adminRoutes = ["/services/admin"];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
@@ -44,9 +43,6 @@ export const updateSession = async (request: NextRequest) => {
     request.nextUrl.pathname.startsWith(route),
   );
   const isAuthRoute = authRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
-  const isAdminRoute = adminRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
 
@@ -70,9 +66,7 @@ export const updateSession = async (request: NextRequest) => {
     return NextResponse.redirect(new URL("/recruiter/login", request.url));
   }
 
-  if (isAdminRoute && user?.app_metadata?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/services/dashboard", request.url));
-  }
+  // Admin gating happens in app/services/admin/layout.tsx — it can reach NeonDB; this middleware can't.
 
   if (user && isAuthRoute) {
     const hasEmailProvider = user.identities?.some(

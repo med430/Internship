@@ -1,28 +1,24 @@
+"use client";
+
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   Building2,
   Clock,
   Bookmark,
-  ExternalLink,
-  Sparkles,
-  Briefcase,
-  Layers,
+  ArrowUpRight,
+  Wallet,
+  CalendarClock,
+  Globe2,
 } from "lucide-react";
 
-import {
-  cn,
-  toTitleCase,
-  formatTag,
-  filterAndDeduplicateTags,
-} from "@/lib/utils";
+import { cn, toTitleCase, formatTag } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { AnimatedCircularProgressBar } from "../ui/animated-circular-progress-bar";
 import { JobCardProps } from "@/types/job-matcher";
 
 const JobCard = ({
@@ -32,222 +28,175 @@ const JobCard = ({
   companyLogo,
   location,
   employmentType,
-  seniorityLevel,
-  jobFunction,
-  industries,
+  workModel,
   postedAt,
   matchScore,
   description,
-  platforms = [],
-  sourceUrl,
   isSaved = false,
+  isPaid,
+  applicationDeadline,
   onSave,
+  onView,
 }: JobCardProps) => {
-  const getMatchLevel = (score: number) => {
-    if (score >= 90)
-      return {
-        label: "Excellent Match",
-        primaryColor: "rgb(16, 185, 129)",
-        secondaryColor: "rgb(209, 250, 229)",
-        badgeClass:
-          "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20",
-      };
-    if (score >= 80)
-      return {
-        label: "Great Match",
-        primaryColor: "rgb(59, 130, 246)",
-        secondaryColor: "rgb(219, 234, 254)",
-        badgeClass:
-          "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border-blue-500/20",
-      };
-    if (score >= 70)
-      return {
-        label: "Good Match",
-        primaryColor: "rgb(139, 92, 246)",
-        secondaryColor: "rgb(237, 233, 254)",
-        badgeClass:
-          "bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border-violet-500/20",
-      };
-    return {
-      label: "Fair Match",
-      primaryColor: "rgb(249, 115, 22)",
-      secondaryColor: "rgb(254, 243, 199)",
-      badgeClass:
-        "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border-orange-500/20",
-    };
-  };
-
-  const matchLevel = getMatchLevel(matchScore);
-  const formattedDate = dayjs(postedAt).fromNow();
   const displayScore = Math.round(matchScore);
 
+  // Match score colour ramp — green → blue → violet → orange.
+  const matchTone =
+    displayScore >= 80
+      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+      : displayScore >= 65
+        ? "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400"
+        : displayScore >= 50
+          ? "bg-violet-500/10 text-violet-600 border-violet-500/30 dark:text-violet-400"
+          : "bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400";
+
+  const daysLeft = applicationDeadline
+    ? Math.ceil((applicationDeadline.getTime() - Date.now()) / 86_400_000)
+    : null;
+  const isUrgent = daysLeft !== null && daysLeft > 0 && daysLeft <= 3;
+
   return (
-    <div className="group flex flex-col h-[500px] w-full cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-card/80 backdrop-blur-md transition-all duration-300 hover:bg-card hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 dark:hover:shadow-primary/5">
-      {/* --- HEADER --- */}
-      <div className="relative h-[140px] flex-shrink-0 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-6 border-b border-border/40 overflow-hidden">
-        {/* Match Score */}
-        <div className="absolute top-4 right-4 z-10">
-          <AnimatedCircularProgressBar
-            max={100}
-            min={0}
-            value={displayScore}
-            gaugePrimaryColor={matchLevel.primaryColor}
-            gaugeSecondaryColor={matchLevel.secondaryColor}
-            className="size-14"
-          />
-        </div>
-
-        {/* Company Info */}
-        <div className="flex items-start gap-3 pr-16">
-          {companyLogo ? (
-            <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/60 flex-shrink-0 bg-background/50">
-              <Image
-                src={companyLogo}
-                width={48}
-                height={48}
-                alt={company}
-                className="w-full h-full object-cover"
-              />
+    <Link
+      href={`/services/offers/${jobId}`}
+      onClick={() => onView?.(jobId)}
+      className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+    >
+      <article className="flex flex-col h-full rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-200">
+        {/* Header — company + match chip */}
+        <header className="flex items-start justify-between gap-3 p-5 pb-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {companyLogo ? (
+              <div className="w-10 h-10 rounded-lg overflow-hidden border border-border/60 flex-shrink-0 bg-background">
+                <Image
+                  src={companyLogo}
+                  width={40}
+                  height={40}
+                  alt={company}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-border/60 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-4 h-4 text-primary" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">
+                {company}
+              </p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <Clock className="w-3 h-3" />
+                {dayjs(postedAt).fromNow()}
+              </p>
             </div>
-          ) : (
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-border/60 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="h-[44px] flex items-start overflow-hidden">
-              <h3 className="font-semibold text-base line-clamp-2 text-foreground group-hover:text-primary transition-colors leading-tight break-words">
-                {title}
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground font-medium truncate mt-1">
-              {company}
-            </p>
           </div>
-        </div>
 
-        {/* Location */}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate w-full">
-            <MapPin className="w-3 h-3 flex-shrink-0" />
-            <span className="font-medium truncate">
-              {toTitleCase(location || "Unknown Location")}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* --- CONTENT BODY --- */}
-      <div className="flex-1 p-6 flex flex-col gap-4 overflow-hidden">
-        {/* Row 1: Match Badge & Employment Type */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge
+          <div
             className={cn(
-              "font-medium text-[10px] border px-2 py-0.5 whitespace-nowrap",
-              matchLevel.badgeClass,
+              "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums",
+              matchTone,
             )}
           >
-            <Sparkles className="w-3 h-3 mr-1" />
-            {matchLevel.label}
-          </Badge>
+            {displayScore}% match
+          </div>
+        </header>
 
-          {filterAndDeduplicateTags([employmentType, seniorityLevel]).map(
-            (tag, index) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className="text-[10px] px-2 py-0.5 bg-background/50"
-              >
-                {formatTag(tag)}
-              </Badge>
-            ),
-          )}
+        {/* Title + meta */}
+        <div className="px-5 space-y-2">
+          <h3 className="font-semibold text-base leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" />
+              {toTitleCase(location || "—")}
+            </span>
+            {employmentType && (
+              <>
+                <span className="text-border">·</span>
+                <span>{formatTag(employmentType)}</span>
+              </>
+            )}
+            {workModel && (
+              <>
+                <span className="text-border">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <Globe2 className="w-3.5 h-3.5" />
+                  {formatTag(workModel)}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Row 2: Description */}
-        <div className="h-[4.5rem] flex-shrink-0 overflow-hidden">
-          <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+        {/* Description excerpt */}
+        <div className="px-5 mt-3 flex-1">
+          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
             {description || "No description available."}
           </p>
         </div>
 
-        {/* Row 3: Job Function & Industry */}
-        <div className="flex flex-col gap-1.5">
-          {jobFunction && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="truncate font-medium">
-                {toTitleCase(jobFunction)}
-              </span>
-            </div>
+        {/* Status chips */}
+        <div className="flex flex-wrap items-center gap-1.5 px-5 mt-4">
+          {isPaid !== undefined && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[11px] font-medium gap-1 border",
+                isPaid
+                  ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/5"
+                  : "border-border text-muted-foreground bg-muted/30",
+              )}
+            >
+              <Wallet className="w-3 h-3" />
+              {isPaid ? "Paid" : "Unpaid"}
+            </Badge>
           )}
-          {industries && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Layers className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="truncate">{toTitleCase(industries)}</span>
-            </div>
+          {daysLeft !== null && daysLeft > 0 && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[11px] font-medium gap-1 border",
+                isUrgent
+                  ? "border-orange-500/30 text-orange-600 dark:text-orange-400 bg-orange-500/10"
+                  : "border-border text-muted-foreground bg-muted/30",
+              )}
+            >
+              <CalendarClock className="w-3 h-3" />
+              {daysLeft}d left
+            </Badge>
           )}
         </div>
 
-        {/* Row 4: Meta Info */}
-        <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0 overflow-hidden whitespace-nowrap pt-2 border-t border-border/30">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{formattedDate}</span>
+        {/* Footer — bookmark + view details */}
+        <footer className="flex items-center gap-2 p-4 mt-4 border-t border-border/40">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-9 w-9 rounded-lg",
+              isSaved
+                ? "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                : "hover:bg-muted",
+            )}
+            aria-label={isSaved ? "Unsave" : "Save"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSave?.(jobId);
+            }}
+          >
+            <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
+          </Button>
+
+          <div className="flex-1 inline-flex items-center justify-end text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+            View details
+            <ArrowUpRight className="w-4 h-4 ml-1" />
           </div>
-          <span className="text-border">•</span>
-          <span className="font-medium">
-            {toTitleCase(platforms[0] || "LinkedIn")}
-          </span>
-        </div>
-      </div>
-
-      {/* --- FOOTER --- */}
-      <div className="px-6 pb-6 flex gap-2 pt-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "rounded-lg h-9 w-9 transition-colors flex-shrink-0",
-            isSaved
-              ? "text-blue-500 hover:text-blue-600 bg-blue-500/10 hover:bg-blue-500/20"
-              : "hover:bg-muted",
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            onSave?.(jobId);
-          }}
-        >
-          <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-        </Button>
-
-        <Button
-          className="flex-1 gap-2 h-9 font-semibold shadow-sm hover:shadow-md transition-shadow whitespace-nowrap"
-          asChild
-        >
-          {sourceUrl.startsWith("/") ? (
-            <Link
-              href={sourceUrl}
-              className="inline-flex items-center justify-center overflow-hidden"
-            >
-              <span className="truncate">View Details</span>
-              <ExternalLink className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
-            </Link>
-          ) : (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center overflow-hidden"
-            >
-              <span className="truncate">View Details</span>
-              <ExternalLink className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
-            </a>
-          )}
-        </Button>
-      </div>
-    </div>
+        </footer>
+      </article>
+    </Link>
   );
 };
 

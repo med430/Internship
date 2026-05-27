@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { jobFilterAPI } from "@/lib/api/job-filter-client";
 import { fetchOffers, type Offer } from "@/lib/api/offers";
 import type {
   JobDocument,
@@ -103,8 +104,10 @@ function applyFilters(
       ),
     ).slice(0, 30);
 
+    // Backend already provides match_score for authenticated feed — only rescore here when the job has no score.
     result = result
       .map((j) => {
+        if (typeof j.match_score === "number" && j.match_score > 0) return j;
         const text =
           `${j.title} ${j.description} ${j.job_function ?? ""}`.toLowerCase();
         const hits = keywords.filter((kw) => text.includes(kw)).length;
@@ -128,11 +131,13 @@ export function useJobMatcher() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetchOffers(1, 200)
-      .then((offers: Offer[]) => {
-        const docs = offers.map(offerToJobDocument);
-        setSourceJobs(docs);
-        setAllJobs(docs);
+    // Use the backend's ranked feed (authenticated student → personalised scores; anonymous → demo).
+    jobFilterAPI
+      .filterJobs({ limit: 200 })
+      .then((response) => {
+        setSourceJobs(response.jobs ?? []);
+        setAllJobs(response.jobs ?? []);
+        setBackendMessage(response.message ?? null);
       })
       .catch((err: unknown) =>
         setError(

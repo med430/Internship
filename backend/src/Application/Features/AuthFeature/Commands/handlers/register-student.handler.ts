@@ -1,7 +1,7 @@
 // Commands/handlers/register-student.handler.ts
-import { CommandHandler } from '@nestjs/cqrs'
+import {CommandHandler} from '@nestjs/cqrs'
 import * as bcrypt from 'bcrypt'
-import { randomUUID } from 'crypto'
+import {randomUUID} from 'crypto'
 import {ConflictException, Inject} from '@nestjs/common'
 import { RegisterStudentCommand } from '../register-student.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
@@ -11,6 +11,9 @@ import { Role } from '../../../../../Domain/enums/role.enum'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
 import { RegisterResult } from '../register-result'
 import { StudentProfile } from '../../../../../Domain/entities/student-profile.entity'
+import { Subscription } from '../../../../../Domain/entities/subscription.entity'
+import { SubscriptionType } from '../../../../../Domain/enums/subscription-type.enum'
+import { ISubscriptionRepository } from '../../../../repositories/subscription.repository'
 
 @CommandHandler(RegisterStudentCommand)
 export class RegisterStudentHandler extends GenericCommandHandler<
@@ -23,7 +26,10 @@ RegisterResult
         private userRepo: IUserRepository,
 
         @Inject(IStudentProfileRepository)
-        private studentProfileRepo: IStudentProfileRepository
+        private studentProfileRepo: IStudentProfileRepository,
+
+        @Inject(ISubscriptionRepository)
+        private subscriptionRepo: ISubscriptionRepository,
     ) { super() }
 
     protected async map(command: RegisterStudentCommand): Promise<User> {
@@ -63,6 +69,14 @@ RegisterResult
 
             throw error
         }
+
+        const subscription = new Subscription(
+            randomUUID(),
+            savedUser.id,
+            SubscriptionType.FREE
+        );
+
+        await this.subscriptionRepo.save(subscription);
 
         await this.studentProfileRepo.save(
             new StudentProfile(randomUUID(), savedUser.id)

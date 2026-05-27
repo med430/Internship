@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { User, LogOut, Moon, Sun, Bell } from "lucide-react";
+import { User, LogOut, Moon, Sun, Bell, Crown } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 import { useNotificationStore } from "@/lib/stores/notification-store";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 
 interface UserNavProps {
   user: {
@@ -31,11 +32,13 @@ interface UserNavProps {
 export function UserNav({ user }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const { unreadCount } = useNotificationStore();
+  const { isPro, fetchStatus } = useSubscriptionStore();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchStatus();
+  }, [fetchStatus]);
 
   const getInitials = (name?: string) => {
     if (!name) return "U";
@@ -68,7 +71,13 @@ export function UserNav({ user }: UserNavProps) {
               {getInitials(user.name)}
             </AvatarFallback>
           </Avatar>
-          {/* Glassy completion badge - works in both light and dark mode */}
+          {/* PRO crown — top-left of avatar */}
+          {isPro && (
+            <div className="absolute -top-1.5 -left-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 border-2 border-card shadow-md">
+              <Crown className="h-2.5 w-2.5 text-white" />
+            </div>
+          )}
+          {/* Glassy completion badge — bottom-right of avatar */}
           <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
             <div className="relative h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-primary border-2 border-card shadow-md">
               <span className="text-[8px] font-bold text-primary-foreground">
@@ -85,6 +94,12 @@ export function UserNav({ user }: UserNavProps) {
               <p className="text-sm font-medium leading-none">
                 {user.name || "User"}
               </p>
+              {isPro && (
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white">
+                  <Crown className="h-2.5 w-2.5" />
+                  PRO
+                </span>
+              )}
               {user.role === "ADMIN" && (
                 <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-destructive text-destructive-foreground">
                   ADMIN

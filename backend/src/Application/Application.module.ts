@@ -81,6 +81,8 @@ import { GetRecommendationsQueryHandler } from './Features/RecommendationFeature
 import { InterviewAiService } from './Services/InterviewService/interview-ai.service';
 import { ContentScoringService } from './Services/RecommendationService/content-scoring.service';
 import { ScoringService } from './Services/RecommendationService/scoring.service';
+import { RecommendationCronService } from './Services/RecommendationService/recommendation-cron.service';
+import { EventCleanupCronService } from './Services/RecommendationService/event-cleanup-cron.service';
 import { IMlClient } from './Services/RecommendationService/ml-client.interface';
 import { MlClientService } from './Services/RecommendationService/ml-client.service';
 import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
@@ -103,6 +105,12 @@ import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Quer
 import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
 import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
+import { UpgradeSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/upgrade-subscription.handler';
+import { CancelSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/cancel-subscription.handler';
+import { GetMySubscriptionHandler } from './Features/SubscriptionFeature/Queries/handlers/get-my-subscription.handler';
+
+// Local dev guard: skip chat handlers + ChatPersistenceModule when CHAT_DB_URL is unset (no MongoDB available).
+const chatEnabled = !!process.env.CHAT_DB_URL;
 
 const CommandHandlers = [
   RegisterStudentHandler,
@@ -148,6 +156,9 @@ const CommandHandlers = [
   MarkMessagesReadHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
+  UpgradeSubscriptionHandler,
+  CancelSubscriptionHandler,
+  ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
 ];
 
 const NotificationHandlers = [
@@ -210,6 +221,10 @@ const QueryHandlers = [
   GetConversationByIdHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
+  // Subscription
+  GetMySubscriptionHandler,
+  // Chat (skipped when CHAT_DB_URL unset)
+  ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
 ];
 
 @Global()
@@ -221,6 +236,7 @@ const QueryHandlers = [
     PersistenceModule,
     ChatPersistenceModule,
     NotificationPersistenceModule,
+    ...(chatEnabled ? [ChatPersistenceModule] : []),
   ],
   providers: [
     ...CommandHandlers,
@@ -229,6 +245,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    RecommendationCronService,
+    EventCleanupCronService,
     OfferFeedService,
     SupabaseAuthBridge,
     {
@@ -246,6 +264,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    RecommendationCronService,
+    EventCleanupCronService,
     OfferFeedService,
     SupabaseAuthBridge,
     IMlClient,

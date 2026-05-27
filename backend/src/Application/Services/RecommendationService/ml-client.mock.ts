@@ -1,3 +1,6 @@
+// Stand-in for the Python sidecar before it ships. Returns null everywhere so the blender stays in Phase 0 (content-only,
+// deterministic). The health call still reports "ok" so the admin panel reflects the mock as live.
+
 import { Injectable } from '@nestjs/common'
 import {
     IMlClient,
@@ -11,38 +14,20 @@ import {
 @Injectable()
 export class MlClientMock extends IMlClient {
 
-    async recommendJobs(req: RecommendJobsRequest): Promise<MlOfferScore[]> {
-        const offerIds = Object.keys(req.contentScores)
-        return offerIds.map(offerId => {
-            const content = req.contentScores[offerId]
-            const semantic = rand(0.5, 1.0)
-            const cf = rand(0.5, 1.0)
-            return {
-                offerId,
-                semanticScore: semantic,
-                cfScore: cf,
-                finalMlScore: 0.4 * content + 0.4 * semantic + 0.2 * cf,
-            }
-        })
+    async recommendJobs(_req: RecommendJobsRequest): Promise<MlOfferScore[] | null> {
+        return null
     }
 
-    async recommendUsers(req: RecommendUsersRequest): Promise<MlStudentScore[]> {
-        return Array.from({ length: req.limit }, (_, i) => ({
-            studentId: `mock-student-${i}`,
-            semanticScore: rand(0.5, 1.0),
-            cfScore: rand(0.5, 1.0),
-        }))
+    async recommendUsers(_req: RecommendUsersRequest): Promise<MlStudentScore[] | null> {
+        return null
     }
 
-    async embed(texts: string[]): Promise<number[][]> {
-        return texts.map(() => Array.from({ length: 1024 }, () => rand(-1, 1)))
+    async embed(_texts: string[]): Promise<number[][] | null> {
+        return null
     }
 
-    async similarJobs(offerId: string, limit: number) {
-        return Array.from({ length: limit }, (_, i) => ({
-            offerId: `mock-similar-${i}`,
-            similarity: rand(0.5, 1.0),
-        }))
+    async similarJobs(_offerId: string, _limit: number): Promise<{ offerId: string; similarity: number }[] | null> {
+        return null
     }
 
     async feedback() {
@@ -50,10 +35,6 @@ export class MlClientMock extends IMlClient {
     }
 
     async health(): Promise<MlHealth> {
-        return { status: 'ok', modelVersion: 'mock-v0', modelsLoaded: ['mock'] }
+        return { status: 'ok', modelVersion: 'content-only', modelsLoaded: [] }
     }
-}
-
-function rand(min: number, max: number): number {
-    return min + Math.random() * (max - min)
 }

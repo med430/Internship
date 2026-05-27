@@ -19,9 +19,9 @@ async function getAccessToken() {
     return session.access_token;
   }
 
-  // Fall back to backend-issued JWT stored in cookie (server-side).
+  // Fall back to backend-issued JWT stored in cookie (server-side). cookies() is async in Next 15.
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const interviewToken = cookieStore.get("interview_token")?.value;
     if (interviewToken) return interviewToken;
   } catch {

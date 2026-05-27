@@ -65,12 +65,14 @@ export function ChatNotificationProvider() {
       // Always add to the notification bell
       addNotification({
         id: crypto.randomUUID(),
+        userId: currentUserIdRef.current,
         title: `New message from ${message.senderName}`,
         message: preview,
         type: "chat",
         link: "/services/chat",
-        is_read: false,
-        created_at: new Date().toISOString(),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        deletedAt: null,
       });
     });
 

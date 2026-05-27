@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Lock, Image, CreditCard, AlertTriangle } from "lucide-react";
+import { User, Lock, Image, CreditCard, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { ProfileAvatarTab } from "./profile-avatar-tab";
 import { SecurityTab } from "./security-tab";
 import { SubscriptionTab } from "./subscription-tab";
 import { DangerZoneTab } from "./danger-zone-tab";
+import { PreferencesForm } from "@/features/profile-preferences/components/preferences-form";
 import type { Database } from "@/types/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -21,7 +22,8 @@ interface ProfileTabsProps {
 }
 
 const tabs = [
-  { id: "profile", label: "Profile", icon: User },
+  { id: "profile", label: "About me", icon: User },
+  { id: "preferences", label: "Job preferences", icon: Sparkles },
   { id: "avatar", label: "Avatar", icon: Image },
   { id: "security", label: "Security", icon: Lock },
   { id: "subscription", label: "Subscription", icon: CreditCard },
@@ -74,6 +76,7 @@ export function ProfileTabs({
         <Card>
           <CardContent className="p-3 sm:p-6 lg:p-8">
             {activeTab === "profile" && <ProfileInfoTab profile={profile} />}
+            {activeTab === "preferences" && <PreferencesForm />}
             {activeTab === "avatar" && <ProfileAvatarTab profile={profile} />}
             {activeTab === "security" && (
               <SecurityTab userEmail={userEmail} isOAuthUser={isOAuthUser} />

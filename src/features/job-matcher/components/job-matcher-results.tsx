@@ -23,6 +23,7 @@ interface JobMatcherResultsProps {
   savedJobs: Set<string>;
   topOfResultsRef: RefObject<HTMLDivElement | null>;
   onSave: (jobId: string) => void;
+  onView: (jobId: string) => void;
   onRefresh: () => Promise<void>;
   onOpenCVSelector: () => void;
   onPageChange: (page: number) => void;
@@ -44,6 +45,7 @@ export function JobMatcherResults({
   savedJobs,
   topOfResultsRef,
   onSave,
+  onView,
   onRefresh,
   onOpenCVSelector,
   onPageChange,
@@ -81,6 +83,7 @@ export function JobMatcherResults({
                   {...cardProps}
                   isSaved={savedJobs.has(job.job_id)}
                   onSave={onSave}
+                  onView={onView}
                 />
               );
             })}

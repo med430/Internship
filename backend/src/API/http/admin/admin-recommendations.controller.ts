@@ -10,6 +10,7 @@ import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supa
 import { Role } from '../../../Domain/enums/role.enum'
 import { ComputeRecommendationsCommand } from '../../../Application/Features/OfferRecommendationFeature/Commands/compute-recommendations.command'
 import { IMlClient } from '../../../Application/Services/RecommendationService/ml-client.interface'
+import { EventCleanupCronService } from '../../../Application/Services/RecommendationService/event-cleanup-cron.service'
 
 @Controller('admin/recommendations')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -19,6 +20,7 @@ export class AdminRecommendationsController {
     constructor(
         private readonly commandBus: CommandBus,
         @Inject(IMlClient) private readonly ml: IMlClient,
+        private readonly cleanup: EventCleanupCronService,
     ) {}
 
     @Post('compute')
@@ -30,5 +32,11 @@ export class AdminRecommendationsController {
     async mlHealth(@SupabaseUser() user: ResolvedUser) {
         const health = await this.ml.health()
         return { reachable: !!health, ...health }
+    }
+
+    // Manually runs the weekly retention cleanup so we can exercise the path without waiting for the cron.
+    @Post('cleanup')
+    async cleanupEvents(@SupabaseUser() user: ResolvedUser) {
+        return this.cleanup.run()
     }
 }

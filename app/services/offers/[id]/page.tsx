@@ -1,11 +1,10 @@
-import { use } from "react";
-import { OfferDetailScreen } from "@/features/offers/components/offer-detail-screen";
+import { OfferDetailScreen } from "@/features/offer-detail/components/offer-detail-screen";
 
-export default function OfferDetailPage({
+export default async function OfferDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id } = await params;
   return <OfferDetailScreen offerId={id} />;
 }
