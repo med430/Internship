@@ -94,7 +94,6 @@ export class OnboardController {
 
     // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
-    @UseGuards(SubscriptionGuard)
     async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
         const outcome = await this.offerFeed.dispatch({
             bearerToken: this.extractBearerToken(req.header('authorization')),

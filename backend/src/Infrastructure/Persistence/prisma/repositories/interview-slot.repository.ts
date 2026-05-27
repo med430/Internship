@@ -44,7 +44,15 @@ export class InterviewSlotRepositoryImpl implements IInterviewSlotRepository {
             include: {
                 application: {
                     include: {
-                        offer: { select: { title: true, company: true } },
+                        offer: {
+                            select: {
+                                title: true,
+                                company: true,
+                                recruiterProfile: {
+                                    select: { user: { select: { name: true } } },
+                                },
+                            },
+                        },
                     },
                 },
             },

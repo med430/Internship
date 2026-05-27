@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Message, Conversation } from "@/lib/api/chat/types";
 import { cn } from "@/lib/utils";
@@ -54,10 +53,11 @@ export function MessageThread({
   onDraftChange,
   onSend,
 }: MessageThreadProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, typingName]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -105,7 +105,7 @@ export function MessageThread({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 px-4 py-4">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -183,11 +183,9 @@ export function MessageThread({
                 </div>
               </div>
             )}
-
-            <div ref={bottomRef} />
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Input */}
       <div className="border-t border-border px-4 py-3 shrink-0 bg-card/30">

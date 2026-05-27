@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   CalendarDays,
@@ -13,6 +14,7 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
+  Video,
   X,
   XCircle,
 } from "lucide-react";
@@ -97,6 +99,7 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
 /* ── component ────────────────────────────────────────────────────── */
 
 export function RecruiterApplicationsScreen() {
+  const router = useRouter();
   const [applications, setApplications] = useState<RecruiterApplication[]>([]);
   const [slotsMap, setSlotsMap] = useState<Record<string, InterviewSlot[]>>({});
   const [loading, setLoading] = useState(false);
@@ -344,14 +347,22 @@ export function RecruiterApplicationsScreen() {
                         const appSlots = slotsMap[app.id] ?? [];
                         const activeSlot = appSlots.find(s => s.status !== "DECLINED");
                         if (activeSlot) {
-                          const slotLabel =
-                            activeSlot.status === "CONFIRMED" ? "Confirmed" :
-                            activeSlot.status === "PROPOSED"  ? "Awaiting response" :
-                            "Scheduled";
+                          if (activeSlot.status === "CONFIRMED") {
+                            return (
+                              <Button
+                                size="sm"
+                                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() => router.push(`/recruiter/interviews/room?slot=${activeSlot.id}`)}
+                              >
+                                <Video className="h-3.5 w-3.5" />
+                                Join Interview
+                              </Button>
+                            );
+                          }
                           return (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                               <CalendarDays className="h-3.5 w-3.5" />
-                              Scheduled · {slotLabel}
+                              Scheduled · Awaiting response
                             </div>
                           );
                         }
