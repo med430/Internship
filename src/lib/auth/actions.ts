@@ -120,21 +120,31 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
       }
 
       try {
-        const backendResponse = await fetch(
-          `${apiBaseUrl}/auth/register/student`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              password,
-              name,
-              lastname,
-              username,
-            }),
-            cache: "no-store",
-          },
-        );
+        const retryEndpoint =
+          role === "RECRUITER"
+            ? `${apiBaseUrl}/auth/register/recruiter`
+            : `${apiBaseUrl}/auth/register/student`;
+
+        const retryBody =
+          role === "RECRUITER"
+            ? {
+                email,
+                password,
+                name,
+                lastname,
+                username,
+                company: (formData.get("company") as string) || "",
+                companyDescription: (formData.get("companyDescription") as string) || "",
+                website: (formData.get("website") as string) || "",
+              }
+            : { email, password, name, lastname, username };
+
+        const backendResponse = await fetch(retryEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(retryBody),
+          cache: "no-store",
+        });
 
         if (!backendResponse.ok && backendResponse.status !== 409) {
           const text = await backendResponse.text().catch(() => "");
@@ -157,16 +167,29 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   }
 
   try {
-    const backendResponse = await fetch(`${apiBaseUrl}/auth/register/student`, {
+    const endpoint =
+      role === "RECRUITER"
+        ? `${apiBaseUrl}/auth/register/recruiter`
+        : `${apiBaseUrl}/auth/register/student`;
+
+    const registrationBody =
+      role === "RECRUITER"
+        ? {
+            email,
+            password,
+            name,
+            lastname,
+            username,
+            company: (formData.get("company") as string) || "",
+            companyDescription: (formData.get("companyDescription") as string) || "",
+            website: (formData.get("website") as string) || "",
+          }
+        : { email, password, name, lastname, username };
+
+    const backendResponse = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        name,
-        lastname,
-        username,
-      }),
+      body: JSON.stringify(registrationBody),
       cache: "no-store",
     });
 
@@ -197,13 +220,23 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  const role = (
+    data.user?.app_metadata?.role ??
+    data.user?.user_metadata?.role ??
+    ""
+  ).toUpperCase();
+
+  if (role === "RECRUITER") {
+    redirect("/recruiter/offers");
   }
 
   redirect("/services/dashboard");

@@ -1,29 +1,27 @@
-import { cookies } from "next/headers";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { RecruiterSidebar } from "@/components/recruiter-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RecruiterUserNav } from "@/components/recruiter-user-nav";
 import { NotificationBell } from "@/components/shared/notification-bell";
 import LogoLink from "@/components/logo-link";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function RecruiterLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const recruiterToken = cookieStore.get("recruiter_token")?.value;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthenticated = Boolean(recruiterToken);
+  const isAuthenticated = Boolean(user);
 
   const userData = {
-    name: "Recruiter",
-    email: "",
+    name: user?.user_metadata?.name ?? user?.email?.split("@")[0] ?? "Recruiter",
+    email: user?.email ?? "",
   };
 
   if (!isAuthenticated) {
-    // Allow public recruiter pages (login/signup) to render without forcing a redirect.
-    // Protected pages should enforce authentication themselves.
     return <main className="w-full">{children}</main>;
   }
 

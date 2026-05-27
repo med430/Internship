@@ -3,11 +3,14 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
+import { randomUUID } from 'crypto'
 import { importJWK, jwtVerify, type JWTPayload } from 'jose'
 import { IUserRepository } from '../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../repositories/student-profile.repository'
+import { IRecruiterProfileRepository } from '../../repositories/recruiter-profile.repository'
 import { User } from '../../../Domain/entities/user.entity'
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity'
+import { RecruiterProfile } from '../../../Domain/entities/recruiter-profile.entity'
 import { Role } from '../../../Domain/enums/role.enum'
 
 interface SupabaseJwtPayload extends JWTPayload {
@@ -31,8 +34,9 @@ export class SupabaseAuthBridge implements OnModuleInit {
 
     constructor(
         cfg: ConfigService,
-        @Inject(IUserRepository)            private readonly users:    IUserRepository,
-        @Inject(IStudentProfileRepository)  private readonly profiles: IStudentProfileRepository,
+        @Inject(IUserRepository)               private readonly users:      IUserRepository,
+        @Inject(IStudentProfileRepository)     private readonly students:   IStudentProfileRepository,
+        @Inject(IRecruiterProfileRepository)   private readonly recruiters: IRecruiterProfileRepository,
     ) {
         const supabaseUrl = cfg.get<string>('NEXT_PUBLIC_SUPABASE_URL') ?? ''
         this.jwksUrl = `${supabaseUrl}/auth/v1/.well-known/jwks.json`
@@ -54,22 +58,48 @@ export class SupabaseAuthBridge implements OnModuleInit {
         const payload = await this.verify(token)
         if (!payload?.sub) return null
 
-        // 1. User provisioned by this bridge — ID == Supabase sub
-        const byId = await this.users.findById(payload.sub)
-        if (byId) {
-            return { id: byId.id, email: byId.email, role: byId.role, isNew: false }
+        const byId    = await this.users.findById(payload.sub)
+        let   byEmail = payload.email ? await this.users.findByEmail(payload.email) : null
+        if (byEmail?.deletedAt) byEmail = null
+
+        // When the same Supabase account has two NeonDB rows (auto-provisioned STUDENT
+        // by sub ID + explicitly registered non-STUDENT by email), prefer the registered one.
+        if (byId && byEmail && byId.id !== byEmail.id) {
+            return { id: byEmail.id, email: byEmail.email, role: byEmail.role, isNew: false }
         }
 
-        // 2. User registered via /auth/register/* — ID is a randomUUID, match by email
-        if (payload.email) {
-            const byEmail = await this.users.findByEmail(payload.email)
-            if (byEmail && !byEmail.deletedAt) {
-                return { id: byEmail.id, email: byEmail.email, role: byEmail.role, isNew: false }
+        // Single row found — promote role if JWT claims higher than stored, and ensure
+        // the matching role profile (RecruiterProfile / StudentProfile) exists.
+        const candidate = byId ?? byEmail
+        if (candidate) {
+            const jwtRole = this.extractRole(payload)
+            if (candidate.role === Role.STUDENT && jwtRole !== Role.STUDENT) {
+                candidate.role = jwtRole
+                await this.users.update(candidate)
+                this.logger.log(`promoted ${candidate.email} from STUDENT to ${jwtRole}`)
+            }
+            // Always ensure the role profile exists — guards against cases where
+            // profile creation failed on a previous request or was never triggered.
+            await this.ensureRoleProfile(candidate.id, candidate.role)
+            return { id: candidate.id, email: candidate.email, role: candidate.role, isNew: false }
+        }
+
+        // First-ever login — auto-provision with Supabase sub as ID
+        return this.provision(payload)
+    }
+
+    private async ensureRoleProfile(userId: string, role: Role): Promise<void> {
+        if (role === Role.RECRUITER) {
+            const existing = await this.recruiters.findByUserId(userId)
+            if (!existing) {
+                await this.recruiters.save(new RecruiterProfile(randomUUID(), userId, ''))
+            }
+        } else if (role === Role.STUDENT) {
+            const existing = await this.students.findByUserId(userId)
+            if (!existing) {
+                await this.students.save(new StudentProfile(randomUUID(), userId))
             }
         }
-
-        // 3. First-ever login — auto-provision with Supabase sub as ID
-        return this.provision(payload)
     }
 
     private async verify(token: string | null | undefined): Promise<SupabaseJwtPayload | null> {
@@ -114,7 +144,9 @@ export class SupabaseAuthBridge implements OnModuleInit {
         const saved = await this.users.save(user)
 
         if (role === Role.STUDENT) {
-            await this.profiles.save(new StudentProfile(payload.sub!, saved.id))
+            await this.students.save(new StudentProfile(payload.sub!, saved.id))
+        } else if (role === Role.RECRUITER) {
+            await this.recruiters.save(new RecruiterProfile(randomUUID(), saved.id, ''))
         }
 
         this.logger.log(`auto-provisioned ${role} ${email} from Supabase sub ${payload.sub}`)

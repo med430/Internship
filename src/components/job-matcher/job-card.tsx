@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 import Image from "next/image";
+import Link from "next/link";
 import {
   MapPin,
   Building2,
@@ -225,15 +226,25 @@ const JobCard = ({
           className="flex-1 gap-2 h-9 font-semibold shadow-sm hover:shadow-md transition-shadow whitespace-nowrap"
           asChild
         >
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center overflow-hidden"
-          >
-            <span className="truncate">View Details</span>
-            <ExternalLink className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
-          </a>
+          {sourceUrl.startsWith("/") ? (
+            <Link
+              href={sourceUrl}
+              className="inline-flex items-center justify-center overflow-hidden"
+            >
+              <span className="truncate">View Details</span>
+              <ExternalLink className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
+            </Link>
+          ) : (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center overflow-hidden"
+            >
+              <span className="truncate">View Details</span>
+              <ExternalLink className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
+            </a>
+          )}
         </Button>
       </div>
     </div>

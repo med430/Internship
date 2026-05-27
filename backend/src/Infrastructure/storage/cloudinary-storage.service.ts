@@ -63,6 +63,13 @@ export class CloudinaryStorageService extends FileStorageService {
     }
 
     async downloadFileBuffer(fileUrl: string): Promise<Buffer> {
+        // Legacy files uploaded before Cloudinary migration have local paths
+        if (fileUrl.startsWith('/uploads/')) {
+            const { readFileSync } = await import('fs')
+            const { join } = await import('path')
+            return readFileSync(join(process.cwd(), fileUrl))
+        }
+
         const extracted = this.extractFromUrl(fileUrl)
         if (!extracted) throw new Error('Invalid Cloudinary URL')
 

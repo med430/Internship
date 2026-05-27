@@ -1,4 +1,3 @@
-import { createClient } from "@/utils/supabase/client";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 
@@ -36,35 +35,6 @@ type GraphQLApplicationsResponse = {
 	errors?: Array<{ message?: string }>;
 };
 
-function parseJwtPayload(token: string): Record<string, unknown> | null {
-	try {
-		const parts = token.split(".");
-		if (parts.length < 2) return null;
-		const encoded = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-		const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
-		const decoded = atob(padded);
-		return JSON.parse(decoded) as Record<string, unknown>;
-	} catch {
-		return null;
-	}
-}
-
-function getBackendUserIdFromToken(): string | null {
-	if (typeof document === "undefined") return null;
-
-	const cookieToken = document.cookie
-		.split("; ")
-		.find((entry) => entry.startsWith("interview_token="))
-		?.split("=")[1];
-
-	const localToken = window.localStorage.getItem("interview_token");
-	const token = cookieToken || localToken;
-	if (!token) return null;
-
-	const payload = parseJwtPayload(token);
-	const userId = payload?.userId;
-	return typeof userId === "string" && userId.trim() ? userId : null;
-}
 
 export async function createApplication(input: {
 	offerId: string;
@@ -165,23 +135,7 @@ export async function fetchMyApplications(
 		);
 	}
 
-	const allApplications = payload.data?.applications || [];
-
-	// Prefer backend JWT userId (used by guarded endpoints).
-	const backendUserId = getBackendUserIdFromToken();
-	if (backendUserId) {
-		return allApplications.filter((application) => application.student?.id === backendUserId);
-	}
-
-	const supabase = createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user?.id) {
-		return [];
-	}
-
-	return allApplications.filter((application) => application.student?.id === user.id);
+	// The GraphQL resolver already filters by the authenticated user server-side.
+	return payload.data?.applications || [];
 }
 

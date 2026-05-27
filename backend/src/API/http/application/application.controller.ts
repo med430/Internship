@@ -7,11 +7,11 @@ import {
     UseGuards,
     Get,
     Res,
+    Inject,
 } from '@nestjs/common'
 
 import type { Response } from 'express'
 import { CommandBus } from '@nestjs/cqrs'
-
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { RolesGuard } from '../guards/roles.guard'
@@ -23,6 +23,7 @@ import { ApplyToOfferCommand } from '../../../Application/Features/ApplicationFe
 import { UpdateApplicationStatusCommand } from '../../../Application/Features/ApplicationFeature/Commands/update-application-status.command'
 import { WithdrawApplicationCommand } from '../../../Application/Features/ApplicationFeature/Commands/withdraw-application.command'
 import { DownloadApplicationFileCommand } from '../../../Application/Features/ApplicationFeature/Commands/download-file.command'
+import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 import { ApplicationStatus } from '../../../Domain/enums/application-status.enum'
 
@@ -33,7 +34,8 @@ export class ApplicationController {
 
     constructor(
         private readonly commandBus: CommandBus,
-
+        @Inject(FileStorageService)
+        private readonly fileStorage: FileStorageService,
     ) {}
 
     @Post()
@@ -96,11 +98,10 @@ export class ApplicationController {
         @CurrentUser() user,
         @Res() res: Response
     ) {
-        const fileUrl = await this.commandBus.execute(
+        const fileUrl: string = await this.commandBus.execute(
             new DownloadApplicationFileCommand(id, user.id, 'cv')
         )
-
-        return res.redirect(fileUrl)
+        return this.sendFile(res, fileUrl)
     }
 
     // ================= DOWNLOAD LETTER =================
@@ -111,11 +112,23 @@ export class ApplicationController {
         @CurrentUser() user,
         @Res() res: Response
     ) {
-        const fileUrl = await this.commandBus.execute(
+        const fileUrl: string = await this.commandBus.execute(
             new DownloadApplicationFileCommand(id, user.id, 'coverLetter')
         )
+        return this.sendFile(res, fileUrl)
+    }
 
-        return res.redirect(fileUrl)
+    private async sendFile(res: Response, fileUrl: string) {
+        // Always stream via downloadFileBuffer:
+        // - LocalFileStorageService reads from disk
+        // - CloudinaryStorageService generates a signed URL and fetches the buffer
+        //   (Cloudinary private resources cannot be accessed via bare redirect)
+        const buffer = await this.fileStorage.downloadFileBuffer(fileUrl)
+        const filename = fileUrl.split('/').pop() ?? 'document.pdf'
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+        res.setHeader('Content-Length', buffer.length)
+        return res.send(buffer)
     }
 
     // ================= WITHDRAW =================

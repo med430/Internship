@@ -36,6 +36,7 @@ enum OfferType {
   PFE
   RESEARCH
   PHD
+  ALTERNANCE
 }
 
 enum WorkMode {

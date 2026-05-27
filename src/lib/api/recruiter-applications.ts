@@ -1,5 +1,4 @@
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
-import { createClient } from "@/utils/supabase/client";
 
 export type RecruiterApplication = {
 	id: string;
@@ -35,9 +34,14 @@ type GraphQLRecruiterApplicationsResponse = {
 
 async function getSupabaseToken(): Promise<string | null> {
 	if (typeof window === "undefined") return null;
-	const supabase = createClient();
-	const { data: { session } } = await supabase.auth.getSession();
-	return session?.access_token ?? null;
+	try {
+		const res = await fetch("/auth/session", { credentials: "include", cache: "no-store" });
+		if (!res.ok) return null;
+		const { accessToken } = await res.json() as { accessToken?: string };
+		return accessToken ?? null;
+	} catch {
+		return null;
+	}
 }
 
 async function recruiterFetch(input: string, init: RequestInit = {}) {
@@ -132,19 +136,33 @@ export async function openRecruiterApplicationFile(
 	applicationId: string,
 	type: "cv" | "cover-letter",
 ): Promise<void> {
-	const apiUrl = getClientApiBaseUrl();
-	const response = await recruiterFetch(
-		`${apiUrl}/applications/${applicationId}/${type}`,
-		{ method: "GET" },
-	);
+	// Open the tab synchronously (within the user-gesture frame) to avoid popup blockers.
+	// Then navigate it once the blob is ready.
+	const newTab = window.open("", "_blank");
 
-	if (!response.ok) {
-		const text = await response.text().catch(() => "");
-		throw new Error(text || `Failed to open ${type}`);
+	try {
+		const apiUrl = getClientApiBaseUrl();
+		const response = await recruiterFetch(
+			`${apiUrl}/applications/${applicationId}/${type}`,
+			{ method: "GET" },
+		);
+
+		if (!response.ok) {
+			newTab?.close();
+			const text = await response.text().catch(() => "");
+			throw new Error(text || `Failed to open ${type}`);
+		}
+
+		const blob = await response.blob();
+		const objectUrl = URL.createObjectURL(blob);
+		if (newTab) {
+			newTab.location.href = objectUrl;
+		} else {
+			window.open(objectUrl, "_blank", "noopener,noreferrer");
+		}
+		window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+	} catch (err) {
+		newTab?.close();
+		throw err;
 	}
-
-	const blob = await response.blob();
-	const objectUrl = URL.createObjectURL(blob);
-	window.open(objectUrl, "_blank", "noopener,noreferrer");
-	window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
 }

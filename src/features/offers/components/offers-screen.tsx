@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,14 +173,24 @@ export function OffersScreen() {
 					{sortedOffers.map((offer) => (
 						<Card key={offer.id}>
 							<CardHeader>
-								<CardTitle className="text-lg">{offer.title}</CardTitle>
+								<CardTitle className="text-lg">
+									<Link
+										href={`/services/offers/${offer.id}`}
+										className="hover:underline"
+									>
+										{offer.title}
+									</Link>
+								</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<div className="text-sm text-muted-foreground">
 									{offer.company} • {offer.location || "Remote"}
 								</div>
-								<p className="text-sm whitespace-pre-wrap">{offer.description}</p>
-								<div className="flex items-center justify-end">
+								<p className="text-sm whitespace-pre-wrap line-clamp-3">{offer.description}</p>
+								<div className="flex items-center justify-end gap-2">
+									<Button variant="outline" asChild>
+										<Link href={`/services/offers/${offer.id}`}>View details</Link>
+									</Button>
 									<Button onClick={() => openApplyModal(offer)}>Apply</Button>
 								</div>
 							</CardContent>

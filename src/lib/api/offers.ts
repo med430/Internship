@@ -1,5 +1,11 @@
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 
+export type SkillRequirement = {
+	id: string;
+	skill: { id: string; name: string };
+	level: string;
+};
+
 export type Offer = {
 	id: string;
 	title: string;
@@ -8,57 +14,47 @@ export type Offer = {
 	location: string;
 	domain: string;
 	type: string;
+	workMode: string;
+	isPaid: boolean;
 	startDate?: string;
 	endDate?: string;
+	skillRequirements?: SkillRequirement[];
 };
 
-type GraphQLOffersResponse = {
-	data?: {
-		offers?: Offer[];
-	};
-	errors?: Array<{ message?: string }>;
-};
+const OFFER_FIELDS = `
+	id title description company location domain
+	type workMode isPaid startDate endDate
+	skillRequirements { id skill { id name } level }
+`;
 
-export async function fetchOffers(
-	pageNumber: number = 1,
-	pageSize: number = 50,
-): Promise<Offer[]> {
+async function gql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
 	const apiUrl = getClientApiBaseUrl();
-	const response = await fetch(`${apiUrl}/graphql`, {
+	const res = await fetch(`${apiUrl}/graphql`, {
 		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			query: `
-				query Offers($pageNumber: Int, $pageSize: Int) {
-					offers(pageNumber: $pageNumber, pageSize: $pageSize) {
-						id
-						title
-						description
-						company
-						location
-						domain
-						type
-						startDate
-						endDate
-					}
-				}
-			`,
-			variables: { pageNumber, pageSize },
-		}),
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ query, variables }),
 		cache: "no-store",
 	});
-
-	if (!response.ok) {
-		throw new Error("Failed to fetch offers");
-	}
-
-	const payload = (await response.json()) as GraphQLOffersResponse;
-	if (payload.errors?.length) {
-		throw new Error(payload.errors[0]?.message || "Failed to fetch offers");
-	}
-
-	return payload.data?.offers || [];
+	if (!res.ok) throw new Error("GraphQL request failed");
+	const json = (await res.json()) as { data?: T; errors?: { message?: string }[] };
+	if (json.errors?.length) throw new Error(json.errors[0]?.message ?? "GraphQL error");
+	return json.data as T;
 }
 
+export async function fetchOffers(pageNumber = 1, pageSize = 200): Promise<Offer[]> {
+	const data = await gql<{ offers: Offer[] }>(
+		`query Offers($pageNumber: Int, $pageSize: Int) {
+			offers(pageNumber: $pageNumber, pageSize: $pageSize) { ${OFFER_FIELDS} }
+		}`,
+		{ pageNumber, pageSize },
+	);
+	return data.offers ?? [];
+}
+
+export async function fetchOffer(id: string): Promise<Offer | null> {
+	const data = await gql<{ offer: Offer | null }>(
+		`query Offer($id: ID!) { offer(id: $id) { ${OFFER_FIELDS} } }`,
+		{ id },
+	);
+	return data.offer ?? null;
+}

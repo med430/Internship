@@ -7,15 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeCheck, Briefcase, Building2, MapPin, Sparkles, Tag } from "lucide-react";
 
-import { createClient } from "@/utils/supabase/client";
+import { createOffer, updateOffer } from "@/lib/api/actions/offer-actions";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-async function getSupabaseToken(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
-}
 
 export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
   const [loading, setLoading] = useState(false);
@@ -53,7 +47,6 @@ export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = await getSupabaseToken();
     try {
       const body = {
         title,
@@ -68,16 +61,10 @@ export function RecruiterOfferFormScreen({ offerId }: { offerId?: string }) {
         type: "INTERNSHIP",
         requiredSkills: [],
       };
-      const url = offerId ? `${API_BASE}/offers/${offerId}` : `${API_BASE}/offers`;
-      const method = offerId ? 'PATCH' : 'POST';
-      const resp = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(body),
-      });
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => "");
-        throw new Error(text || 'Save failed');
+      if (offerId) {
+        await updateOffer(offerId, body);
+      } else {
+        await createOffer(body);
       }
       router.push('/recruiter/offers');
     } catch (err:any) {

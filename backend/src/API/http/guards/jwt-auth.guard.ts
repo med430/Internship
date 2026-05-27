@@ -11,22 +11,26 @@ export class JwtAuthGuard implements CanActivate {
         private readonly configService: ConfigService,
         @Inject(IUserRepository)
         private readonly userRepo: IUserRepository,
-        private readonly bridge: SupabaseAuthBridge,
+        protected readonly bridge: SupabaseAuthBridge,
     ) {}
+
+    protected getRequest(context: ExecutionContext) {
+        return context.switchToHttp().getRequest()
+    }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         if (this.isDevBypassEnabled()) {
-            const request = context.switchToHttp().getRequest()
+            const request = this.getRequest(context)
             request.user = await this.resolveDevBypassUser()
             return true
         }
 
-        const request = context.switchToHttp().getRequest()
+        const request = this.getRequest(context)
         const auth = (request.headers.authorization as string | undefined) ?? ''
         const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
 
         const resolved = await this.bridge.resolve(token)
-        if (!resolved) return false
+        if (!resolved) throw new UnauthorizedException('Invalid or missing token')
 
         request.user = { id: resolved.id, email: resolved.email, role: resolved.role }
         return true
