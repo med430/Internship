@@ -80,6 +80,8 @@ import { GetRecommendationsQueryHandler } from './Features/RecommendationFeature
 import { InterviewAiService } from './Services/InterviewService/interview-ai.service';
 import { ContentScoringService } from './Services/RecommendationService/content-scoring.service';
 import { ScoringService } from './Services/RecommendationService/scoring.service';
+import { RecommendationCronService } from './Services/RecommendationService/recommendation-cron.service';
+import { EventCleanupCronService } from './Services/RecommendationService/event-cleanup-cron.service';
 import { IMlClient } from './Services/RecommendationService/ml-client.interface';
 import { MlClientService } from './Services/RecommendationService/ml-client.service';
 import { MlClientMock } from './Services/RecommendationService/ml-client.mock';
@@ -198,6 +200,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    RecommendationCronService,
+    EventCleanupCronService,
     OfferFeedService,
     SupabaseAuthBridge,
     {
@@ -219,6 +223,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    RecommendationCronService,
+    EventCleanupCronService,
     OfferFeedService,
     SupabaseAuthBridge,
     IMlClient,

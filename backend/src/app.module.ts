@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {HttpApiModule} from "./API/http/http.module";
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { GraphQLAPIModule } from './API/graphql/graphql.module';
 import { resolve } from 'path';
 import {CallGateway} from "./API/websocket/gateways/call.gateway";
@@ -19,6 +20,7 @@ const envFilePaths = [
       isGlobal: true,
       envFilePath: envFilePaths,
     }),
+    ScheduleModule.forRoot(),
     HttpApiModule,
     GraphQLAPIModule,
   ],
