@@ -12,7 +12,7 @@ import {
 } from "@/lib/api/chat";
 import { useChatSocket } from "@/hooks/use-chat-socket";
 
-export function useChatController() {
+export function useChatController(openWithUserId?: string) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userMap, setUserMap] = useState<Map<string, string>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -132,6 +132,32 @@ export function useChatController() {
     },
     [selectedId, emitTyping],
   );
+
+  // Auto-open or create a conversation when openWithUserId is provided
+  useEffect(() => {
+    if (!openWithUserId || loadingConvs) return;
+
+    // Check if a 1-to-1 conversation already exists with that user
+    const existing = conversations.find(
+      (c) =>
+        c.participantIds.length === 2 &&
+        c.participantIds.includes(openWithUserId),
+    );
+
+    if (existing) {
+      setSelectedId(existing.id);
+    } else {
+      // Create it automatically
+      createConversation([openWithUserId])
+        .then((conv) => {
+          setConversations((prev) => [conv, ...prev.filter((c) => c.id !== conv.id)]);
+          setSelectedId(conv.id);
+        })
+        .catch(console.error);
+    }
+  // Only run once after conversations finish loading
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingConvs]);
 
   // Create new conversation from the user-picker dialog
   const handleCreateConversationWithIds = useCallback(async (ids: string[]) => {
