@@ -1,18 +1,6 @@
-import { MiddlewareConsumer, Module, NestModule, Logger } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import {HttpApiModule} from "./API/http/http.module";
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
-import { GraphQLAPIModule } from './API/graphql/graphql.module';
-import { resolve } from 'path';
 import { existsSync } from 'fs';
+import { resolve } from 'path';
 import * as dotenv from 'dotenv';
-import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
-import { CallGateway } from './API/websocket/gateways/call.gateway';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ChatGateway } from './API/websocket/gateways/chat.gateway';
-import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),
@@ -21,6 +9,19 @@ const envFilePaths = [
 
 // Populate process.env early so the chat feature flag can drive module wiring below.
 dotenv.config({ path: envFilePaths.find(p => existsSync(p)) ?? envFilePaths[0] });
+
+import { MiddlewareConsumer, Module, NestModule, Logger } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import {HttpApiModule} from "./API/http/http.module";
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { GraphQLAPIModule } from './API/graphql/graphql.module';
+import { SupabaseSyncMiddleware } from './API/http/middleware/supabase-sync.middleware';
+import { CallGateway } from './API/websocket/gateways/call.gateway';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ChatGateway } from './API/websocket/gateways/chat.gateway';
+import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
 
 const chatEnabled = !!process.env.CHAT_DB_URL;
 if (!chatEnabled) {
