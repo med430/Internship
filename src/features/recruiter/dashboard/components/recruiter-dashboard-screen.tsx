@@ -16,61 +16,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-
-interface Stats {
-  totalOffers: number;
-  totalApplications: number;
-  pendingApplications: number;
-  acceptedApplications: number;
-}
-
-async function getToken(): Promise<string | null> {
-  try {
-    const res = await fetch("/auth/session", { credentials: "include", cache: "no-store" });
-    if (!res.ok) return null;
-    const { accessToken } = (await res.json()) as { accessToken?: string };
-    return accessToken ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchStats(): Promise<Stats> {
-  const token = await getToken();
-  if (!token) return { totalOffers: 0, totalApplications: 0, pendingApplications: 0, acceptedApplications: 0 };
-
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const res = await fetch(`${apiBase}/graphql`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      query: `query {
-        myOffers: offers(pageNumber: 1, pageSize: 500) { id }
-        myApplications: applications(pageNumber: 1, pageSize: 500) { status }
-      }`,
-    }),
-    cache: "no-store",
-  });
-
-  if (!res.ok) return { totalOffers: 0, totalApplications: 0, pendingApplications: 0, acceptedApplications: 0 };
-
-  const json = (await res.json()) as {
-    data?: {
-      myOffers?: { id: string }[];
-      myApplications?: { status: string }[];
-    };
-  };
-
-  const offers = json.data?.myOffers ?? [];
-  const applications = json.data?.myApplications ?? [];
-
-  return {
-    totalOffers: offers.length,
-    totalApplications: applications.length,
-    pendingApplications: applications.filter((a) => a.status === "PENDING").length,
-    acceptedApplications: applications.filter((a) => a.status === "ACCEPTED").length,
-  };
-}
+import { fetchRecruiterStats, type RecruiterStats } from "@/lib/api/recruiter-stats-client";
 
 function greeting(name: string): string {
   const h = new Date().getHours();
@@ -140,43 +86,52 @@ const dotColors: Record<string, string> = {
 };
 
 export function RecruiterDashboardScreen({ userName }: Props) {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<RecruiterStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats()
+    fetchRecruiterStats()
       .then(setStats)
+      .catch(() => null)
       .finally(() => setLoading(false));
   }, []);
 
   const statCards = [
     {
       label: "Active Offers",
-      value: stats?.totalOffers ?? 0,
+      value: stats?.activeOffers ?? 0,
+      suffix: "",
       icon: Briefcase,
       color: "text-sky-600 dark:text-sky-400",
       bg: "bg-sky-500/10",
+      hint: "offers currently posted",
     },
     {
-      label: "Total Applications",
-      value: stats?.totalApplications ?? 0,
+      label: "This Week",
+      value: stats?.applicationsThisWeek ?? 0,
+      suffix: "",
       icon: Users,
       color: "text-violet-600 dark:text-violet-400",
       bg: "bg-violet-500/10",
+      hint: "new applications (7 days)",
     },
     {
-      label: "Pending Review",
-      value: stats?.pendingApplications ?? 0,
-      icon: Clock,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-500/10",
+      label: "Response Rate",
+      value: stats?.responseRate ?? 0,
+      suffix: "%",
+      icon: TrendingUp,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-500/10",
+      hint: "of applications answered",
     },
     {
       label: "Accepted",
       value: stats?.acceptedApplications ?? 0,
-      icon: TrendingUp,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-500/10",
+      suffix: "",
+      icon: Clock,
+      color: "text-teal-600 dark:text-teal-400",
+      bg: "bg-teal-500/10",
+      hint: "candidates accepted",
     },
   ];
 
@@ -237,8 +192,11 @@ export function RecruiterDashboardScreen({ userName }: Props) {
                       <Icon className={`h-5 w-5 ${s.color}`} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{s.value}</p>
-                      <p className="text-xs text-muted-foreground font-medium mt-0.5">{s.label}</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {s.value}{s.suffix}
+                      </p>
+                      <p className="text-xs font-semibold text-foreground/80 mt-0.5">{s.label}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{s.hint}</p>
                     </div>
                   </div>
                 )}

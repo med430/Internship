@@ -40,6 +40,7 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
 import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
 import { InterviewSlotController } from "./interview-slot/interview-slot.controller";
 import { SubscriptionController } from "./subscription/subscription.controller";
+import { RecruiterStatsController } from "./recruiter-stats/recruiter-stats.controller";
 import { StripeService } from "../../Infrastructure/stripe/stripe.service";
 import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
 import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
@@ -73,6 +74,7 @@ const chatEnabled = !!process.env.CHAT_DB_URL;
         InterviewSlotController,
         DocumentsController,
         SubscriptionController,
+        RecruiterStatsController,
         ...(chatEnabled ? [ChatController] : [])],
     providers: [
         OnboardService,

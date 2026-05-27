@@ -21,7 +21,7 @@ const faqs = [
   {
     question: "Where do the job listings come from?",
     answer:
-      "Stagio aggregates job listings from multiple premium sources including LinkedIn, Upwork, and specialized job APIs. Our semantic matching algorithm then ranks these opportunities based on how well they align with your skills and career goals.",
+      "Stagio collects job listings posted directly by recruiters on the platform. Our AI matching algorithm then ranks these opportunities based on how well they align with your skills, preferences, and career goals.",
   },
   {
     question: "Is my data secure and private?",

@@ -75,7 +75,7 @@ export function ProfileTabs({
       <div className="flex-1 min-w-0">
         <Card>
           <CardContent className="p-3 sm:p-6 lg:p-8">
-            {activeTab === "profile" && <ProfileInfoTab profile={profile} />}
+            {activeTab === "profile" && <ProfileInfoTab />}
             {activeTab === "preferences" && <PreferencesForm />}
             {activeTab === "avatar" && <ProfileAvatarTab profile={profile} />}
             {activeTab === "security" && (

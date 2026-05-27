@@ -173,19 +173,44 @@ export function useJobMatcherController() {
     });
   }, [page]);
 
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [modeFilter, setModeFilter] = useState<string[]>([]);
+  const [paidOnly, setPaidOnly] = useState(false);
+
   const filteredAllJobs = useMemo(() => {
-    if (!searchQuery) {
-      return allJobs || [];
+    let jobs = allJobs || [];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      jobs = jobs.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.company.toLowerCase().includes(query),
+      );
     }
 
-    const query = searchQuery.toLowerCase();
-    return (allJobs || []).filter((job) => {
-      return (
-        job.title.toLowerCase().includes(query) ||
-        job.company.toLowerCase().includes(query)
+    if (typeFilter.length > 0) {
+      jobs = jobs.filter((job) =>
+        typeFilter.some(
+          (t) => (job.employment_type ?? "").toLowerCase() === t.toLowerCase(),
+        ),
       );
-    });
-  }, [allJobs, searchQuery]);
+    }
+
+    if (modeFilter.length > 0) {
+      jobs = jobs.filter((job) =>
+        modeFilter.some(
+          (m) => (job.work_model ?? "").toLowerCase() === m.toLowerCase(),
+        ),
+      );
+    }
+
+    if (paidOnly) {
+      jobs = jobs.filter((job) => job.is_paid === true);
+    }
+
+    return jobs;
+  }, [allJobs, searchQuery, typeFilter, modeFilter, paidOnly]);
 
   const activeFilterTags = useMemo(() => {
     return buildActiveFilterTags(activeFilters);
@@ -349,6 +374,14 @@ export function useJobMatcherController() {
     !isLoading &&
     !isExtractingCV;
 
+  const hasDisplayFilters = typeFilter.length > 0 || modeFilter.length > 0 || paidOnly;
+
+  const clearDisplayFilters = useCallback(() => {
+    setTypeFilter([]);
+    setModeFilter([]);
+    setPaidOnly(false);
+  }, []);
+
   return {
     page,
     setPage,
@@ -373,6 +406,14 @@ export function useJobMatcherController() {
     savedJobs,
     topOfResultsRef,
     shouldShowCVPrompt,
+    typeFilter,
+    setTypeFilter,
+    modeFilter,
+    setModeFilter,
+    paidOnly,
+    setPaidOnly,
+    hasDisplayFilters,
+    clearDisplayFilters,
     handleSave,
     handleView,
     handleRefresh,

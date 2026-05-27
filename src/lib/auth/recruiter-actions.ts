@@ -98,5 +98,5 @@ export async function signInRecruiter(formData: FormData): Promise<RecruiterAuth
 export async function signOutRecruiter(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/recruiter/login");
+  redirect("/");
 }

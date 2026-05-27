@@ -57,7 +57,7 @@ const JobCard = ({
 
   return (
     <Link
-      href={`/services/offers/${jobId}`}
+      href={`/services/offers/${jobId}?from=matcher`}
       onClick={() => onView?.(jobId)}
       className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
     >

@@ -12,11 +12,19 @@ export interface MyProfileSkill {
 }
 
 export interface MyProfile {
+  // User entity fields
+  name: string | null;
+  lastname: string | null;
+  username: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+
+  // StudentProfile entity fields
   id: string;
   userId: string;
   bio: string | null;
   birthDate: string | null;
-  gender: string | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
   address: string | null;
   city: string | null;
   domains: string[];

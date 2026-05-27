@@ -1,9 +1,7 @@
-import type { Database } from "@/types/database.types";
 import { FIELD_LABELS, PROFILE_FIELDS } from "./completion-fields";
 
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-export function calculateProfileCompletion(profile: Profile | null): number {
+// Accepts any object so both the Supabase profile and MyProfile can be passed.
+export function calculateProfileCompletion(profile: Record<string, unknown> | null): number {
   if (!profile) return 0;
 
   let filledFields = 0;
@@ -11,48 +9,30 @@ export function calculateProfileCompletion(profile: Profile | null): number {
 
   for (const field of PROFILE_FIELDS) {
     const value = profile[field];
-
     if (value !== null && value !== undefined && value !== "") {
-      if (Array.isArray(value)) {
-        if (value.length > 0) {
-          filledFields++;
-        }
-      } else {
-        filledFields++;
-      }
+      filledFields++;
     }
   }
 
   return Math.round((filledFields / totalFields) * 100);
 }
 
-export function getIncompleteFields(profile: Profile | null): string[] {
+export function getIncompleteFields(profile: Record<string, unknown> | null): string[] {
   if (!profile) return [...PROFILE_FIELDS];
 
-  const incomplete: string[] = [];
-
-  for (const field of PROFILE_FIELDS) {
+  return PROFILE_FIELDS.filter((field) => {
     const value = profile[field];
-
-    if (value === null || value === undefined || value === "") {
-      incomplete.push(field);
-    } else if (Array.isArray(value) && value.length === 0) {
-      incomplete.push(field);
-    }
-  }
-
-  return incomplete;
+    return value === null || value === undefined || value === "";
+  });
 }
 
-export function getProfileSuggestions(profile: Profile | null) {
-  const incomplete = getIncompleteFields(profile);
-
-  return incomplete.map((field) => ({
+export function getProfileSuggestions(profile: Record<string, unknown> | null) {
+  return getIncompleteFields(profile).map((field) => ({
     field,
     label: FIELD_LABELS[field as (typeof PROFILE_FIELDS)[number]],
   }));
 }
 
-export function isProfileComplete(profile: Profile | null): boolean {
+export function isProfileComplete(profile: Record<string, unknown> | null): boolean {
   return calculateProfileCompletion(profile) === 100;
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,27 +11,23 @@ import {
 } from "@/components/ui/form";
 import { ProfileInfoFormValues } from "../lib/profile-info-schema";
 
-interface ProfileProfessionalSectionProps {
+interface ProfileContactSectionProps {
   form: UseFormReturn<ProfileInfoFormValues>;
 }
 
-export function ProfileProfessionalSection({
-  form,
-}: ProfileProfessionalSectionProps) {
+export function ProfileProfessionalSection({ form }: ProfileContactSectionProps) {
   return (
-    <div className="space-y-6 pb-20">
-      <h3 className="text-xl font-semibold">Professional Information</h3>
+    <div className="space-y-6 pb-6">
+      <h3 className="text-xl font-semibold">Contact & Account</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="targeted_role"
+          name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold">
-                Target Role
-              </FormLabel>
+              <FormLabel className="text-base font-semibold">Username</FormLabel>
               <FormControl>
-                <Input placeholder="Senior Software Engineer" {...field} />
+                <Input placeholder="john_doe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -37,14 +35,12 @@ export function ProfileProfessionalSection({
         />
         <FormField
           control={form.control}
-          name="organization"
+          name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold">
-                Current Organization
-              </FormLabel>
+              <FormLabel className="text-base font-semibold">Phone</FormLabel>
               <FormControl>
-                <Input placeholder="Talentya" {...field} />
+                <Input placeholder="+216 XX XXX XXX" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

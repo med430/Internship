@@ -2,9 +2,12 @@ import { OfferDetailScreen } from "@/features/offer-detail/components/offer-deta
 
 export default async function OfferDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { id } = await params;
-  return <OfferDetailScreen offerId={id} />;
+  const { from } = await searchParams;
+  return <OfferDetailScreen offerId={id} from={from} />;
 }

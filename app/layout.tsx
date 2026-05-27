@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   title:
     "Stagio - AI-Powered Career Platform | Land Your Dream Job 10x Faster",
   description:
-    "Transform your job search with Stagio's AI-powered CV optimization, intelligent job matching from LinkedIn & Upwork, personalized career guidance, virtual interviews, and portfolio builder. Start free today.",
+    "Transform your job search with Stagio's AI-powered CV optimization, intelligent job matching, personalized career guidance, virtual interviews, and portfolio builder. Start free today.",
   keywords: [
     "job search",
     "CV optimization",
