@@ -4,9 +4,11 @@ import {
     Get,
     Param,
     Res,
-    UseGuards, UseInterceptors, BadRequestException, UploadedFile, Patch, Inject,
+    UseGuards, UseInterceptors, BadRequestException, UploadedFile, Patch, Inject, NotFoundException,
 } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
+import { ICVRepository } from '../../../Application/repositories/cv.repository'
+import { IStudentProfileRepository } from '../../../Application/repositories/student-profile.repository'
 import type { Response } from 'express'
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
@@ -30,6 +32,10 @@ export class CVController {
         private readonly commandBus: CommandBus,
         @Inject(FileStorageService)
         private readonly fileService: FileStorageService,
+        @Inject(ICVRepository)
+        private readonly cvRepo: ICVRepository,
+        @Inject(IStudentProfileRepository)
+        private readonly studentRepo: IStudentProfileRepository,
     ) {}
 
     @Post()
@@ -66,5 +72,33 @@ export class CVController {
     @Patch(':id/delete')
     delete(@Param('id') id: string, @CurrentUser() user) {
         return this.commandBus.execute(new DeleteCVCommand(user.id, id))
+    }
+
+    @Get()
+    async list(@CurrentUser() user) {
+        const profile = await this.studentRepo.findByUserId(user.id)
+        if (!profile) throw new NotFoundException('Profile not found')
+
+        const all = await this.cvRepo.findByStudent(profile.id)
+        const cvs = all.map((c) => ({
+            id: c.id,
+            user_id: c.studentId,
+            pdf_url: `/cvs/${c.id}/download`,
+            original_score: 0,
+            final_score: 0,
+            job_title: '',
+            jobs_summary: '',
+            review_improvements: [],
+            anonymized_cv_text: null,
+            created_at: c.createdAt ? c.createdAt.toISOString() : new Date().toISOString(),
+        }))
+
+        return {
+            cvs,
+            total: cvs.length,
+            page: 1,
+            pageSize: cvs.length,
+            totalPages: Math.max(1, Math.ceil(cvs.length / (cvs.length || 1))),
+        }
     }
 }

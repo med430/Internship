@@ -25,7 +25,7 @@ const envFilePaths = [
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('CHAT_DB_URL'),
+        uri: config.get<string>('CHAT_DB_URL') ?? 'mongodb://127.0.0.1:27017/stagio',
       }),
     }),
     ChatPersistenceModule,

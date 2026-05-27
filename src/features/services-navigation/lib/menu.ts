@@ -20,6 +20,11 @@ export interface SidebarMenuEntry {
 
 export const PRIMARY_ITEMS: SidebarMenuEntry[] = [
   {
+    title: "Documents",
+    url: "/services/document-generator",
+    icon: FileText,
+  },
+  {
     title: "Offers",
     url: "/services/offers",
     icon: Briefcase,
