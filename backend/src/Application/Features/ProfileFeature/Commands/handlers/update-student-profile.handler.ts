@@ -49,6 +49,19 @@ ProfileResponseDTO
         profile.city      = command.city      ?? profile.city
         profile.domains   = command.domains   ?? profile.domains
 
+        // School + recommendation preferences. `null` from the client means "clear it"; `undefined` means "leave alone".
+        if (command.schoolId          !== undefined) profile.schoolId          = command.schoolId          ?? undefined
+        if (command.currentYear       !== undefined) profile.currentYear       = command.currentYear       ?? undefined
+        if (command.currentProgram    !== undefined) profile.currentProgram    = command.currentProgram    ?? undefined
+        if (command.preferredCities)                 profile.preferredCities     = command.preferredCities
+        if (command.preferredDomains)                profile.preferredDomains    = command.preferredDomains
+        if (command.preferredOfferTypes)             profile.preferredOfferTypes = command.preferredOfferTypes
+        if (command.preferredWorkMode !== undefined) profile.preferredWorkMode = command.preferredWorkMode ?? undefined
+        if (command.languages)                       profile.languages           = command.languages
+        if (command.paidOnly          !== undefined) profile.paidOnly          = command.paidOnly
+        if (command.availableFrom     !== undefined) profile.availableFrom     = command.availableFrom     ?? undefined
+        if (command.availableTo       !== undefined) profile.availableTo       = command.availableTo       ?? undefined
+
         await this.studentProfileRepo.update(profile)
 
         return { user }
