@@ -107,195 +107,38 @@ export function ServicesSidebar({ role }: ServicesSidebarProps) {
 
       <SidebarContent>
 
-        {/* ── Home ── */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={exact("/services/dashboard")} tooltip="Dashboard">
-                  <Link href="/services/dashboard">
-                    <LayoutDashboard className="h-5 w-5" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* ── AI Career Tools ── */}
-        <SidebarGroup>
-          <SidebarGroupLabel>AI Career Tools</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              <SidebarCollapsibleGroup
-                title="CV Booster"
-                baseUrl="/services/cv-rewriter"
-                currentPath={pathname}
-                icon={Sparkles}
-                isActive={is("/services/cv-rewriter")}
-                isCollapsed={isCollapsed}
-                isLoading={isHydrated && isCVRewriterLoading}
-                items={CV_BOOSTER_ITEMS}
-                open={isCVBoosterOpen}
-                onOpenChange={setIsCVBoosterOpen}
-              />
-
-              <SidebarCollapsibleGroup
-                title="Career Guide"
-                baseUrl="/services/career-guide"
-                currentPath={pathname}
-                icon={GraduationCap}
-                isActive={is("/services/career-guide")}
-                isCollapsed={isCollapsed}
-                isLoading={isHydrated && isCareerGuideLoading}
-                items={CAREER_GUIDE_ITEMS}
-                open={isCareerGuideOpen}
-                onOpenChange={setIsCareerGuideOpen}
-              />
-
-              <SidebarCollapsibleGroup
-                title="Virtual Interviewer"
-                baseUrl="/services/virtual-interviewer"
-                currentPath={pathname}
-                icon={Video}
-                isActive={is("/services/virtual-interviewer")}
-                isCollapsed={isCollapsed}
-                items={VIRTUAL_INTERVIEWER_ITEMS}
-                open={isVIOpen}
-                onOpenChange={setIsVIOpen}
-              />
-
-              <SidebarCollapsibleGroup
-                title="Portfolio Builder"
-                baseUrl="/services/portfolio-builder"
-                currentPath={pathname}
-                icon={Briefcase}
-                isActive={is("/services/portfolio-builder")}
-                isCollapsed={isCollapsed}
-                isLoading={isHydrated && isPortfolioBuilderLoading}
-                items={PORTFOLIO_BUILDER_ITEMS}
-                open={isPortfolioOpen}
-                onOpenChange={setIsPortfolioOpen}
-              />
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/document-generator")} tooltip="CV & Letter Generator">
-                  <Link href="/services/document-generator">
-                    <FileText className="h-5 w-5" />
-                    <span>CV & Letter Generator</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* ── Job Search ── */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Job Search</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/offers")} tooltip="Offers">
-                  <Link href="/services/offers">
-                    <Target className="h-5 w-5" />
-                    <span>Browse Offers</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={exact("/services/jobmatcher")} tooltip="Job Matcher">
-                  <Link href="/services/jobmatcher">
-                    <Sparkles className="h-5 w-5" />
-                    <span>Job Matcher</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/applications")} tooltip="Applications">
-                  <Link href="/services/applications">
-                    <ClipboardList className="h-5 w-5" />
-                    <span>My Applications</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* ── Communication & Tools ── */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Communication</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/chat")} tooltip="Messages">
-                  <Link href="/services/chat">
-                    <MessageSquare className="h-5 w-5" />
-                    <span>Messages</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/interviews")} tooltip="Interviews">
-                  <Link href="/services/interviews">
-                    <CalendarClock className="h-5 w-5" />
-                    <span>Interviews</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={is("/services/calendar")} tooltip="Calendar">
-                  <Link href="/services/calendar">
-                    <CalendarDays className="h-5 w-5" />
-                    <span>Calendar</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip="Video Call"
-                  isActive={is("/services/call")}
-                  onClick={handleStartCall}
-                >
-                  <Phone className="h-5 w-5" />
-                  <span>Video Call</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* ── Administration (ADMIN only) ── */}
-        {isAdmin && (
+        {isAdmin ? (
+          /* ── ADMIN layout: Dashboard + Administration only ── */
           <>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={exact("/services/admin")} tooltip="Dashboard">
+                      <a href="/services/admin">
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span>Dashboard</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
             <SidebarSeparator />
+
             <SidebarGroup>
               <SidebarGroupLabel>Administration</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="space-y-1">
                   {ADMIN_ITEMS.map((item) => {
-                    const Icon = item.icon;
                     const IconMap: Record<string, React.ElementType> = {
                       Overview: LayoutDashboard,
                       Users: Users,
                       Offers: Target,
                       Recommendations: Shield,
                     };
-                    const AdminIcon = IconMap[item.title] ?? Icon;
+                    const AdminIcon = IconMap[item.title] ?? item.icon;
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
@@ -311,6 +154,180 @@ export function ServicesSidebar({ role }: ServicesSidebarProps) {
                       </SidebarMenuItem>
                     );
                   })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        ) : (
+          /* ── Regular user layout ── */
+          <>
+            {/* ── Home ── */}
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={exact("/services/dashboard")} tooltip="Dashboard">
+                      <Link href="/services/dashboard">
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            {/* ── AI Career Tools ── */}
+            <SidebarGroup>
+              <SidebarGroupLabel>AI Career Tools</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  <SidebarCollapsibleGroup
+                    title="CV Booster"
+                    baseUrl="/services/cv-rewriter"
+                    currentPath={pathname}
+                    icon={Sparkles}
+                    isActive={is("/services/cv-rewriter")}
+                    isCollapsed={isCollapsed}
+                    isLoading={isHydrated && isCVRewriterLoading}
+                    items={CV_BOOSTER_ITEMS}
+                    open={isCVBoosterOpen}
+                    onOpenChange={setIsCVBoosterOpen}
+                  />
+
+                  <SidebarCollapsibleGroup
+                    title="Career Guide"
+                    baseUrl="/services/career-guide"
+                    currentPath={pathname}
+                    icon={GraduationCap}
+                    isActive={is("/services/career-guide")}
+                    isCollapsed={isCollapsed}
+                    isLoading={isHydrated && isCareerGuideLoading}
+                    items={CAREER_GUIDE_ITEMS}
+                    open={isCareerGuideOpen}
+                    onOpenChange={setIsCareerGuideOpen}
+                  />
+
+                  <SidebarCollapsibleGroup
+                    title="Virtual Interviewer"
+                    baseUrl="/services/virtual-interviewer"
+                    currentPath={pathname}
+                    icon={Video}
+                    isActive={is("/services/virtual-interviewer")}
+                    isCollapsed={isCollapsed}
+                    items={VIRTUAL_INTERVIEWER_ITEMS}
+                    open={isVIOpen}
+                    onOpenChange={setIsVIOpen}
+                  />
+
+                  <SidebarCollapsibleGroup
+                    title="Portfolio Builder"
+                    baseUrl="/services/portfolio-builder"
+                    currentPath={pathname}
+                    icon={Briefcase}
+                    isActive={is("/services/portfolio-builder")}
+                    isCollapsed={isCollapsed}
+                    isLoading={isHydrated && isPortfolioBuilderLoading}
+                    items={PORTFOLIO_BUILDER_ITEMS}
+                    open={isPortfolioOpen}
+                    onOpenChange={setIsPortfolioOpen}
+                  />
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/document-generator")} tooltip="CV & Letter Generator">
+                      <Link href="/services/document-generator">
+                        <FileText className="h-5 w-5" />
+                        <span>CV & Letter Generator</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            {/* ── Job Search ── */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Job Search</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/offers")} tooltip="Offers">
+                      <Link href="/services/offers">
+                        <Target className="h-5 w-5" />
+                        <span>Browse Offers</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={exact("/services/jobmatcher")} tooltip="Job Matcher">
+                      <Link href="/services/jobmatcher">
+                        <Sparkles className="h-5 w-5" />
+                        <span>Job Matcher</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/applications")} tooltip="Applications">
+                      <Link href="/services/applications">
+                        <ClipboardList className="h-5 w-5" />
+                        <span>My Applications</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            {/* ── Communication ── */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Communication</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/chat")} tooltip="Messages">
+                      <Link href="/services/chat">
+                        <MessageSquare className="h-5 w-5" />
+                        <span>Messages</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/interviews")} tooltip="Interviews">
+                      <Link href="/services/interviews">
+                        <CalendarClock className="h-5 w-5" />
+                        <span>Interviews</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={is("/services/calendar")} tooltip="Calendar">
+                      <Link href="/services/calendar">
+                        <CalendarDays className="h-5 w-5" />
+                        <span>Calendar</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Video Call"
+                      isActive={is("/services/call")}
+                      onClick={handleStartCall}
+                    >
+                      <Phone className="h-5 w-5" />
+                      <span>Video Call</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
