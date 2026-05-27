@@ -21,11 +21,27 @@ import { fetchOffers, type Offer } from "@/lib/api/offers";
 import { createApplication } from "@/lib/api/applications";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { uploadCoverLetter } from "@/lib/api/cover-letters";
 
 type ApplyModalState = {
 	open: boolean;
 	offer: Offer | null;
 };
+
+function resolveCoverLetterId(source: CoverLetterSource | null): string | undefined {
+	if (!source) return undefined;
+	if (source.type === "database") return source.letter.id;
+	return undefined;
+}
+
+async function uploadCoverLetterIfNeeded(source: CoverLetterSource): Promise<string> {
+	if (source.type === "database") {
+		return source.letter.id;
+	}
+
+	const uploaded = await uploadCoverLetter(source.file);
+	return uploaded.id;
+}
 
 async function uploadCvIfNeeded(source: CVSource): Promise<string> {
 	if (source.type === "database") {
@@ -54,19 +70,6 @@ async function uploadCvIfNeeded(source: CVSource): Promise<string> {
 	return payload.id;
 }
 
-function resolveCoverLetterId(source: CoverLetterSource | null): string | undefined {
-	if (!source) {
-		return undefined;
-	}
-
-	if (source.type === "database") {
-		return source.letter.id;
-	}
-
-	// Uploaded cover-letter file flow can be added later if required.
-	return undefined;
-}
-
 export function OffersScreen() {
 	const [offers, setOffers] = useState<Offer[]>([]);
 	const [loadingOffers, setLoadingOffers] = useState(true);
@@ -75,8 +78,7 @@ export function OffersScreen() {
 		offer: null,
 	});
 	const [selectedCv, setSelectedCv] = useState<CVSource | null>(null);
-	const [selectedCoverLetter, setSelectedCoverLetter] =
-		useState<CoverLetterSource | null>(null);
+	const [selectedCoverLetter, setSelectedCoverLetter] = useState<CoverLetterSource | null>(null);
 	const [submittingApplication, setSubmittingApplication] = useState(false);
 
 	useEffect(() => {
@@ -133,7 +135,9 @@ export function OffersScreen() {
 		setSubmittingApplication(true);
 		try {
 			const cvId = await uploadCvIfNeeded(selectedCv);
-			const coverLetterId = resolveCoverLetterId(selectedCoverLetter);
+			const coverLetterId = selectedCoverLetter
+				? await uploadCoverLetterIfNeeded(selectedCoverLetter)
+				: undefined;
 
 			await createApplication({
 				offerId: applyState.offer.id,

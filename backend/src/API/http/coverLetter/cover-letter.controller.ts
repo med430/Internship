@@ -1,7 +1,7 @@
 import {
     Controller, Post, Get, Param, Res, Query,
     UseGuards, UseInterceptors, UploadedFile,
-    BadRequestException, Patch
+    BadRequestException, Patch, Inject
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -17,6 +17,7 @@ import { DeleteCoverLetterCommand } from '../../../Application/Features/CoverLet
 import { DownloadOwnCoverLetterCommand } from '../../../Application/Features/CoverLetterFeature/Commands/download-own-cover-letter.command'
 import { ListOwnCoverLettersQuery } from '../../../Application/Features/CoverLetterFeature/Queries/list-own-cover-letters.query'
 import { GetOwnCoverLetterQuery } from '../../../Application/Features/CoverLetterFeature/Queries/get-own-cover-letter.query'
+import { FileStorageService } from '../../../Application/Services/FileStorageService/FileStorageService'
 
 @Controller('cover-letters')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,6 +27,8 @@ export class CoverLetterController {
     constructor(
         private readonly commandBus: CommandBus,
         private readonly queryBus: QueryBus,
+        @Inject(FileStorageService)
+        private readonly fileStorage: FileStorageService,
     ) {}
 
     @Get()
@@ -64,7 +67,11 @@ export class CoverLetterController {
         const fileUrl = await this.commandBus.execute(
             new DownloadOwnCoverLetterCommand(user.id, id)
         )
-        return res.redirect(fileUrl)
+        const buffer = await this.fileStorage.downloadFileBuffer(fileUrl)
+        res.set('Content-Type', 'application/pdf')
+        res.set('Content-Disposition', `inline; filename="cover_letter_${id}.pdf"`)
+        res.set('Content-Length', buffer.length.toString())
+        res.send(buffer)
     }
 
     @Get(':id')

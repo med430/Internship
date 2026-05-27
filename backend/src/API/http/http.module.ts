@@ -27,6 +27,7 @@ import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
+import { DocumentsController } from "./documents/documents.controller";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
@@ -55,7 +56,8 @@ import { InterviewSlotRespondedHandler } from "../../Application/Features/Interv
         AdminController,
         ChatController,
         NotificationController,
-        InterviewSlotController],
+        InterviewSlotController,
+        DocumentsController],
     providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
     exports: [SupabaseSyncMiddleware],
 })

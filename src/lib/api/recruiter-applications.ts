@@ -20,7 +20,7 @@ export type RecruiterApplication = {
 		} | null;
 	} | null;
 	cv: { id: string } | null;
-	coverLetter: { id: string } | null;
+		coverLetter: { id: string } | null;
 	status: string;
 	createdAt: string;
 };
@@ -93,7 +93,7 @@ export async function fetchRecruiterApplications(
 							}
 						}
 						cv { id }
-						coverLetter { id }
+							coverLetter { id }
 						status
 						createdAt
 					}
