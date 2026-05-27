@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, CalendarDays, ClipboardList, Globe, LayoutDashboard } from "lucide-react";
+import { Briefcase, CalendarClock, CalendarDays, ClipboardList, Globe, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ const items = [
   { title: "My Offers",     url: "/recruiter/offers",       icon: Briefcase },
   { title: "Browse Offers", url: "/recruiter/browse",       icon: Globe },
   { title: "Applications",  url: "/recruiter/applications", icon: ClipboardList },
+  { title: "Interviews",    url: "/recruiter/interviews",   icon: CalendarClock },
   { title: "Calendar",      url: "/recruiter/calendar",     icon: CalendarDays },
 ];
 

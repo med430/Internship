@@ -236,6 +236,7 @@ interface SlotCardProps {
   slot: InterviewSlot;
   currentUserId: string | null;
   responding: boolean;
+  roomBasePath: string;
   onRespond: (
     slotId: string,
     action: "accept" | "decline" | "counter",
@@ -243,7 +244,7 @@ interface SlotCardProps {
   ) => Promise<void>;
 }
 
-function SlotCard({ slot, currentUserId, responding, onRespond }: SlotCardProps) {
+function SlotCard({ slot, currentUserId, responding, roomBasePath, onRespond }: SlotCardProps) {
   const router = useRouter();
   const [counterOpen, setCounterOpen] = useState(false);
   const isPast = new Date(slot.endAt) < new Date();
@@ -302,7 +303,7 @@ function SlotCard({ slot, currentUserId, responding, onRespond }: SlotCardProps)
             <Button
               size="sm"
               onClick={() =>
-                router.push(`/services/interviews/room?slot=${slot.id}`)
+                router.push(`${roomBasePath}?slot=${slot.id}`)
               }
               className="gap-1.5 font-label"
             >
@@ -406,7 +407,11 @@ function ScheduleSkeleton() {
 
 // ── Root screen ───────────────────────────────────────────────────────────────
 
-export function InterviewScheduleScreen() {
+export function InterviewScheduleScreen({
+  roomBasePath = "/services/interviews/room",
+}: {
+  roomBasePath?: string;
+} = {}) {
   const { slots, loading, error, respondingId, currentUserId, respond } =
     useInterviewSchedule();
 
@@ -489,6 +494,7 @@ export function InterviewScheduleScreen() {
                 key={slot.id}
                 slot={slot}
                 currentUserId={currentUserId}
+                roomBasePath={roomBasePath}
                 responding={respondingId === slot.id}
                 onRespond={respond}
               />
