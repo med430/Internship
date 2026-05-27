@@ -29,32 +29,25 @@ const WEIGHTS = {
 export class ContentScoringService {
 
     score(student: StudentProfile, offer: Offer): { score: number; breakdown: ScoreBreakdown } {
-        const breakdown: ScoreBreakdown = {
-            skillMatch:        this.skillMatch(student.skills, offer.skillRequirements),
-            locationMatch:     this.locationMatch(student.preferredCities, offer.location, offer.workMode),
-            domainMatch:       this.domainMatch(student.preferredDomains, offer.domain),
-            workModeMatch:     this.workModeMatch(student.preferredWorkMode, offer.workMode),
-            paidMatch:         this.paidMatch(student.paidOnly, offer.isPaid),
-            availabilityScore: this.availability(student.availableFrom, student.availableTo, offer.startDate, offer.endDate),
-            languageMatch:     this.languageMatch(student.languages, offer.languagesRequired),
-            offerTypeMatch:    this.offerTypeMatch(student.preferredOfferTypes, offer.type),
-        }
+        const breakdown: ScoreBreakdown = {}
+        const skillMatch = this.skillMatch(student.skills, offer.skillRequirements)
+        const paidMatch = this.paidMatch(student.paidOnly, offer.isPaid)
 
-        const score =
-            WEIGHTS.skillMatch        * breakdown.skillMatch! +
-            WEIGHTS.locationMatch     * breakdown.locationMatch! +
-            WEIGHTS.domainMatch       * breakdown.domainMatch! +
-            WEIGHTS.workModeMatch     * breakdown.workModeMatch! +
-            WEIGHTS.paidMatch         * breakdown.paidMatch! +
-            WEIGHTS.availabilityScore * breakdown.availabilityScore! +
-            WEIGHTS.languageMatch     * breakdown.languageMatch! +
-            WEIGHTS.offerTypeMatch    * breakdown.offerTypeMatch!
+        if (skillMatch !== undefined) breakdown.skillMatch = skillMatch
+        breakdown.locationMatch     = this.locationMatch(student.preferredCities, offer.location, offer.workMode)
+        breakdown.domainMatch       = this.domainMatch(student.preferredDomains, offer.domain)
+        breakdown.workModeMatch     = this.workModeMatch(student.preferredWorkMode, offer.workMode)
+        if (paidMatch !== undefined) breakdown.paidMatch = paidMatch
+        breakdown.availabilityScore = this.availability(student.availableFrom, student.availableTo, offer.startDate, offer.endDate)
+        breakdown.languageMatch     = this.languageMatch(student.languages, offer.languagesRequired)
+        breakdown.offerTypeMatch    = this.offerTypeMatch(student.preferredOfferTypes, offer.type)
 
+        const score = weightedScore(breakdown)
         return { score: clamp01(score), breakdown }
     }
 
-    private skillMatch(have: SkillAssignment[], need: SkillRequirement[]): number {
-        if (need.length === 0) return 1.0
+    private skillMatch(have: SkillAssignment[], need: SkillRequirement[]): number | undefined {
+        if (need.length === 0) return undefined
 
         const haveById = new Map<number, SkillLevel>()
         for (const a of have) haveById.set(a.skillId, a.level)
@@ -68,7 +61,6 @@ export class ContentScoringService {
 
             const myLevel = haveById.get(req.skill.id)
             if (myLevel === undefined) {
-                if (req.mandatory) return 0
                 continue
             }
 
@@ -77,7 +69,7 @@ export class ContentScoringService {
             earned += weight * credit
         }
 
-        return total === 0 ? 1.0 : earned / total
+        return total === 0 ? undefined : earned / total
     }
 
     private locationMatch(prefs: string[], offerLocation: string, mode: WorkMode): number {
@@ -99,8 +91,8 @@ export class ContentScoringService {
         return pref === mode ? 1.0 : 0.0
     }
 
-    private paidMatch(paidOnly: boolean, offerIsPaid: boolean): number {
-        if (!paidOnly) return 1.0
+    private paidMatch(paidOnly: boolean, offerIsPaid: boolean): number | undefined {
+        if (!paidOnly) return undefined
         return offerIsPaid ? 1.0 : 0.0
     }
 
@@ -139,6 +131,23 @@ export class ContentScoringService {
         if (prefs.length === 0) return 0.5
         return prefs.includes(offerType) ? 1.0 : 0.0
     }
+}
+
+type WeightedDimension = keyof typeof WEIGHTS
+
+function weightedScore(breakdown: ScoreBreakdown): number {
+    let earned = 0
+    let totalWeight = 0
+
+    for (const key of Object.keys(WEIGHTS) as WeightedDimension[]) {
+        const value = breakdown[key]
+        if (typeof value !== 'number' || !Number.isFinite(value)) continue
+
+        earned += WEIGHTS[key] * clamp01(value)
+        totalWeight += WEIGHTS[key]
+    }
+
+    return totalWeight === 0 ? 0 : earned / totalWeight
 }
 
 function clamp01(x: number): number {

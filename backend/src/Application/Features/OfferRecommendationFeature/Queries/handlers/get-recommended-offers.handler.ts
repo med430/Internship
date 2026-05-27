@@ -11,6 +11,8 @@ import { decodeCursor, encodeCursor, FeedCursor } from '../../cursor'
 import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { RecommendationScore } from '../../../../../Domain/entities/recommendation-score.entity'
 
+const RANKED_FEED_CANDIDATE_LIMIT = 200
+
 export interface RecommendedOfferDto {
     offer: Offer
     score: number
@@ -39,7 +41,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const limit = Math.max(1, Math.min(query.limit ?? 20, 50))
         const cursor = decodeCursor(query.cursor)
 
-        const scores = await this.scores.findTopForStudent(query.studentUserId, limit + 1)
+        const scores = await this.scores.findTopForStudent(query.studentUserId, RANKED_FEED_CANDIDATE_LIMIT)
 
         if (scores.length === 0) {
             return this.newestFallback(query.studentUserId, limit, cursor)
@@ -67,7 +69,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
                 !!p.offer && !p.offer.deletedAt && this.notPastDeadline(p.offer),
             )
 
-        // Apply real-time modifiers and re-sort
+        // Apply real-time modifiers to the score the frontend receives, so the visible match order stays descending.
         const adjusted = pairs.map(({ score, offer }) => ({
             offer,
             score: this.adjustScore(score, offer, bookmarkedIds.has(offer.id), viewCounts.get(offer.id) ?? 0),
@@ -76,7 +78,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         }))
         adjusted.sort((a, b) => b.score - a.score || (a.offer.id < b.offer.id ? 1 : -1))
 
-        // Apply cursor (start AFTER the cursor's (score, id))
+        // Apply cursor (start AFTER the cursor's score and id)
         const startIdx = cursor
             ? adjusted.findIndex(x => x.score < cursor.score || (x.score === cursor.score && x.offer.id < cursor.id))
             : 0
@@ -132,9 +134,9 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const bookmarkBoost = isBookmarked ? 0.1 : 0
 
         // Demote offers the student already viewed 3+ times without acting on them.
-        const viewedPenalty = viewCount >= 3 ? 0.7 : 1.0
+        const viewedPenalty = viewCount >= 3 ? 0.8 : 1.0
 
-        return score.finalScore * freshness * viewedPenalty * deadlineUrgency + bookmarkBoost
+        return clamp01(score.finalScore * freshness * viewedPenalty * deadlineUrgency + bookmarkBoost)
     }
 
     // ×1.2 if deadline is within 3 days, ×1.0 otherwise (or unknown).
@@ -163,4 +165,8 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const candidateSet = new Set(candidateIds)
         return new Set(active.filter(b => candidateSet.has(b.offerId)).map(b => b.offerId))
     }
+}
+
+function clamp01(value: number): number {
+    return Math.max(0, Math.min(1, value))
 }

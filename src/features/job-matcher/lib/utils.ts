@@ -16,6 +16,10 @@ function capitalizeWords(text: string): string {
 export function convertJobToCardProps(job: JobDocument): JobCardProps {
   const matchScore = job.match_score || 0;
   const breakdown = job.score_breakdown ?? {};
+  const percent = (value: number | undefined) =>
+    typeof value === "number" && Number.isFinite(value)
+      ? Math.round(Math.max(0, Math.min(1, value > 1 ? value / 100 : value)) * 100)
+      : 0;
 
   return {
     jobId: job.job_id,
@@ -31,9 +35,9 @@ export function convertJobToCardProps(job: JobDocument): JobCardProps {
     postedAt: new Date(job.posted_date),
     matchScore,
     matchReasons: {
-      skills: Math.round((breakdown.skillMatch ?? matchScore / 100) * 100),
-      experience: Math.round((breakdown.domainMatch ?? matchScore / 100) * 100),
-      culture: Math.round((breakdown.locationMatch ?? matchScore / 100) * 100),
+      skills: percent(breakdown.skillMatch),
+      experience: percent(breakdown.domainMatch),
+      culture: percent(breakdown.locationMatch),
     },
     techstack: [],
     platforms: [job.source],
