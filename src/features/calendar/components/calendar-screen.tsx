@@ -156,7 +156,6 @@ export function CalendarScreen({ role }: { role: "STUDENT" | "RECRUITER" }) {
                 events={events}
                 eventClick={handleEventClick}
                 height="auto"
-                locale="fr"
                 firstDay={1}
                 slotMinTime="08:00:00"
                 slotMaxTime="20:00:00"
