@@ -18,6 +18,8 @@ interface TrackPayload {
   data: Record<string, unknown>;
 }
 
+const OFFER_VIEW_SOURCE_PREFIX = "offer-view-source:";
+
 async function postSilently(path: string, body: unknown): Promise<void> {
   try {
     await fetchWithAuth(`${API_BASE_URL}${path}`, {
@@ -31,6 +33,20 @@ async function postSilently(path: string, body: unknown): Promise<void> {
 }
 
 export const tracking = {
+  markOfferViewSource(offerId: string, source: string) {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem(`${OFFER_VIEW_SOURCE_PREFIX}${offerId}`, source);
+  },
+
+  consumeOfferViewSource(offerId: string, fallback: string = "detail") {
+    if (typeof window === "undefined") return fallback;
+
+    const key = `${OFFER_VIEW_SOURCE_PREFIX}${offerId}`;
+    const source = window.sessionStorage.getItem(key);
+    window.sessionStorage.removeItem(key);
+    return source ?? fallback;
+  },
+
   trackView(offerId: string, source: string = "feed", durationMs?: number) {
     void postSilently("/events/track", {
       eventType: "offer_view",

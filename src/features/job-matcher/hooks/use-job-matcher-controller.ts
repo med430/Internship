@@ -232,7 +232,7 @@ export function useJobMatcherController() {
   }, []);
 
   const handleView = useCallback((jobId: string) => {
-    tracking.trackView(jobId, "feed");
+    tracking.markOfferViewSource(jobId, "feed");
   }, []);
 
   // Debounced search-query tracking. Fires 400ms after the user stops typing.

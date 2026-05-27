@@ -21,6 +21,7 @@ import { fetchOffers, type Offer } from "@/lib/api/offers";
 import { createApplication } from "@/lib/api/applications";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { tracking } from "@/lib/api/tracking-client";
 import {
 	Pagination,
 	PaginationContent,
@@ -134,7 +135,23 @@ export function OffersScreen() {
 		[sortedOffers, page],
 	);
 
+	useEffect(() => {
+		if (paginated.length === 0) return;
+		tracking.trackImpressions(
+			paginated.map((offer, index) => ({
+				offerId: offer.id,
+				position: (page - 1) * PAGE_SIZE + index,
+				source: "offers",
+			})),
+		);
+	}, [paginated, page]);
+
+	const handleOfferNavigation = (offerId: string) => {
+		tracking.markOfferViewSource(offerId, "offers");
+	};
+
 	const openApplyModal = (offer: Offer) => {
+		tracking.trackView(offer.id, "offers_apply");
 		setSelectedCv(null);
 		setSelectedCoverLetter(null);
 		setApplyState({ open: true, offer });
@@ -202,6 +219,7 @@ export function OffersScreen() {
 									<Link
 										href={`/services/offers/${offer.id}`}
 										className="hover:underline"
+										onClick={() => handleOfferNavigation(offer.id)}
 									>
 										{offer.title}
 									</Link>
@@ -214,7 +232,12 @@ export function OffersScreen() {
 								<p className="text-sm whitespace-pre-wrap line-clamp-3">{offer.description}</p>
 								<div className="flex items-center justify-end gap-2">
 									<Button variant="outline" asChild>
-										<Link href={`/services/offers/${offer.id}`}>View details</Link>
+										<Link
+											href={`/services/offers/${offer.id}`}
+											onClick={() => handleOfferNavigation(offer.id)}
+										>
+											View details
+										</Link>
 									</Button>
 									<Button onClick={() => openApplyModal(offer)}>Apply</Button>
 								</div>

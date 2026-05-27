@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ export function OfferDetailScreen({ offerId }: OfferDetailScreenProps) {
     useState<CoverLetterSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [now] = useState(() => Date.now());
+  const trackedViewRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +74,10 @@ export function OfferDetailScreen({ offerId }: OfferDetailScreenProps) {
       } else {
         setOffer(data);
         setIsSaved(data.bookmarked);
+        if (trackedViewRef.current !== offerId) {
+          trackedViewRef.current = offerId;
+          tracking.trackView(offerId, tracking.consumeOfferViewSource(offerId));
+        }
       }
       setLoading(false);
     })();
