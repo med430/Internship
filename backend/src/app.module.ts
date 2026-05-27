@@ -10,6 +10,7 @@ import { CallGateway } from './API/websocket/gateways/call.gateway';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatGateway } from './API/websocket/gateways/chat.gateway';
 import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
+import { StripeWebhookModule } from './API/webhooks/stripe/stripe-webhook.module';
 
 const envFilePaths = [
   resolve(process.cwd(), '.env'),
@@ -31,6 +32,7 @@ const envFilePaths = [
     ChatPersistenceModule,
     HttpApiModule,
     GraphQLAPIModule,
+    StripeWebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService, CallGateway, ChatGateway],

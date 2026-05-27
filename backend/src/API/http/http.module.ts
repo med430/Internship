@@ -33,6 +33,8 @@ import { ApplicationWithdrawnHandler } from "../../Application/Features/Applicat
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
 import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
 import { InterviewSlotController } from "./interview-slot/interview-slot.controller";
+import { SubscriptionController } from "./subscription/subscription.controller";
+import { StripeService } from "../../Infrastructure/stripe/stripe.service";
 import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
 import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
 
@@ -55,8 +57,9 @@ import { InterviewSlotRespondedHandler } from "../../Application/Features/Interv
         AdminController,
         ChatController,
         NotificationController,
-        InterviewSlotController],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
+        InterviewSlotController,
+        SubscriptionController],
+    providers: [OnboardService, SseService, StripeService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

@@ -31,6 +31,8 @@ export class UpgradeSubscriptionHandler implements ICommandHandler<UpgradeSubscr
             existing?.id ?? randomUUID(),
             profile.id,
             SubscriptionType.PAID,
+            command.stripeCustomerId     ?? existing?.stripeCustomerId     ?? null,
+            command.stripeSubscriptionId ?? existing?.stripeSubscriptionId ?? null,
         )
 
         return this.subscriptionRepo.save(subscription)
