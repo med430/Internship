@@ -14,6 +14,12 @@ const SKILL_LEVEL_RANK: Record<SkillLevel, number> = {
     [SkillLevel.EXPERT]:       4,
 }
 
+const WORK_MODE_RANK: Record<WorkMode, number> = {
+    [WorkMode.ONSITE]: 0,
+    [WorkMode.HYBRID]: 1,
+    [WorkMode.REMOTE]: 2,
+}
+
 const WEIGHTS = {
     skillMatch:        0.35,
     locationMatch:     0.20,
@@ -88,7 +94,8 @@ export class ContentScoringService {
 
     private workModeMatch(pref: WorkMode | undefined, mode: WorkMode): number {
         if (pref === undefined) return 0.5
-        return pref === mode ? 1.0 : 0.0
+        const distance = Math.abs(WORK_MODE_RANK[pref] - WORK_MODE_RANK[mode])
+        return distance === 0 ? 1.0 : distance === 1 ? 0.5 : 0.0
     }
 
     private paidMatch(paidOnly: boolean, offerIsPaid: boolean): number | undefined {

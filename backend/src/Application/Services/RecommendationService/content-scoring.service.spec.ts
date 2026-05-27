@@ -45,6 +45,24 @@ describe('ContentScoringService', () => {
         expect(result.breakdown.skillMatch).toBeGreaterThan(0)
         expect(result.breakdown.skillMatch).toBeLessThan(1)
     })
+
+    it('scores neighboring work modes as half matches', () => {
+        const result = service.score(
+            makeStudent({ preferredWorkMode: WorkMode.REMOTE }),
+            makeOffer({ workMode: WorkMode.HYBRID }),
+        )
+
+        expect(result.breakdown.workModeMatch).toBe(0.5)
+    })
+
+    it('scores opposite work modes as the lowest match', () => {
+        const result = service.score(
+            makeStudent({ preferredWorkMode: WorkMode.REMOTE }),
+            makeOffer({ workMode: WorkMode.ONSITE }),
+        )
+
+        expect(result.breakdown.workModeMatch).toBe(0)
+    })
 })
 
 function makeStudent(overrides: Partial<StudentProfile> = {}): StudentProfile {
