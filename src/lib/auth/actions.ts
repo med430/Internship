@@ -207,47 +207,31 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     return { success: false, error: error.message };
   }
 
-  // Retrieve backend JWT used by protected Nest endpoints.
+  // Best-effort legacy JWT mint — Supabase session alone is enough.
   try {
     const backendResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/login`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
         cache: "no-store",
       },
     );
 
-    if (!backendResponse.ok) {
-      const text = await backendResponse.text().catch(() => "");
-      return {
-        success: false,
-        error: text || "Backend login failed. Please ensure the backend is running.",
-      };
+    if (backendResponse.ok) {
+      const backendPayload = (await backendResponse.json()) as { token?: string };
+      if (backendPayload.token) {
+        const cookieStore = await cookies();
+        cookieStore.set("interview_token", backendPayload.token, {
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+        });
+      }
     }
-
-    const backendPayload = (await backendResponse.json()) as { token?: string };
-    if (!backendPayload.token) {
-      return {
-        success: false,
-        error: "Backend login did not return a token",
-      };
-    }
-
-    const cookieStore = await cookies();
-    cookieStore.set("interview_token", backendPayload.token, {
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
   } catch {
-    return {
-      success: false,
-      error: "Backend login failed. Please ensure the backend is running.",
-    };
+    // ignore
   }
 
   redirect("/services/dashboard");

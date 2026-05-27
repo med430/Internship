@@ -10,6 +10,7 @@ import { ChatNotificationProvider } from "@/components/shared/chat-notification-
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
 import { getServerProfile } from "@/lib/profile/backend";
+import { getServerMe } from "@/lib/auth/me";
 
 export default async function ServicesLayout({
   children,
@@ -30,8 +31,9 @@ export default async function ServicesLayout({
     redirect("/login");
   }
 
-  const profile = await getServerProfile();
-  const role = (user.app_metadata?.role as string | undefined) ?? undefined;
+  const [profile, me] = await Promise.all([getServerProfile(), getServerMe()]);
+  // Role is sourced from NeonDB (the backend's RolesGuard reads the same place). JWT app_metadata is the fallback.
+  const role = me?.role ?? (user.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
     name: profile?.name || user.user_metadata?.name || "User",

@@ -32,22 +32,16 @@ export const updateSession = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Accept backend-issued JWT stored in cookie as an authentication signal
-  // so pages protected by the middleware don't force a Supabase login when
-  // the backend token is present (interview_token).
+  // Backend-issued interview JWT also counts as signed-in.
   const interviewToken = request.cookies.get("interview_token")?.value;
 
   const protectedRoutes = ["/services", "/profile", "/settings"];
   const authRoutes = ["/login", "/signup", "/forgot-password"];
-  const adminRoutes = ["/services/admin"];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
   const isAuthRoute = authRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
-  const isAdminRoute = adminRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
 
@@ -57,9 +51,7 @@ export const updateSession = async (request: NextRequest) => {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAdminRoute && user?.app_metadata?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/services/dashboard", request.url));
-  }
+  // Admin gating happens in app/services/admin/layout.tsx — it can reach NeonDB; this middleware can't.
 
   if (user && isAuthRoute) {
     const hasEmailProvider = user.identities?.some(
