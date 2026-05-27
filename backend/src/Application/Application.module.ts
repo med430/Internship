@@ -100,6 +100,9 @@ import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.m
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 
+// Local dev guard: skip chat handlers + ChatPersistenceModule when CHAT_DB_URL is unset (no MongoDB available).
+const chatEnabled = !!process.env.CHAT_DB_URL;
+
 const CommandHandlers = [
   LoginHandler,
   RegisterStudentHandler,
@@ -139,8 +142,7 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
-  CreateConversationHandler,
-  SendMessageHandler,
+  ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
 ];
 
 const QueryHandlers = [
@@ -189,9 +191,8 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
-  // Chat
-  GetConversationsHandler,
-  GetMessagesHandler,
+  // Chat (skipped when CHAT_DB_URL unset)
+  ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
 ];
 
 @Global()
@@ -201,7 +202,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
-    ChatPersistenceModule,
+    ...(chatEnabled ? [ChatPersistenceModule] : []),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ← ajout

@@ -22,6 +22,10 @@ import { TrackingController } from "./tracking/tracking.controller";
 import { AdminRecommendationsController } from "./admin/admin-recommendations.controller";
 import { AdminController } from "./admin/admin.controller";
 import { ChatController } from "./chat/chat.controller";
+import { MeController } from "./auth-me/me.controller";
+import { MeProfileController } from "./me-profile/me-profile.controller";
+import { MeSkillsController } from "./me-profile/me-skills.controller";
+import { ReferenceController } from "./reference/reference.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
@@ -29,6 +33,9 @@ import { ApplicationStatusChangedHandler } from "../../Application/Features/Appl
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
+
+// Local dev guard: skip ChatController when CHAT_DB_URL is unset (no MongoDB available).
+const chatEnabled = !!process.env.CHAT_DB_URL;
 
 @Module({
     imports: [ApplicationModule, PersistenceModule],
@@ -47,7 +54,11 @@ import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Eve
         TrackingController,
         AdminRecommendationsController,
         AdminController,
-        ChatController],
+        MeController,
+        MeProfileController,
+        MeSkillsController,
+        ReferenceController,
+        ...(chatEnabled ? [ChatController] : [])],
     providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
     exports: [SupabaseSyncMiddleware],
 })
