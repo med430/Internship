@@ -9,6 +9,7 @@ import {
   Clock,
   FileText,
   Mail,
+  MessageSquare,
   RefreshCw,
   Sparkles,
   TrendingDown,
@@ -317,7 +318,7 @@ export function RecruiterApplicationsScreen() {
                       <MetaChip icon={<CalendarDays className="h-3.5 w-3.5" />} value={fmtDate(app.createdAt)} />
                     </div>
 
-                    {/* Documents */}
+                    {/* Documents + Message */}
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
@@ -339,6 +340,17 @@ export function RecruiterApplicationsScreen() {
                         <Mail className="h-3.5 w-3.5" />
                         Cover letter
                       </Button>
+                      {app.student?.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 h-8 text-xs border-sky-400/40 text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-900/20"
+                          onClick={() => router.push(`/recruiter/chat?openWith=${app.student!.id}`)}
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          Message
+                        </Button>
+                      )}
                     </div>
 
                     {/* Actions */}

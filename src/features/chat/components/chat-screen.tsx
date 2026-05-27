@@ -173,7 +173,7 @@ function UserPickerDialog({ open, onOpenChange, onConfirm, creating, error }: Us
 
 // ── Root ────────────────────────────────────────────────────────────────────
 
-export function ChatScreen() {
+export function ChatScreen({ openWithUserId }: { openWithUserId?: string } = {}) {
   const {
     conversations,
     userMap,
@@ -192,7 +192,7 @@ export function ChatScreen() {
     newConvError,
     creating,
     handleCreateConversationWithIds,
-  } = useChatController();
+  } = useChatController(openWithUserId);
 
   const selectedConversation = conversations.find((c) => c.id === selectedId) ?? null;
 
