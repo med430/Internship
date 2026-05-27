@@ -1,61 +1,118 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getAccessToken } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 import { useNotificationStore } from "@/lib/stores/notification-store";
+import type { NotificationRecord } from "@/lib/api/notifications";
+
+const RECONNECT_DELAY_MS = 5_000;
 
 export function useSseNotifications() {
-  const addNotification = useNotificationStore((state) => state.addNotification);
+  const { addNotification, fetchNotifications } = useNotificationStore();
+  const cancelledRef = useRef(false);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const esRef = useRef<EventSource | null>(null);
 
+  // Load persisted history once on mount
   useEffect(() => {
-    let es: EventSource | null = null;
-    let cancelled = false;
+    void fetchNotifications();
+  }, [fetchNotifications]);
 
-    async function connect() {
-      try {
-        const token = await getAccessToken();
-        if (cancelled) return;
+  // Open SSE stream with automatic reconnect
+  useEffect(() => {
+    cancelledRef.current = false;
 
-        const url = `${getClientApiBaseUrl()}/notifications/stream?token=${encodeURIComponent(token)}`;
-        es = new EventSource(url);
-
-        es.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data as string) as {
-              type?: string;
-              title?: string;
-              message?: string;
-              applicationId?: string;
-            };
-            addNotification({
-              id: crypto.randomUUID(),
-              title: data.title ?? "Notification",
-              message: data.message ?? "",
-              type: data.type ?? "info",
-              link: data.applicationId ? "/services/dashboard" : undefined,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            });
-          } catch {
-            // ignore malformed events
-          }
-        };
-
-        es.onerror = () => {
-          es?.close();
-          es = null;
-        };
-      } catch {
-        // user not authenticated, skip connection
+    function clearTimer() {
+      if (reconnectTimerRef.current !== null) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
     }
 
-    void connect();
+    function scheduleReconnect() {
+      clearTimer();
+      if (cancelledRef.current) return;
+      reconnectTimerRef.current = setTimeout(() => connect(), RECONNECT_DELAY_MS);
+    }
+
+    function connect() {
+      if (cancelledRef.current) return;
+
+      getAccessToken()
+        .then((token) => {
+          if (cancelledRef.current) return;
+
+          const url = `${getClientApiBaseUrl()}/notifications/stream?token=${encodeURIComponent(token)}`;
+          const es = new EventSource(url);
+          esRef.current = es;
+
+          es.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data as string) as {
+                id?: string;
+                type?: string;
+                title?: string;
+                message?: string;
+                link?: string;
+              };
+
+              const notification: NotificationRecord = {
+                id: data.id ?? crypto.randomUUID(),
+                userId: "",
+                type: data.type ?? "info",
+                title: data.title ?? "Notification",
+                message: data.message ?? "",
+                link: data.link ?? null,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+                deletedAt: null,
+              };
+
+              addNotification(notification);
+            } catch {
+              // ignore malformed events
+            }
+          };
+
+          es.onerror = () => {
+            es.close();
+            esRef.current = null;
+            scheduleReconnect();
+          };
+        })
+        .catch(() => {
+          // Not authenticated yet — retry after delay
+          scheduleReconnect();
+        });
+    }
+
+    connect();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !esRef.current) {
+        clearTimer();
+        connect();
+      }
+    };
+
+    const onOnline = () => {
+      if (!esRef.current) {
+        clearTimer();
+        connect();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("online", onOnline);
 
     return () => {
-      cancelled = true;
-      es?.close();
+      cancelledRef.current = true;
+      clearTimer();
+      esRef.current?.close();
+      esRef.current = null;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", onOnline);
     };
   }, [addNotification]);
 }

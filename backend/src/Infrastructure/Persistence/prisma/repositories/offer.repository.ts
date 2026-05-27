@@ -52,6 +52,17 @@ export class OfferRepositoryImpl
         return this.mapper.toDomain(result)
     }
 
+    async findPaginated(pageNumber: number, pageSize: number): Promise<Offer[]> {
+        const skip = (pageNumber - 1) * pageSize
+        const results = await this.prisma.offer.findMany({
+            where: { deletedAt: null },
+            skip,
+            take: pageSize,
+            include: this.includeOptions,
+        })
+        return results.map(r => this.mapper.toDomain(r))
+    }
+
     async findById(id: string): Promise<Offer | null> {
         const result = await this.prisma.offer.findUnique({
             where:   { id },

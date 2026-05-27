@@ -5,6 +5,8 @@ import { IGenericRepository } from './generic.repository'
 export interface IApplicationRepository extends IGenericRepository<Application> {
     findByStudentAndOffer(studentId: string, offerId: string): Promise<Application | null>
     findByStudent(studentId: string): Promise<Application[]>
+    findByStudentUserId(userId: string): Promise<Application[]>
+    findByRecruiterUserId(userId: string): Promise<Application[]>
     findByOffer(offerId: string): Promise<Application[]>
     rejectAllExcept(offerId: string, acceptedId: string): Promise<void>
     existsByCvId(cvId: string): Promise<boolean>

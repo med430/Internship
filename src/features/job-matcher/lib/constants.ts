@@ -1,14 +1,9 @@
 import type { JobSearchFilters } from "@/types/job-matcher";
 
-export const DEFAULT_FILTERS: JobSearchFilters = {
-  job_types: ["full_time"],
-  work_models: ["remote", "hybrid"],
-  locations: ["Berlin", "Remote"],
-  experience_levels: ["entry", "mid"],
-};
+export const DEFAULT_FILTERS: JobSearchFilters = {};
 
 export const STORAGE_KEYS = {
-  ACTIVE_FILTERS: "jobMatcher_activeFilters",
+  ACTIVE_FILTERS: "jobMatcher_filters_v2",
   LIKED_JOBS: "likedJobs",
   SAVED_JOBS: "savedJobs",
   SELECTED_CV: "jobMatcher_selectedCV",

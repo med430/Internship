@@ -5,6 +5,11 @@ export abstract class FileStorageService {
         folder: 'cvs' | 'letters'
     ): Promise<string>
 
+    abstract uploadImage(
+        file: Express.Multer.File,
+        folder: 'avatars'
+    ): Promise<string>
+
     abstract uploadBuffer(
         buffer: Buffer,
         folder: 'pdfs',

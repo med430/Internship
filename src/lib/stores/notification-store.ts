@@ -1,16 +1,15 @@
 "use client";
 
 import { create } from "zustand";
+import {
+  fetchNotifications as apiFetch,
+  markNotificationRead as apiMarkRead,
+  markAllNotificationsRead as apiMarkAllRead,
+  deleteNotification as apiDelete,
+  type NotificationRecord,
+} from "@/lib/api/notifications";
 
-type NotificationRecord = {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  link?: string;
-  is_read: boolean;
-  created_at: string;
-};
+export type { NotificationRecord };
 
 interface NotificationStore {
   notifications: NotificationRecord[];
@@ -23,44 +22,67 @@ interface NotificationStore {
   addNotification: (notification: NotificationRecord) => void;
 }
 
-export const useNotificationStore = create<NotificationStore>((set) => ({
+export const useNotificationStore = create<NotificationStore>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
-  fetchNotifications: async () => undefined,
+
+  fetchNotifications: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await apiFetch();
+      set({
+        notifications: data,
+        unreadCount: data.filter((n) => !n.isRead).length,
+      });
+    } catch {
+      // silently fail — user may not be authenticated yet
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   markAsRead: async (id) => {
     set((state) => ({
-      notifications: state.notifications.map((item) =>
-        item.id === id ? { ...item, is_read: true } : item,
+      notifications: state.notifications.map((n) =>
+        n.id === id ? { ...n, isRead: true } : n,
       ),
       unreadCount: Math.max(
         0,
-        state.notifications.filter((item) => !item.is_read && item.id !== id).length,
+        state.notifications.filter((n) => !n.isRead && n.id !== id).length,
       ),
     }));
+    try {
+      await apiMarkRead(id);
+    } catch { /* optimistic — ignore */ }
   },
+
   markAllAsRead: async () => {
     set((state) => ({
-      notifications: state.notifications.map((item) => ({
-        ...item,
-        is_read: true,
-      })),
+      notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
       unreadCount: 0,
     }));
+    try {
+      await apiMarkAllRead();
+    } catch { /* optimistic — ignore */ }
   },
+
   deleteNotification: async (id) => {
     set((state) => {
-      const notifications = state.notifications.filter((item) => item.id !== id);
-      return {
-        notifications,
-        unreadCount: notifications.filter((item) => !item.is_read).length,
-      };
+      const notifications = state.notifications.filter((n) => n.id !== id);
+      return { notifications, unreadCount: notifications.filter((n) => !n.isRead).length };
     });
+    try {
+      await apiDelete(id);
+    } catch { /* optimistic — ignore */ }
   },
+
   addNotification: (notification) => {
+    // Avoid duplicates if SSE fires and fetch already loaded it
+    if (get().notifications.some((n) => n.id === notification.id)) return;
     set((state) => ({
       notifications: [notification, ...state.notifications],
-      unreadCount: state.unreadCount + 1,
+      unreadCount: state.unreadCount + (notification.isRead ? 0 : 1),
     }));
   },
 }));

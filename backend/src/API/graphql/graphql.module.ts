@@ -51,11 +51,8 @@ import { RecruiterProfileResolver } from './resolvers/recruiter-profile.resolver
     ApplicationResolver,
     InterviewResolver,
     RecommendationResolver,
-    InterviewResolver,
-    ApplicationResolver,
     StudentProfileResolver,
     RecruiterProfileResolver,
-    CoverletterResolver,
   ],
 })
 export class GraphQLAPIModule {}

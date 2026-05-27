@@ -36,6 +36,7 @@ enum OfferType {
   PFE
   RESEARCH
   PHD
+  ALTERNANCE
 }
 
 enum WorkMode {
@@ -59,6 +60,13 @@ enum RecruiterMode {
   EMPATHIC
   TECHNICAL
   DIRECT
+}
+
+enum InterviewSlotStatus {
+  PROPOSED
+  ACCEPTED
+  DECLINED
+  CONFIRMED
 }
 
 // ─────────────────────────────────────────
@@ -349,6 +357,8 @@ model Application {
   cv          CV             @relation(fields: [cvId], references: [id])
   coverLetter CoverLetter?   @relation(fields: [coverLetterId], references: [id])
 
+  interviewSlots InterviewSlot[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -356,6 +366,30 @@ model Application {
   @@unique([studentId, offerId])
   @@index([studentId])
   @@index([offerId])
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW SLOT (scheduling)
+// ─────────────────────────────────────────
+model InterviewSlot {
+  id               String              @id @default(uuid())
+  applicationId    String
+  proposedByUserId String
+  startAt          DateTime
+  endAt            DateTime
+  status           InterviewSlotStatus @default(PROPOSED)
+  notes            String?
+  parentSlotId     String?
+
+  application  Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  parentSlot   InterviewSlot? @relation("rescheduled", fields: [parentSlotId], references: [id])
+  counterSlots InterviewSlot[] @relation("rescheduled")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([proposedByUserId])
 }
 
 // ─────────────────────────────────────────

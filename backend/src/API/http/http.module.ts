@@ -26,13 +26,19 @@ import { MeController } from "./auth-me/me.controller";
 import { MeProfileController } from "./me-profile/me-profile.controller";
 import { MeSkillsController } from "./me-profile/me-skills.controller";
 import { ReferenceController } from "./reference/reference.controller";
+import { NotificationController } from "./notifications/notification.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { SupabaseSyncMiddleware } from "./middleware/supabase-sync.middleware";
 import { ApplicationStatusChangedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-status-changed.handler";
 import { ApplicationSubmittedHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-submitted.handler";
 import { ApplicationWithdrawnHandler } from "../../Application/Features/ApplicationFeature/Events/handlers/application-withdrawn.handler";
 import { OfferCreatedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-created.handler";
+import { OfferDeletedHandler } from "../../Application/Features/OfferFeature/Events/handlers/offer-deleted.handler";
+import { InterviewSlotController } from "./interview-slot/interview-slot.controller";
+import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
+import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
 
 // Local dev guard: skip ChatController when CHAT_DB_URL is unset (no MongoDB available).
 const chatEnabled = !!process.env.CHAT_DB_URL;
@@ -58,8 +64,10 @@ const chatEnabled = !!process.env.CHAT_DB_URL;
         MeProfileController,
         MeSkillsController,
         ReferenceController,
+        NotificationController,
+        InterviewSlotController,
         ...(chatEnabled ? [ChatController] : [])],
-    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler],
+    providers: [OnboardService, SseService, SseAuthGuard, SupabaseAuthGuard, JwtAuthGuard, RolesGuard, SupabaseSyncMiddleware, ApplicationStatusChangedHandler, ApplicationSubmittedHandler, ApplicationWithdrawnHandler, OfferCreatedHandler, OfferDeletedHandler, InterviewSlotProposedHandler, InterviewSlotRespondedHandler],
     exports: [SupabaseSyncMiddleware],
 })
 export class HttpApiModule {}

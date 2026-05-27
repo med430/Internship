@@ -1,17 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 
 import { PersistenceModule } from '../Infrastructure/Persistence/persistence.module';
-import { AuthService } from './Services/AuthService/AuthService';
-import { JwtAuthService } from '../Infrastructure/auth/jwt-auth.service';
-import { JwtStrategy } from '../API/http/guards/jwt.strategy';
 import { FileStorageModule } from '../Infrastructure/storage/file.module';
 
-// ── Command handlers (unchanged) ──────────────────────────
-import { LoginHandler } from './Features/AuthFeature/Commands/handlers/login.handler';
+// ── Command handlers ───────────────────────────────────────
 import { RegisterRecruiterHandler } from './Features/AuthFeature/Commands/handlers/register-recruiter.handler';
 import { RegisterStudentHandler } from './Features/AuthFeature/Commands/handlers/register-student.handler';
 import { CreateOfferHandler } from './Features/OfferFeature/Commands/handlers/create-offer.handler';
@@ -42,6 +36,7 @@ import { DeleteProjectHandler } from './Features/ProjectFeature/Commands/handler
 import { SoftDeleteUserHandler } from './Features/ProfileFeature/Commands/handlers/soft-delete-user.handler';
 import { UpdateStudentProfileHandler } from './Features/ProfileFeature/Commands/handlers/update-student-profile.handler';
 import { UpdateRecruiterProfileHandler } from './Features/ProfileFeature/Commands/handlers/update-recruiter-profile.handler';
+import { UploadAvatarHandler } from './Features/ProfileFeature/Commands/handlers/upload-avatar.handler';
 import { AssignSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/assign-skill.handler';
 import { RemoveSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/remove-skill.handler';
 import { UpdateSkillHandler } from './Features/SkillAssignmentFeature/Commands/handlers/update-skill.handler';
@@ -54,6 +49,7 @@ import { GetUserQueryHandler } from './Features/UserFeature/Queries/handlers/get
 import { GetUsersQueryHandler } from './Features/UserFeature/Queries/handlers/get-users-query.handler';
 import { GetOfferQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offer-query.handler';
 import { GetOffersQueryHandler } from './Features/OfferFeature/Queries/handlers/get-offers-query.handler';
+import { GetMyOffersQueryHandler } from './Features/OfferFeature/Queries/handlers/get-my-offers.handler';
 import { GetSkillQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skill-query.handler';
 import { GetSkillsQueryHandler } from './Features/SkillFeature/Queries/handlers/get-skills-query.handler';
 import { GetSkillAssignmentQueryHandler } from './Features/SkillAssignmentFeature/Queries/handlers/get-skill-assignment-query.handler';
@@ -97,14 +93,21 @@ import { SendMessageHandler } from './Features/ChatFeature/Commands/handlers/sen
 import { GetConversationsHandler } from './Features/ChatFeature/Queries/handlers/get-conversations.handler';
 import { GetMessagesHandler } from './Features/ChatFeature/Queries/handlers/get-messages.handler';
 import { ChatPersistenceModule } from '../Infrastructure/chat/chat-persistence.module';
+import { NotificationPersistenceModule } from '../Infrastructure/notifications/notification-persistence.module';
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
+import { GetNotificationsHandler } from './Features/NotificationFeature/Queries/handlers/get-notifications.handler'
+import { ProposeInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/propose-interview-slot.handler'
+import { RespondToInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/respond-to-interview-slot.handler'
+import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Queries/handlers/get-my-interview-slots.handler';
+import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
+import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
+import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
 
 // Local dev guard: skip chat handlers + ChatPersistenceModule when CHAT_DB_URL is unset (no MongoDB available).
 const chatEnabled = !!process.env.CHAT_DB_URL;
 
 const CommandHandlers = [
-  LoginHandler,
   RegisterStudentHandler,
   RegisterRecruiterHandler,
   CreateOfferHandler,
@@ -135,6 +138,7 @@ const CommandHandlers = [
   SoftDeleteUserHandler,
   UpdateStudentProfileHandler,
   UpdateRecruiterProfileHandler,
+  UploadAvatarHandler,
   AssignSkillHandler,
   RemoveSkillHandler,
   UpdateSkillHandler,
@@ -142,7 +146,16 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
+  ProposeInterviewSlotHandler,
+  RespondToInterviewSlotHandler,
   ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
+];
+
+const NotificationHandlers = [
+  GetNotificationsHandler,
+  MarkNotificationReadHandler,
+  MarkAllNotificationsReadHandler,
+  DeleteNotificationHandler,
 ];
 
 const QueryHandlers = [
@@ -152,6 +165,7 @@ const QueryHandlers = [
   // Offers
   GetOfferQueryHandler,
   GetOffersQueryHandler,
+  GetMyOffersQueryHandler,
   // Skills
   GetSkillQueryHandler,
   GetSkillsQueryHandler,
@@ -191,6 +205,8 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
+  // Interview slots
+  GetMyInterviewSlotsHandler,
   // Chat (skipped when CHAT_DB_URL unset)
   ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
 ];
@@ -202,23 +218,13 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    NotificationPersistenceModule,
     ...(chatEnabled ? [ChatPersistenceModule] : []),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule], // ← ajout
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: Number(config.get('JWT_EXPIRATION_TIME') || 3600),
-        },
-      }),
-    }),
   ],
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
-    JwtStrategy,
+    ...NotificationHandlers,
     InterviewAiService,
     ContentScoringService,
     ScoringService,
@@ -232,17 +238,12 @@ const QueryHandlers = [
         cfg.get<string>('ML_MOCK') === 'true' ? new MlClientMock() : new MlClientService(cfg),
       inject: [ConfigService],
     },
-    {
-      provide: AuthService,
-      useClass: JwtAuthService,
-    },
   ],
   exports: [
     CqrsModule,
-    JwtModule,
-    PassportModule,
     FileStorageModule,
     PersistenceModule,
+    NotificationPersistenceModule,
     InterviewAiService,
     ContentScoringService,
     ScoringService,

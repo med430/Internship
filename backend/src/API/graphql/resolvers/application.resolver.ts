@@ -1,4 +1,4 @@
-import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Context, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { QueryBus } from '@nestjs/cqrs';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../guards/gql-auth.guard';
@@ -33,16 +33,17 @@ export class ApplicationResolver {
   async getApplications(
     @Args('pageNumber') pageNumber: number = 1,
     @Args('pageSize') pageSize: number = 200,
+    @Context() ctx: { req?: { user?: { id: string; role: string } } },
   ): Promise<Application[]> {
+    const user = ctx.req?.user
     try {
       const result = await this.queryBus.execute(
-        new GetApplicationsQuery(pageNumber, pageSize),
-      );
-
-      return result ?? [];
+        new GetApplicationsQuery(pageNumber, pageSize, user?.id, user?.role),
+      )
+      return result ?? []
     } catch (error) {
-      console.error('[GraphQL] applications query failed', error);
-      return [];
+      console.error('[GraphQL] applications query failed', error)
+      return []
     }
   }
 

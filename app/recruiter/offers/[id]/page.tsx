@@ -1,9 +1,11 @@
+import { use } from "react";
 import { RecruiterOfferFormScreen } from "@/features/recruiter/offers/components/offer-form-screen";
 
 export default function RecruiterOfferEditPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <RecruiterOfferFormScreen offerId={params.id} />;
+  const { id } = use(params);
+  return <RecruiterOfferFormScreen offerId={id} />;
 }

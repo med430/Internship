@@ -3,7 +3,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { cookies } from "next/headers";
 import { resolveRequestOrigin } from "./internal/form-origin";
 import { validatePasswordPolicy } from "./internal/password-rules";
 import {
@@ -70,7 +69,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     return { success: false, error: passwordPolicyError };
   }
 
-  const userMetadata: Record<string, string> = { role };
+  const userMetadata: Record<string, string> = { role, name, lastname, username };
   if (role === "RECRUITER") {
     const company = formData.get("company") as string;
     if (!company?.trim()) {
@@ -121,21 +120,31 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
       }
 
       try {
-        const backendResponse = await fetch(
-          `${apiBaseUrl}/auth/register/student`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              password,
-              name,
-              lastname,
-              username,
-            }),
-            cache: "no-store",
-          },
-        );
+        const retryEndpoint =
+          role === "RECRUITER"
+            ? `${apiBaseUrl}/auth/register/recruiter`
+            : `${apiBaseUrl}/auth/register/student`;
+
+        const retryBody =
+          role === "RECRUITER"
+            ? {
+                email,
+                password,
+                name,
+                lastname,
+                username,
+                company: (formData.get("company") as string) || "",
+                companyDescription: (formData.get("companyDescription") as string) || "",
+                website: (formData.get("website") as string) || "",
+              }
+            : { email, password, name, lastname, username };
+
+        const backendResponse = await fetch(retryEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(retryBody),
+          cache: "no-store",
+        });
 
         if (!backendResponse.ok && backendResponse.status !== 409) {
           const text = await backendResponse.text().catch(() => "");
@@ -158,16 +167,29 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   }
 
   try {
-    const backendResponse = await fetch(`${apiBaseUrl}/auth/register/student`, {
+    const endpoint =
+      role === "RECRUITER"
+        ? `${apiBaseUrl}/auth/register/recruiter`
+        : `${apiBaseUrl}/auth/register/student`;
+
+    const registrationBody =
+      role === "RECRUITER"
+        ? {
+            email,
+            password,
+            name,
+            lastname,
+            username,
+            company: (formData.get("company") as string) || "",
+            companyDescription: (formData.get("companyDescription") as string) || "",
+            website: (formData.get("website") as string) || "",
+          }
+        : { email, password, name, lastname, username };
+
+    const backendResponse = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        name,
-        lastname,
-        username,
-      }),
+      body: JSON.stringify(registrationBody),
       cache: "no-store",
     });
 
@@ -198,7 +220,7 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -207,31 +229,14 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     return { success: false, error: error.message };
   }
 
-  // Best-effort legacy JWT mint — Supabase session alone is enough.
-  try {
-    const backendResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/login`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        cache: "no-store",
-      },
-    );
+  const role = (
+    data.user?.app_metadata?.role ??
+    data.user?.user_metadata?.role ??
+    ""
+  ).toUpperCase();
 
-    if (backendResponse.ok) {
-      const backendPayload = (await backendResponse.json()) as { token?: string };
-      if (backendPayload.token) {
-        const cookieStore = await cookies();
-        cookieStore.set("interview_token", backendPayload.token, {
-          path: "/",
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-        });
-      }
-    }
-  } catch {
-    // ignore
+  if (role === "RECRUITER") {
+    redirect("/recruiter/offers");
   }
 
   redirect("/services/dashboard");
@@ -305,12 +310,6 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  const cookieStore = await cookies();
-  cookieStore.set("interview_token", "", {
-    path: "/",
-    sameSite: "lax",
-    expires: new Date(0),
-  });
   redirect("/login");
 }
 

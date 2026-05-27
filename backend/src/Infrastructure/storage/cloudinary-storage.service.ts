@@ -37,6 +37,28 @@ export class CloudinaryStorageService extends FileStorageService {
         })
     }
 
+    async uploadImage(
+        file: Express.Multer.File,
+        folder: 'avatars'
+    ): Promise<string> {
+        if (!file?.buffer) throw new Error('Invalid file: buffer missing')
+
+        return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: `stagio/${folder}`,
+                    resource_type: 'image',
+                    type: 'upload',
+                },
+                (error, result) => {
+                    if (error || !result) return reject(error ?? new Error('Upload failed'))
+                    resolve(result.secure_url)
+                }
+            )
+            stream.end(file.buffer)
+        })
+    }
+
     async uploadBuffer(buffer: Buffer, folder: 'pdfs', filename: string): Promise<string> {
         return new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
@@ -63,6 +85,13 @@ export class CloudinaryStorageService extends FileStorageService {
     }
 
     async downloadFileBuffer(fileUrl: string): Promise<Buffer> {
+        // Legacy files uploaded before Cloudinary migration have local paths
+        if (fileUrl.startsWith('/uploads/')) {
+            const { readFileSync } = await import('fs')
+            const { join } = await import('path')
+            return readFileSync(join(process.cwd(), fileUrl))
+        }
+
         const extracted = this.extractFromUrl(fileUrl)
         if (!extracted) throw new Error('Invalid Cloudinary URL')
 

@@ -1,11 +1,14 @@
 // profile.controller.ts
-import { Body, Controller, Delete, Patch, Req, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Patch, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { memoryStorage } from 'multer'
 
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto'
 import { UpdateRecruiterProfileDto } from './dto/update-recruiter-profile.dto'
 import { UpdateStudentProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-student-profile.command'
 import { UpdateRecruiterProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-recruiter-profile.command'
+import { UploadAvatarCommand } from '../../../Application/Features/ProfileFeature/Commands/upload-avatar.command'
 import { SoftDeleteUserCommand } from '../../../Application/Features/ProfileFeature/Commands/soft-delete-user.command'
 import { Role } from '../../../Domain/enums/role.enum'
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
@@ -57,6 +60,23 @@ export class ProfileController {
                 recruiterDto.website,
             )
         )
+    }
+
+    @Post('avatar')
+    @UseInterceptors(
+        FileInterceptor('avatar', {
+            storage: memoryStorage(),
+            limits: { fileSize: 5 * 1024 * 1024 },
+            fileFilter: (_, file, cb) => {
+                if (!file.mimetype.startsWith('image/'))
+                    return cb(new BadRequestException('Only image files allowed'), false)
+                cb(null, true)
+            },
+        })
+    )
+    uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req) {
+        if (!file) throw new BadRequestException('Image file required')
+        return this.commandBus.execute(new UploadAvatarCommand(req.user.id, file))
     }
 
     @Delete()

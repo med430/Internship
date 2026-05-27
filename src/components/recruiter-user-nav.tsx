@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { LogOut, User } from "lucide-react";
+import Link from "next/link";
+import { LogOut, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,10 +34,6 @@ function initials(name?: string): string {
 }
 
 export function RecruiterUserNav({ user }: RecruiterUserNavProps) {
-  const handleSignOut = async () => {
-    await signOutRecruiter();
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -63,15 +60,17 @@ export function RecruiterUserNav({ user }: RecruiterUserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem className="cursor-default">
-          <User className="mr-2 h-4 w-4" />
-          <span>Recruiter Account</span>
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link href="/recruiter/profile">
+            <UserCog className="mr-2 h-4 w-4" />
+            <span>Profile Settings</span>
+          </Link>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
-          onClick={handleSignOut}
+          onClick={() => void signOutRecruiter()}
           className="cursor-pointer text-destructive focus:text-destructive"
         >
           <LogOut className="mr-2 h-4 w-4" />

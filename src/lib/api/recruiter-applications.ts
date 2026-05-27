@@ -21,7 +21,7 @@ export type RecruiterApplication = {
 	} | null;
 	cv: { id: string } | null;
 	coverLetter: { id: string } | null;
-	status: string;
+	status: "SUBMITTED" | "IN_REVIEW" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
 	createdAt: string;
 };
 
@@ -32,42 +32,20 @@ type GraphQLRecruiterApplicationsResponse = {
 	errors?: Array<{ message?: string }>;
 };
 
-function readRecruiterToken(): string | null {
-	if (typeof document === "undefined") return null;
-
-	const cookieToken = document.cookie
-		.split("; ")
-		.find((entry) => entry.startsWith("recruiter_token="))
-		?.split("=")[1];
-
-	const localToken = window.localStorage.getItem("recruiter_token");
-	return cookieToken || localToken;
-}
-
-function parseJwtPayload(token: string): Record<string, unknown> | null {
+async function getSupabaseToken(): Promise<string | null> {
+	if (typeof window === "undefined") return null;
 	try {
-		const parts = token.split(".");
-		if (parts.length < 2) return null;
-		const encoded = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-		const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
-		const decoded = atob(padded);
-		return JSON.parse(decoded) as Record<string, unknown>;
+		const res = await fetch("/auth/session", { credentials: "include", cache: "no-store" });
+		if (!res.ok) return null;
+		const { accessToken } = await res.json() as { accessToken?: string };
+		return accessToken ?? null;
 	} catch {
 		return null;
 	}
 }
 
-function getRecruiterUserIdFromToken(): string | null {
-	const token = readRecruiterToken();
-	if (!token) return null;
-
-	const payload = parseJwtPayload(token);
-	const userId = payload?.userId;
-	return typeof userId === "string" && userId.trim() ? userId : null;
-}
-
 async function recruiterFetch(input: string, init: RequestInit = {}) {
-	const token = readRecruiterToken();
+	const token = await getSupabaseToken();
 	if (!token) {
 		throw new Error("You need to sign in as a recruiter again.");
 	}
@@ -135,16 +113,7 @@ export async function fetchRecruiterApplications(
 		throw new Error(payload.errors[0]?.message || "Failed to load applications");
 	}
 
-	const allApplications = payload.data?.applications || [];
-	const recruiterUserId = getRecruiterUserIdFromToken();
-
-	if (!recruiterUserId) {
-		return allApplications;
-	}
-
-	return allApplications.filter(
-		(application) => application.offer?.recruiterProfile?.user?.id === recruiterUserId,
-	);
+	return payload.data?.applications || [];
 }
 
 export async function updateRecruiterApplicationStatus(
@@ -167,19 +136,33 @@ export async function openRecruiterApplicationFile(
 	applicationId: string,
 	type: "cv" | "cover-letter",
 ): Promise<void> {
-	const apiUrl = getClientApiBaseUrl();
-	const response = await recruiterFetch(
-		`${apiUrl}/applications/${applicationId}/${type}`,
-		{ method: "GET" },
-	);
+	// Open the tab synchronously (within the user-gesture frame) to avoid popup blockers.
+	// Then navigate it once the blob is ready.
+	const newTab = window.open("", "_blank");
 
-	if (!response.ok) {
-		const text = await response.text().catch(() => "");
-		throw new Error(text || `Failed to open ${type}`);
+	try {
+		const apiUrl = getClientApiBaseUrl();
+		const response = await recruiterFetch(
+			`${apiUrl}/applications/${applicationId}/${type}`,
+			{ method: "GET" },
+		);
+
+		if (!response.ok) {
+			newTab?.close();
+			const text = await response.text().catch(() => "");
+			throw new Error(text || `Failed to open ${type}`);
+		}
+
+		const blob = await response.blob();
+		const objectUrl = URL.createObjectURL(blob);
+		if (newTab) {
+			newTab.location.href = objectUrl;
+		} else {
+			window.open(objectUrl, "_blank", "noopener,noreferrer");
+		}
+		window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+	} catch (err) {
+		newTab?.close();
+		throw err;
 	}
-
-	const blob = await response.blob();
-	const objectUrl = URL.createObjectURL(blob);
-	window.open(objectUrl, "_blank", "noopener,noreferrer");
-	window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
 }

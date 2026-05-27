@@ -7,7 +7,7 @@ scalar JSON
 
 enum ApplicationStatus {
     SUBMITTED
-    PENDING
+    IN_REVIEW
     ACCEPTED
     REJECTED
     WITHDRAWN
@@ -18,6 +18,7 @@ enum OfferType {
     PFE
     RESEARCH
     PHD
+    ALTERNANCE
 }
 
 enum Role {
@@ -318,6 +319,7 @@ type Query {
     # ── Offers ─────────────────────────────────────────────
     offer(id: ID!): Offer
     offers(pageNumber: Int, pageSize: Int): [Offer]!
+    myOffers: [Offer]!
 
     # ── Skills ─────────────────────────────────────────────
     skill(id: ID!): Skill

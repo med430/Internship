@@ -65,4 +65,18 @@ export class ApplicationRepositoryImpl
         })
         return count > 0
     }
+
+    async findByStudentUserId(userId: string): Promise<Application[]> {
+        const results = await this.prisma.application.findMany({
+            where: { student: { userId }, deletedAt: null }
+        })
+        return results.map(r => this.mapper.toDomain(r))
+    }
+
+    async findByRecruiterUserId(userId: string): Promise<Application[]> {
+        const results = await this.prisma.application.findMany({
+            where: { offer: { recruiterProfile: { userId } }, deletedAt: null }
+        })
+        return results.map(r => this.mapper.toDomain(r))
+    }
 }

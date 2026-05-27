@@ -32,23 +32,38 @@ export const updateSession = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Backend-issued interview JWT also counts as signed-in.
-  const interviewToken = request.cookies.get("interview_token")?.value;
-
   const protectedRoutes = ["/services", "/profile", "/settings"];
+  const recruiterRoutes = ["/recruiter/offers", "/recruiter/applications"];
   const authRoutes = ["/login", "/signup", "/forgot-password"];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
+  const isRecruiterRoute = recruiterRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
   const isAuthRoute = authRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
 
-  if (isProtectedRoute && !user && !interviewToken) {
+  const userRole = (
+    (user?.app_metadata?.role ?? user?.user_metadata?.role) as string | undefined ?? ""
+  ).toUpperCase();
+  const isRecruiter = userRole === "RECRUITER";
+
+  if (isProtectedRoute && !user) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Recruiter logged in as student → send to recruiter area
+  if (isProtectedRoute && user && isRecruiter) {
+    return NextResponse.redirect(new URL("/recruiter/offers", request.url));
+  }
+
+  if (isRecruiterRoute && !user) {
+    return NextResponse.redirect(new URL("/recruiter/login", request.url));
   }
 
   // Admin gating happens in app/services/admin/layout.tsx — it can reach NeonDB; this middleware can't.
@@ -69,7 +84,8 @@ export const updateSession = async (request: NextRequest) => {
       );
     }
 
-    return NextResponse.redirect(new URL("/services/dashboard", request.url));
+    const dest = isRecruiter ? "/recruiter/offers" : "/services/dashboard";
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return supabaseResponse;

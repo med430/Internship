@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,24 @@ import { fetchOffers, type Offer } from "@/lib/api/offers";
 import { createApplication } from "@/lib/api/applications";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const PAGE_SIZE = 12;
+
+function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
+	if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+	if (currentPage <= 3) return [1, 2, 3, 4, "ellipsis", totalPages];
+	if (currentPage >= totalPages - 2) return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+	return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
+}
 
 type ApplyModalState = {
 	open: boolean;
@@ -77,6 +96,7 @@ export function OffersScreen() {
 	const [selectedCoverLetter, setSelectedCoverLetter] =
 		useState<CoverLetterSource | null>(null);
 	const [submittingApplication, setSubmittingApplication] = useState(false);
+	const [page, setPage] = useState(1);
 
 	useEffect(() => {
 		let mounted = true;
@@ -106,6 +126,12 @@ export function OffersScreen() {
 	const sortedOffers = useMemo(
 		() => [...offers].sort((a, b) => a.title.localeCompare(b.title)),
 		[offers],
+	);
+
+	const totalPages = Math.ceil(sortedOffers.length / PAGE_SIZE);
+	const paginated = useMemo(
+		() => sortedOffers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+		[sortedOffers, page],
 	);
 
 	const openApplyModal = (offer: Offer) => {
@@ -169,22 +195,60 @@ export function OffersScreen() {
 				</Card>
 			) : (
 				<div className="grid gap-4">
-					{sortedOffers.map((offer) => (
+					{paginated.map((offer) => (
 						<Card key={offer.id}>
 							<CardHeader>
-								<CardTitle className="text-lg">{offer.title}</CardTitle>
+								<CardTitle className="text-lg">
+									<Link
+										href={`/services/offers/${offer.id}`}
+										className="hover:underline"
+									>
+										{offer.title}
+									</Link>
+								</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<div className="text-sm text-muted-foreground">
 									{offer.company} • {offer.location || "Remote"}
 								</div>
-								<p className="text-sm whitespace-pre-wrap">{offer.description}</p>
-								<div className="flex items-center justify-end">
+								<p className="text-sm whitespace-pre-wrap line-clamp-3">{offer.description}</p>
+								<div className="flex items-center justify-end gap-2">
+									<Button variant="outline" asChild>
+										<Link href={`/services/offers/${offer.id}`}>View details</Link>
+									</Button>
 									<Button onClick={() => openApplyModal(offer)}>Apply</Button>
 								</div>
 							</CardContent>
 						</Card>
 					))}
+				</div>
+			)}
+
+			{/* Pagination */}
+			{!loadingOffers && totalPages > 1 && (
+				<div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-5 py-3 shadow-sm">
+					<p className="text-xs text-muted-foreground">
+						Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sortedOffers.length)} of {sortedOffers.length} offers
+					</p>
+					<Pagination className="w-fit mx-0">
+						<PaginationContent>
+							<PaginationItem>
+								<PaginationPrevious onClick={() => setPage(p => Math.max(1, p - 1))} className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+							</PaginationItem>
+							{getPaginationItems(page, totalPages).map((item, i) =>
+								item === "ellipsis" ? (
+									<PaginationItem key={"e-" + i}><PaginationEllipsis /></PaginationItem>
+								) : (
+									<PaginationItem key={item}>
+										<PaginationLink isActive={item === page} onClick={() => setPage(item)} className="cursor-pointer">{item}</PaginationLink>
+									</PaginationItem>
+								)
+							)}
+							<PaginationItem>
+								<PaginationNext onClick={() => setPage(p => Math.min(totalPages, p + 1))} className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+							</PaginationItem>
+						</PaginationContent>
+					</Pagination>
 				</div>
 			)}
 
