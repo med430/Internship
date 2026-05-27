@@ -25,6 +25,7 @@ import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
+import { SubscriptionGuard } from '../guards/subscription.guard'
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
 import { SupabaseUser } from '../decorators/supabase-user.decorator'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
@@ -93,6 +94,7 @@ export class OnboardController {
 
     // Authenticated student → personalised feed. Anonymous (or unknown JWT) → existing demo flow.
     @Post('jobs/match')
+    @UseGuards(SubscriptionGuard)
     async matchJobs(@Req() req: Request, @Body() body: Record<string, any>) {
         const outcome = await this.offerFeed.dispatch({
             bearerToken: this.extractBearerToken(req.header('authorization')),
@@ -120,7 +122,9 @@ export class OnboardController {
     // Shapes a ranked offer into the JobDocument format the frontend expects.
     private mapItemToJobDocument(item: { offer: any; score: number; breakdown?: any; bookmarked: boolean }) {
         const offer = item.offer
-        const salary = this.formatSalary(offer)
+        const salary = offer.stipendMin && offer.stipendMax
+            ? `${offer.stipendMin}-${offer.stipendMax} TND`
+            : offer.isPaid ? 'paid' : 'unpaid'
         return {
             job_id: offer.id,
             title: offer.title,
@@ -132,7 +136,7 @@ export class OnboardController {
             job_function: offer.domain,
             salary,
             source: 'stagio',
-            source_url: `/services/offers/${offer.id}`,
+            source_url: `/services/jobmatcher/${offer.id}`,
             posted_date: (offer.createdAt ?? new Date()).toISOString(),
             match_score: Math.round(item.score * 100),
             score_breakdown: item.breakdown,
@@ -200,6 +204,7 @@ export class OnboardController {
     }
 
     @Post('generate_queries')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(
         FileFieldsInterceptor(
             [
@@ -243,6 +248,7 @@ export class OnboardController {
     }
 
     @Post('rewrite_cv')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
     async rewriteCv(@Req() req: Request, @Body() body: Record<string, any> = {}) {
         const questionSessionId = String(body.question_session_id || '').trim()
@@ -305,6 +311,7 @@ export class OnboardController {
     }
 
     @Post('career-guide/generate')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async generateCareerGuide(
         @Req() req: Request,
@@ -351,6 +358,7 @@ export class OnboardController {
     }
 
     @Post('portfolio/build')
+    @UseGuards(SubscriptionGuard)
     @UseInterceptors(FileInterceptor('cv', { storage: memoryStorage() }))
     async buildPortfolio(
         @Req() req: Request,
@@ -399,6 +407,7 @@ export class OnboardController {
     }
 
     @Post('onboard/interviews/start')
+    @UseGuards(SubscriptionGuard)
     async startInterview(@Req() req: Request, @Body() body: Record<string, any>) {
         return this.onboardService.startInterview(this.getSessionKey(req), {
             personaKey: body.personaKey,

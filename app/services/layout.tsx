@@ -10,7 +10,6 @@ import { ChatNotificationProvider } from "@/components/shared/chat-notification-
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
 import { getServerProfile } from "@/lib/profile/backend";
-import { getServerMe } from "@/lib/auth/me";
 
 export default async function ServicesLayout({
   children,
@@ -36,10 +35,10 @@ export default async function ServicesLayout({
   const role = me?.role ?? (user.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
-    name: profile?.name || user.user_metadata?.name || "User",
-    email: profile?.email || user.email || "",
+    name: profile?.name || user?.user_metadata?.name || "User",
+    email: profile?.email || user?.email || "",
     avatar:
-      (profile?.avatar_url as string) || user.user_metadata?.avatar_url || "",
+      (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
     profileCompletion: calculateProfileCompletion(profile),
     role,
   };

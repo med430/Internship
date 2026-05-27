@@ -18,7 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node -r tsconfig-paths/register src/Infrastructure/Persistence/prisma/seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/Infrastructure/Persistence/prisma/seed.ts",
+    "sub:upgrade": "ts-node -r tsconfig-paths/register src/Infrastructure/Persistence/prisma/scripts/subscription.ts upgrade",
+    "sub:cancel": "ts-node -r tsconfig-paths/register src/Infrastructure/Persistence/prisma/scripts/subscription.ts cancel"
   },
   "dependencies": {
     "@as-integrations/express5": "^1.1.2",
@@ -62,6 +64,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
+    "stripe": "^22.1.1",
     "typeorm": "^0.3.28"
   },
   "devDependencies": {

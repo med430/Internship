@@ -103,6 +103,9 @@ import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Quer
 import { MarkNotificationReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-notification-read.handler';
 import { MarkAllNotificationsReadHandler } from './Features/NotificationFeature/Commands/handlers/mark-all-notifications-read.handler';
 import { DeleteNotificationHandler } from './Features/NotificationFeature/Commands/handlers/delete-notification.handler';
+import { UpgradeSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/upgrade-subscription.handler';
+import { CancelSubscriptionHandler } from './Features/SubscriptionFeature/Commands/handlers/cancel-subscription.handler';
+import { GetMySubscriptionHandler } from './Features/SubscriptionFeature/Queries/handlers/get-my-subscription.handler';
 
 // Local dev guard: skip chat handlers + ChatPersistenceModule when CHAT_DB_URL is unset (no MongoDB available).
 const chatEnabled = !!process.env.CHAT_DB_URL;
@@ -146,8 +149,12 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
+  CreateConversationHandler,
+  SendMessageHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
+  UpgradeSubscriptionHandler,
+  CancelSubscriptionHandler,
   ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
 ];
 
@@ -205,8 +212,13 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
+  // Chat
+  GetConversationsHandler,
+  GetMessagesHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
+  // Subscription
+  GetMySubscriptionHandler,
   // Chat (skipped when CHAT_DB_URL unset)
   ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
 ];
@@ -218,6 +230,7 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
+    ChatPersistenceModule,
     NotificationPersistenceModule,
     ...(chatEnabled ? [ChatPersistenceModule] : []),
   ],

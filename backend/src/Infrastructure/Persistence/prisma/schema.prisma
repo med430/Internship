@@ -69,6 +69,11 @@ enum InterviewSlotStatus {
   CONFIRMED
 }
 
+enum SubscriptionType {
+  FREE
+  PAID
+}
+
 // ─────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────
@@ -94,7 +99,7 @@ model User {
   offerBookmarks          OfferBookmark[]
   offerImpressions        OfferImpression[]
   searchQueries           SearchQuery[]
-  profileViewsAsRecruiter ProfileView[]        @relation("RecruiterViews")
+  profileViewsAsRecruiter ProfileView[]         @relation("RecruiterViews")
   recommendationScores    RecommendationScore[]
 
   createdAt DateTime  @default(now())
@@ -124,7 +129,7 @@ model StudentProfile {
   preferredWorkMode   WorkMode?
   availableFrom       DateTime?
   availableTo         DateTime?
-  paidOnly            Boolean      @default(false)
+  paidOnly            Boolean     @default(false)
   preferredOfferTypes OfferType[]
   languages           String[]
   maxCommuteCities    String[]
@@ -145,6 +150,7 @@ model StudentProfile {
 
   // Behavioral back-relations (recommendation system)
   profileViewsReceived ProfileView[]
+  subscription         Subscription?
 }
 
 model RecruiterProfile {
@@ -157,6 +163,20 @@ model RecruiterProfile {
   website            String?
 
   offers Offer[]
+}
+
+// ─────────────────────────────────────────
+// PROJECT
+// ─────────────────────────────────────────
+
+model Subscription {
+  id        String           @id @default(uuid())
+  studentId String           @unique
+  student   StudentProfile   @relation(fields: [studentId], references: [id])
+  type      SubscriptionType @default(FREE)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
 }
 
 // ─────────────────────────────────────────
@@ -381,8 +401,8 @@ model InterviewSlot {
   notes            String?
   parentSlotId     String?
 
-  application  Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  parentSlot   InterviewSlot? @relation("rescheduled", fields: [parentSlotId], references: [id])
+  application  Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  parentSlot   InterviewSlot?  @relation("rescheduled", fields: [parentSlotId], references: [id])
   counterSlots InterviewSlot[] @relation("rescheduled")
 
   createdAt DateTime @default(now())
@@ -396,9 +416,9 @@ model InterviewSlot {
 // INTERVIEW
 // ─────────────────────────────────────────
 model Interview {
-  id             String          @id @default(uuid())
-  studentId      String
-  offerId        String?
+  id        String  @id @default(uuid())
+  studentId String
+  offerId   String?
 
   company        String?
   jobTitle       String?
@@ -407,13 +427,13 @@ model Interview {
   recruiterMode RecruiterMode   @default(EMPATHIC)
   status        InterviewStatus @default(IN_PROGRESS)
 
-  score    Float  @default(0)
-  feedback String @default("")
+  score    Float   @default(0)
+  feedback String  @default("")
   summary  String?
 
   data Json?
 
-  student User  @relation(fields: [studentId], references: [id])
+  student User   @relation(fields: [studentId], references: [id])
   offer   Offer? @relation(fields: [offerId], references: [id])
 
   createdAt DateTime  @default(now())
@@ -429,9 +449,9 @@ model Interview {
 // ─────────────────────────────────────────
 
 model PublicSessionProfile {
-  id                  String   @id @default(uuid())
-  sessionKey          String   @unique
-  name                String   @default("")
+  id                  String    @id @default(uuid())
+  sessionKey          String    @unique
+  name                String    @default("")
   email               String?
   location            String?
   birthDate           DateTime?
@@ -445,44 +465,44 @@ model PublicSessionProfile {
   linkedinUrl         String?
   twitterUrl          String?
   avatarUrl           String?
-  profileCompleted    Boolean  @default(false)
-  isDeactivated       Boolean  @default(false)
+  profileCompleted    Boolean   @default(false)
+  isDeactivated       Boolean   @default(false)
   deactivatedAt       DateTime?
-  subscription        String   @default("Starter")
+  subscription        String    @default("Starter")
   subscriptionEndDate DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model PublicCvQuestionSession {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   sessionKey    String
-  status        String   @default("OPEN")
+  status        String    @default("OPEN")
   questionsJson Json
   metadata      Json
-  cvText        String   @db.Text
-  jobsText      String   @db.Text
+  cvText        String    @db.Text
+  jobsText      String    @db.Text
   expiresAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([sessionKey])
   @@index([createdAt])
 }
 
 model PublicCv {
-  id               String   @id @default(uuid())
-  sessionKey       String
-  questionSessionId String?
-  pdfUrl           String
-  originalScore    Float
-  finalScore       Float
-  jobTitle         String
-  jobsSummary      String   @db.Text
+  id                 String   @id @default(uuid())
+  sessionKey         String
+  questionSessionId  String?
+  pdfUrl             String
+  originalScore      Float
+  finalScore         Float
+  jobTitle           String
+  jobsSummary        String   @db.Text
   reviewImprovements String[]
-  anonymizedCvText String?  @db.Text
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  anonymizedCvText   String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([sessionKey])
   @@index([createdAt])
@@ -500,19 +520,19 @@ model PublicCoverLetter {
 }
 
 model PublicCareerGuide {
-  id                    String   @id @default(uuid())
-  sessionKey            String
-  currentStrengths      String[]
-  readinessScore        Int
-  skillsToLearn         String[]
-  projectsToWorkOn      String[]
-  softSkillsToDevelop   String[]
-  careerRoadmap         String[]
-  domain                String
-  currentJob            String
-  targetJob             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  sessionKey          String
+  currentStrengths    String[]
+  readinessScore      Int
+  skillsToLearn       String[]
+  projectsToWorkOn    String[]
+  softSkillsToDevelop String[]
+  careerRoadmap       String[]
+  domain              String
+  currentJob          String
+  targetJob           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([sessionKey])
   @@index([createdAt])
@@ -577,11 +597,11 @@ model OfferBookmark {
 }
 
 model OfferImpression {
-  id       String   @id @default(uuid())
+  id        String   @id @default(uuid())
   studentId String
-  offerId  String
-  shownAt  DateTime @default(now())
-  position Int?
+  offerId   String
+  shownAt   DateTime @default(now())
+  position  Int?
 
   student User  @relation(fields: [studentId], references: [id])
   offer   Offer @relation(fields: [offerId], references: [id])
@@ -620,13 +640,13 @@ model SearchQuery {
 }
 
 model RecommendationScore {
-  id            String   @id @default(uuid())
-  studentId     String
-  offerId       String
+  id        String @id @default(uuid())
+  studentId String
+  offerId   String
 
   contentScore  Float
-  semanticScore Float    @default(0)
-  cfScore       Float    @default(0)
+  semanticScore Float @default(0)
+  cfScore       Float @default(0)
   finalScore    Float
 
   breakdown    Json?

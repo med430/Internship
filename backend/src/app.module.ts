@@ -22,6 +22,7 @@ import { CallGateway } from './API/websocket/gateways/call.gateway';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatGateway } from './API/websocket/gateways/chat.gateway';
 import { ChatPersistenceModule } from './Infrastructure/chat/chat-persistence.module';
+import { StripeWebhookModule } from './API/webhooks/stripe/stripe-webhook.module';
 
 const chatEnabled = !!process.env.CHAT_DB_URL;
 if (!chatEnabled) {
@@ -46,6 +47,7 @@ if (!chatEnabled) {
     ] : []),
     HttpApiModule,
     GraphQLAPIModule,
+    StripeWebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService, CallGateway, ...(chatEnabled ? [ChatGateway] : [])],
