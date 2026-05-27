@@ -32,6 +32,11 @@ export const updateSession = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Accept backend-issued JWT stored in cookie as an authentication signal
+  // so pages protected by the middleware don't force a Supabase login when
+  // the backend token is present (interview_token).
+  const interviewToken = request.cookies.get("interview_token")?.value;
+
   const protectedRoutes = ["/services", "/profile", "/settings"];
   const authRoutes = ["/login", "/signup", "/forgot-password"];
   const adminRoutes = ["/services/admin"];
@@ -46,7 +51,7 @@ export const updateSession = async (request: NextRequest) => {
     request.nextUrl.pathname.startsWith(route),
   );
 
-  if (isProtectedRoute && !user) {
+  if (isProtectedRoute && !user && !interviewToken) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);

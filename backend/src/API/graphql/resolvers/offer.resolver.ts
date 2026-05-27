@@ -18,10 +18,16 @@ export class OfferResolver {
 
   @Query('offers')
   async getOffers(
-    @Args('pageNumber') pageNumber: number,
-    @Args('pageSize') pageSize: number,
+    @Args('pageNumber') pageNumber: number = 1,
+    @Args('pageSize') pageSize: number = 200,
   ): Promise<Offer[]> {
-    return this.queryBus.execute(new GetOffersQuery(pageNumber, pageSize));
+    try {
+      const result = await this.queryBus.execute(new GetOffersQuery(pageNumber, pageSize));
+      return result ?? [];
+    } catch (error) {
+      console.error('[GraphQL] offers query failed', error);
+      return [];
+    }
   }
 
   @ResolveField('recruiterProfile')   // ← name must match schema field

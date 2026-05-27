@@ -3,23 +3,17 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as bcrypt from 'bcrypt'
-import { importJWK, jwtVerify } from 'jose'
+import { importJWK, jwtVerify, type JWTPayload } from 'jose'
 import { IUserRepository } from '../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../repositories/student-profile.repository'
 import { User } from '../../../Domain/entities/user.entity'
 import { StudentProfile } from '../../../Domain/entities/student-profile.entity'
 import { Role } from '../../../Domain/enums/role.enum'
 
-interface SupabaseJwtPayload {
-    sub?: string
+interface SupabaseJwtPayload extends JWTPayload {
     email?: string
-    role?: string
     user_metadata?: { role?: string; name?: string; lastname?: string; username?: string }
     app_metadata?:  { role?: string }
-    exp?: number
-    iat?: number
-    iss?: string
-    aud?: string | string[]
 }
 
 export interface ResolvedUser {

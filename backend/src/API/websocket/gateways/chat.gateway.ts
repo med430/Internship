@@ -52,6 +52,18 @@ export class ChatGateway implements OnGatewayDisconnect {
         this.subscriptions.delete(client.id);
     }
 
+    // Client registers its userId so it can receive messages addressed to it
+    // even when it isn't actively viewing that conversation (e.g. notification provider).
+    @SubscribeMessage('register-user')
+    handleRegisterUser(
+        @MessageBody() payload: { userId: string },
+        @ConnectedSocket() client: Socket,
+    ) {
+        if (payload?.userId) {
+            client.join(`user:${payload.userId}`);
+        }
+    }
+
     // Client subscribes to a conversation room to receive real-time messages
     @SubscribeMessage('join-conversation')
     handleJoin(
@@ -100,8 +112,14 @@ export class ChatGateway implements OnGatewayDisconnect {
         conversation.lastMessageAt = now;
         await this.conversationRepo.save(conversation);
 
-        // Broadcast to everyone in the room (including sender)
+        // Broadcast to everyone in the conversation room (chat page viewers)
         this.server.to(`conv:${conversationId}`).emit('new-message', saved);
+
+        // Also deliver to each participant's personal user room so that
+        // the notification provider receives it even when they aren't on the chat page.
+        for (const participantId of conversation.participantIds) {
+            this.server.to(`user:${participantId}`).emit('new-message', saved);
+        }
     }
 
     @SubscribeMessage('typing')

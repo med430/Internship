@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserNav } from "@/components/user-nav";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { ChatNotificationProvider } from "@/components/shared/chat-notification-provider";
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
 import { getServerProfile } from "@/lib/profile/backend";
@@ -20,7 +22,11 @@ export default async function ServicesLayout({
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  // If Supabase session is missing, allow backend JWT (interview_token) to authenticate server-side pages.
+  const cookieStore = await cookies();
+  const interviewToken = cookieStore.get("interview_token")?.value;
+
+  if ((error || !user) && !interviewToken) {
     redirect("/login");
   }
 
@@ -54,6 +60,7 @@ export default async function ServicesLayout({
           </div>
         </div>
         <div className="pt-16 shadow-[inset_0_4px_6px_-1px_rgba(0,0,0,0.06),inset_0_2px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_4px_6px_-1px_rgba(0,0,0,0.3),inset_0_2px_4px_-2px_rgba(0,0,0,0.2)]">
+          <ChatNotificationProvider />
           {children}
         </div>
       </main>

@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   Briefcase,
   Database,
   FileText,
@@ -18,6 +19,16 @@ export interface SidebarMenuEntry {
 }
 
 export const PRIMARY_ITEMS: SidebarMenuEntry[] = [
+  {
+    title: "Offers",
+    url: "/services/offers",
+    icon: Briefcase,
+  },
+  {
+    title: "Applications",
+    url: "/services/applications",
+    icon: ClipboardList,
+  },
   {
     title: "Jobmatcher",
     url: "/services/jobmatcher",

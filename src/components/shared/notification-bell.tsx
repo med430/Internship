@@ -55,6 +55,8 @@ export function NotificationBell() {
         return "🎯";
       case "portfolio-builder":
         return "🌐";
+      case "chat":
+        return "💬";
       default:
         return "🔔";
     }
