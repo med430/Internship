@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, CheckCheck, X } from "lucide-react";
+import {
+  Bell,
+  CheckCheck,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +62,8 @@ export function NotificationBell() {
         return "🌐";
       case "chat":
         return "💬";
+      case "recommendations-recomputed":
+        return <Sparkles className="h-4 w-4" />;
       default:
         return "🔔";
     }
@@ -144,7 +151,14 @@ export function NotificationBell() {
                   }
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-2xl mt-0.5">
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                        notification.type === "recommendations-recomputed"
+                          ? "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30 dark:text-amber-300"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">

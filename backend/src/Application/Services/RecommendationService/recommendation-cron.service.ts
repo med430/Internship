@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { CommandBus } from '@nestjs/cqrs'
 import { ComputeRecommendationsCommand } from '../../Features/OfferRecommendationFeature/Commands/compute-recommendations.command'
+import { ComputeResult } from '../../Features/OfferRecommendationFeature/Commands/handlers/compute-recommendations.handler'
 
 @Injectable()
 export class RecommendationCronService {
@@ -16,7 +17,9 @@ export class RecommendationCronService {
     async runDailyRecompute(): Promise<void> {
         this.logger.log('daily recommendation recompute starting')
         try {
-            const result = await this.commandBus.execute(new ComputeRecommendationsCommand())
+            const result = await this.commandBus.execute<ComputeRecommendationsCommand, ComputeResult>(
+                new ComputeRecommendationsCommand(undefined, 'cron'),
+            )
             this.logger.log(`daily recommendation recompute done: ${JSON.stringify(result)}`)
         } catch (err) {
             this.logger.error('daily recommendation recompute failed', err as Error)

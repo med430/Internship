@@ -45,6 +45,7 @@ import { StripeService } from "../../Infrastructure/stripe/stripe.service";
 import { InterviewSlotProposedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-proposed.handler";
 import { InterviewSlotRespondedHandler } from "../../Application/Features/InterviewSlotFeature/Events/handlers/interview-slot-responded.handler";
 import { INotificationEmitter } from "../../Application/Services/NotificationEmitter/notification-emitter.interface";
+import { RecommendationsRecomputedHandler } from "../../Application/Features/OfferRecommendationFeature/Events/handlers/recommendations-recomputed.handler";
 
 // Local dev guard: skip ChatController when CHAT_DB_URL is unset (no MongoDB available).
 const chatEnabled = !!process.env.CHAT_DB_URL;
@@ -92,6 +93,7 @@ const chatEnabled = !!process.env.CHAT_DB_URL;
         ApplicationWithdrawnHandler,
         OfferCreatedHandler,
         OfferDeletedHandler,
+        RecommendationsRecomputedHandler,
         InterviewSlotProposedHandler,
         InterviewSlotRespondedHandler,
     ],
