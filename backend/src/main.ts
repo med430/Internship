@@ -19,8 +19,12 @@ dotenv.config({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : [/^http:\/\/localhost:\d+$/];
+
   app.enableCors({
-    origin: [/^http:\/\/localhost:\d+$/],
+    origin: allowedOrigins,
     credentials: true,
   });
   app.useWebSocketAdapter(new IoAdapter(app));

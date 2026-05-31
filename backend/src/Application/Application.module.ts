@@ -151,14 +151,11 @@ const CommandHandlers = [
   AnswerInterviewHandler,
   ComputeRecommendationsHandler,
   UpdateUserRoleHandler,
-  CreateConversationHandler,
-  SendMessageHandler,
-  MarkMessagesReadHandler,
   ProposeInterviewSlotHandler,
   RespondToInterviewSlotHandler,
   UpgradeSubscriptionHandler,
   CancelSubscriptionHandler,
-  ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler] : []),
+  ...(chatEnabled ? [CreateConversationHandler, SendMessageHandler, MarkMessagesReadHandler] : []),
 ];
 
 const NotificationHandlers = [
@@ -215,16 +212,12 @@ const QueryHandlers = [
   GetInterviewsQueryHandler,
   // Recommendation feed
   GetRecommendedOffersHandler,
-  // Chat
-  GetConversationsHandler,
-  GetMessagesHandler,
-  GetConversationByIdHandler,
   // Interview slots
   GetMyInterviewSlotsHandler,
   // Subscription
   GetMySubscriptionHandler,
   // Chat (skipped when CHAT_DB_URL unset)
-  ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler] : []),
+  ...(chatEnabled ? [GetConversationsHandler, GetMessagesHandler, GetConversationByIdHandler] : []),
 ];
 
 @Global()
@@ -234,7 +227,6 @@ const QueryHandlers = [
     ConfigModule,
     FileStorageModule,
     PersistenceModule,
-    ChatPersistenceModule,
     NotificationPersistenceModule,
     ...(chatEnabled ? [ChatPersistenceModule] : []),
   ],
