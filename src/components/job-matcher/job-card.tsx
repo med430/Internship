@@ -38,6 +38,7 @@ const JobCard = ({
   applicationDeadline,
   detailSource = "matcher",
   showMatchScore = true,
+  position,
   onSave,
   onView,
 }: JobCardProps) => {
@@ -63,7 +64,7 @@ const JobCard = ({
   return (
     <Link
       href={href}
-      onClick={() => onView?.(jobId)}
+      onClick={() => onView?.(jobId, position)}
       className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
     >
       <article className="flex flex-col h-full rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-200">

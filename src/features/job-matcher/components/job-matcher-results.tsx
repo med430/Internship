@@ -6,6 +6,7 @@ import JobCard from "@/components/job-matcher/job-card";
 import type { CVSource } from "@/components/shared/cv-selector";
 import type { JobDocument } from "@/types/job-matcher";
 import { convertJobToCardProps } from "../lib/utils";
+import { JOBS_PER_PAGE } from "../lib/constants";
 import { JobMatcherPagination } from "./job-matcher-pagination";
 
 interface JobMatcherResultsProps {
@@ -75,13 +76,14 @@ export function JobMatcherResults({
       ) : paginatedJobs.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedJobs.map((job) => {
+            {paginatedJobs.map((job, index) => {
               const cardProps = convertJobToCardProps(job);
               return (
                 <JobCard
                   key={job.job_id}
                   {...cardProps}
                   isSaved={savedJobs.has(job.job_id)}
+                  position={(page - 1) * JOBS_PER_PAGE + index}
                   onSave={onSave}
                   onView={onView}
                 />

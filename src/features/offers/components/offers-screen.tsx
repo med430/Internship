@@ -273,8 +273,8 @@ export function OffersScreen() {
 		};
 	}, []);
 
-	const handleView = useCallback((offerId: string) => {
-		tracking.markOfferViewSource(offerId, "offers");
+	const handleView = useCallback((offerId: string, position?: number) => {
+		tracking.markOfferViewSource(offerId, "offers", position);
 	}, []);
 
 	const cancelPendingUnbookmark = useCallback((offerId: string, notify = false) => {
@@ -448,7 +448,7 @@ export function OffersScreen() {
 			/>
 
 			<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-				{visibleJobs.map((job) => {
+				{visibleJobs.map((job, index) => {
 					const props = convertJobToCardProps(job);
 					const isPendingUnsave = pendingUnsave.has(job.job_id);
 					return (
@@ -458,6 +458,7 @@ export function OffersScreen() {
 							isSaved={bookmarked.has(job.job_id) && !isPendingUnsave}
 							detailSource="offers"
 							showMatchScore={false}
+							position={index}
 							onSave={handleSave}
 							onView={handleView}
 						/>

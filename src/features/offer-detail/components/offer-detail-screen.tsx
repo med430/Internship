@@ -64,29 +64,122 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
     useState<CoverLetterSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [now] = useState(() => Date.now());
-  const trackedViewRef = useRef<string | null>(null);
+  const validOfferRef = useRef(false);
+  const activeStartedAtRef = useRef<number | null>(null);
+  const activeDurationMsRef = useRef(0);
+  const sentViewRef = useRef(false);
+  const viewIdRef = useRef("");
+  const viewSourceRef = useRef("detail");
+  const viewPositionRef = useRef<number | undefined>(undefined);
+
+  const startTrackedVisit = useCallback((
+    source: string,
+    position?: number,
+  ) => {
+    viewIdRef.current = createViewId();
+    viewSourceRef.current = source;
+    viewPositionRef.current = position;
+    activeStartedAtRef.current = null;
+    activeDurationMsRef.current = 0;
+    sentViewRef.current = false;
+
+    tracking.trackView(
+      offerId,
+      viewSourceRef.current,
+      undefined,
+      viewPositionRef.current,
+      undefined,
+      viewIdRef.current,
+    );
+
+    if (document.visibilityState === "visible") {
+      activeStartedAtRef.current = Date.now();
+    }
+  }, [offerId]);
 
   useEffect(() => {
     let cancelled = false;
+    validOfferRef.current = false;
+    viewSourceRef.current = "detail";
+    viewPositionRef.current = undefined;
     (async () => {
       const data = await fetchOfferDetail(offerId);
       if (cancelled) return;
       if (!data) {
         setNotFound(true);
       } else {
+        const origin = tracking.consumeOfferViewSource(offerId);
+        viewSourceRef.current = origin.source;
+        viewPositionRef.current = origin.position;
         setOffer(data);
         setIsSaved(data.bookmarked);
-        if (trackedViewRef.current !== offerId) {
-          trackedViewRef.current = offerId;
-          tracking.trackView(offerId, tracking.consumeOfferViewSource(offerId));
-        }
+        validOfferRef.current = true;
+        startTrackedVisit(origin.source, origin.position);
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [offerId]);
+  }, [offerId, startTrackedVisit]);
+
+  // Track active dwell time: tab switch pauses, tab return resumes, page leave sends once.
+  useEffect(() => {
+    activeStartedAtRef.current = null;
+    activeDurationMsRef.current = 0;
+    sentViewRef.current = false;
+
+    const pauseActiveTimer = () => {
+      if (activeStartedAtRef.current === null) return;
+      activeDurationMsRef.current += Date.now() - activeStartedAtRef.current;
+      activeStartedAtRef.current = null;
+    };
+
+    const resumeActiveTimer = () => {
+      if (!validOfferRef.current || activeStartedAtRef.current !== null) return;
+      activeStartedAtRef.current = Date.now();
+    };
+
+    const sendView = () => {
+      if (sentViewRef.current || !validOfferRef.current) return;
+      pauseActiveTimer();
+      sentViewRef.current = true;
+      const durationMs = Math.max(0, Math.round(activeDurationMsRef.current));
+      tracking.trackView(
+        offerId,
+        viewSourceRef.current,
+        durationMs,
+        viewPositionRef.current,
+        { keepalive: true },
+        viewIdRef.current,
+      );
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        pauseActiveTimer();
+        return;
+      }
+      resumeActiveTimer();
+    };
+
+    const onPageHide = () => sendView();
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted || !validOfferRef.current) return;
+      startTrackedVisit(viewSourceRef.current, viewPositionRef.current);
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+      sendView();
+    };
+  }, [offerId, startTrackedVisit]);
 
   const toggleSave = useCallback(() => {
     setIsSaved((prev) => {
@@ -125,6 +218,16 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
     }
   }, [offer, selectedCv, selectedCoverLetter]);
 
+  const backHref = showMatchContext ? "/services/jobmatcher" : "/services/offers";
+  const backLabel = showMatchContext ? "Back to matcher" : "Back to offers";
+  const handleBack = useCallback(() => {
+    if (hasClientHistoryEntry()) {
+      router.back();
+      return;
+    }
+    router.push(backHref);
+  }, [backHref, router]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -141,7 +244,7 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
           This offer may have been removed or the link is no longer valid.
         </p>
         <Button asChild>
-          <Link href="/services/jobmatcher">Back to feed</Link>
+          <Link href={backHref}>{backLabel}</Link>
         </Button>
       </div>
     );
@@ -166,10 +269,10 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
         variant="ghost"
         size="sm"
         className="mb-6 -ml-2 text-muted-foreground"
-        onClick={() => router.back()}
+        onClick={handleBack}
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
+        {backLabel}
       </Button>
 
       {/* Hero */}
@@ -550,4 +653,17 @@ async function resolveCvId(source: CVSource): Promise<string> {
 function resolveCoverLetterId(source: CoverLetterSource | null): string | undefined {
   if (!source || source.type !== "database") return undefined;
   return source.letter.id;
+}
+
+function createViewId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function hasClientHistoryEntry() {
+  if (typeof window === "undefined") return false;
+  const state = window.history.state as { idx?: unknown } | null;
+  return typeof state?.idx === "number" && state.idx > 0;
 }

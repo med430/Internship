@@ -257,8 +257,8 @@ export function useJobMatcherController() {
     });
   }, []);
 
-  const handleView = useCallback((jobId: string) => {
-    tracking.markOfferViewSource(jobId, "feed");
+  const handleView = useCallback((jobId: string, position?: number) => {
+    tracking.markOfferViewSource(jobId, "feed", position);
   }, []);
 
   // Debounced search-query tracking. Fires 400ms after the user stops typing.

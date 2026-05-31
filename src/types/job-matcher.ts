@@ -152,8 +152,9 @@ export interface JobCardProps {
   workModel?: string;
   detailSource?: "matcher" | "offers";
   showMatchScore?: boolean;
+  position?: number;
   onLike?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
-  onView?: (jobId: string) => void;
+  onView?: (jobId: string, position?: number) => void;
   onTailorCV?: (jobId: string, description: string) => void;
 }

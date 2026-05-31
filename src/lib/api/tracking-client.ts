@@ -1,6 +1,6 @@
 // Fire-and-forget client for /events/track. Never blocks UI on network failure.
 
-import { fetchWithAuth } from "@/lib/api/auth";
+import { getAccessToken } from "@/lib/api/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -19,13 +19,46 @@ interface TrackPayload {
 }
 
 const OFFER_VIEW_SOURCE_PREFIX = "offer-view-source:";
+let cachedAccessToken: string | null = null;
 
-async function postSilently(path: string, body: unknown): Promise<void> {
+// Where the user came from when they opened an offer, plus the rank it held in that list.
+interface OfferViewOrigin {
+  source: string;
+  position?: number;
+}
+
+async function postSilently(
+  path: string,
+  body: unknown,
+  opts?: { keepalive?: boolean },
+): Promise<void> {
   try {
-    await fetchWithAuth(`${API_BASE_URL}${path}`, {
+    const serialized = JSON.stringify(body);
+
+    if (opts?.keepalive && cachedAccessToken) {
+      await fetch(`${API_BASE_URL}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cachedAccessToken}`,
+        },
+        body: serialized,
+        credentials: "include",
+        keepalive: true,
+      });
+      return;
+    }
+
+    cachedAccessToken = await getAccessToken();
+    await fetch(`${API_BASE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cachedAccessToken}`,
+      },
+      body: serialized,
+      credentials: "include",
+      keepalive: opts?.keepalive,
     });
   } catch {
     // intentional: telemetry shouldn't surface errors to users
@@ -33,25 +66,43 @@ async function postSilently(path: string, body: unknown): Promise<void> {
 }
 
 export const tracking = {
-  markOfferViewSource(offerId: string, source: string) {
+  markOfferViewSource(offerId: string, source: string, position?: number) {
     if (typeof window === "undefined") return;
-    window.sessionStorage.setItem(`${OFFER_VIEW_SOURCE_PREFIX}${offerId}`, source);
+    const origin: OfferViewOrigin = { source, position };
+    window.sessionStorage.setItem(`${OFFER_VIEW_SOURCE_PREFIX}${offerId}`, JSON.stringify(origin));
   },
 
-  consumeOfferViewSource(offerId: string, fallback: string = "detail") {
-    if (typeof window === "undefined") return fallback;
+  consumeOfferViewSource(offerId: string, fallback: string = "detail"): OfferViewOrigin {
+    if (typeof window === "undefined") return { source: fallback };
 
     const key = `${OFFER_VIEW_SOURCE_PREFIX}${offerId}`;
-    const source = window.sessionStorage.getItem(key);
+    const raw = window.sessionStorage.getItem(key);
     window.sessionStorage.removeItem(key);
-    return source ?? fallback;
+    if (!raw) return { source: fallback };
+    try {
+      const parsed = JSON.parse(raw) as OfferViewOrigin;
+      return { source: parsed.source ?? fallback, position: parsed.position };
+    } catch {
+      return { source: fallback };
+    }
   },
 
-  trackView(offerId: string, source: string = "feed", durationMs?: number) {
-    void postSilently("/events/track", {
-      eventType: "offer_view",
-      data: { offerId, source, durationMs },
-    } satisfies TrackPayload);
+  trackView(
+    offerId: string,
+    source: string = "feed",
+    durationMs?: number,
+    position?: number,
+    opts?: { keepalive?: boolean },
+    viewId?: string,
+  ) {
+    void postSilently(
+      "/events/track",
+      {
+        eventType: "offer_view",
+        data: { offerId, viewId, source, durationMs, position },
+      } satisfies TrackPayload,
+      opts,
+    );
   },
 
   trackBookmark(offerId: string) {
