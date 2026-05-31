@@ -78,12 +78,15 @@ export class TrackingController {
             case 'offer_view':
                 if (!evt.data?.offerId) throw new BadRequestException('offerId required')
                 await this.views.save(new OfferView(
-                    randomUUID(),
+                    typeof evt.data.viewId === 'string' && evt.data.viewId.trim()
+                        ? evt.data.viewId.trim()
+                        : randomUUID(),
                     user.id,
                     evt.data.offerId,
                     now,
                     evt.data.durationMs,
                     evt.data.source,
+                    evt.data.position,
                 ))
                 return
 
@@ -131,7 +134,7 @@ export class TrackingController {
                 return
 
             default:
-                throw new BadRequestException(`unknown eventType: ${evt.eventType}`)
+                throw new BadRequestException('unknown eventType')
         }
     }
 }

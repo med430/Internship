@@ -13,6 +13,7 @@ export class OfferViewMapper implements IGenericMapper<OfferView, PrismaOfferVie
             raw.viewedAt,
             raw.durationMs ?? undefined,
             raw.source ?? undefined,
+            raw.position ?? undefined,
         )
     }
 
@@ -24,6 +25,7 @@ export class OfferViewMapper implements IGenericMapper<OfferView, PrismaOfferVie
             viewedAt:   domain.viewedAt,
             durationMs: domain.durationMs ?? null,
             source:     domain.source ?? null,
+            position:   domain.position ?? null,
         }
     }
 }

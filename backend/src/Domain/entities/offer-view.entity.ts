@@ -6,5 +6,6 @@ export class OfferView {
         public viewedAt: Date,
         public durationMs?: number,
         public source?: string,
+        public position?: number,
     ) {}
 }

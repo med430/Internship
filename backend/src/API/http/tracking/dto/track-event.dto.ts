@@ -9,6 +9,7 @@ export type TrackEventType =
     | 'profile_view'
 
 export interface TrackEventData {
+    viewId?: string
     offerId?: string
     studentProfileId?: string
     durationMs?: number

@@ -151,6 +151,9 @@ model StudentProfile {
   // Behavioral back-relations (recommendation system)
   profileViewsReceived ProfileView[]
   subscription         Subscription?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RecruiterProfile {
@@ -573,6 +576,7 @@ model OfferView {
   viewedAt   DateTime @default(now())
   durationMs Int?
   source     String?
+  position   Int?
 
   student User  @relation(fields: [studentId], references: [id])
   offer   Offer @relation(fields: [offerId], references: [id])
