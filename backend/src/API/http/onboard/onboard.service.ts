@@ -35,6 +35,17 @@ type InterviewState = {
     turns: InterviewTurn[]
 }
 
+type CvData = {
+    name: string
+    jobTitle?: string
+    contact: { email?: string; phone?: string; location?: string; linkedin?: string }
+    summary: string
+    experience: Array<{ title: string; company: string; period: string; bullets: string[] }>
+    education: Array<{ degree: string; school: string; period: string }>
+    skills: string[]
+    projects: Array<{ name: string; description: string; tech: string }>
+}
+
 type JobDocument = {
     job_id: string
     title: string
@@ -428,12 +439,9 @@ export class OnboardService {
         const jobsTextParts = await Promise.all(jobDescriptions.map((file) => this.extractTextFromFile(file)))
         const jobsText = jobsTextParts.join('\n\n')
         const role = this.detectRole(jobsText || cvText || 'software engineer')
-        const questions = {
-            question_1: `What project best demonstrates that you can succeed as a ${role}?`,
-            question_2: `Which tools or technologies in your background map most directly to this ${role} role?`,
-            question_3: `Tell us about a challenge you solved that shows ownership and collaboration.`,
-            question_4: `What would you improve in your current resume to sound more targeted for this role?`,
-        }
+
+        // AI-generated questions based on actual CV + job description content
+        const questions = await this.generateAiQuestions(cvText, jobsText, role)
 
         const session = await this.prisma.publicCvQuestionSession.create({
             data: {
@@ -506,17 +514,15 @@ export class OnboardService {
             ...improvementNotes.map((item, index) => `${index + 1}. ${item}`),
         ].join('\n')
 
-        const pdfBuffer = await this.createPdfDocument(`${role} CV Booster`, [
-            {
-                heading: 'Professional Summary',
-                lines: [this.createProfessionalSummary(session.cvText, role)],
-            },
-            {
-                heading: 'Answered Context',
-                lines: answers.map((item) => `${item.question} ${item.answer}`),
-            },
-            { heading: 'Improvements Applied', lines: improvementNotes },
-        ])
+        const cvData = await this.generateRewrittenCvContent(session.cvText, session.jobsText || '', role, answers).catch(() => null)
+
+        const pdfBuffer = cvData
+            ? await this.createFormattedCvPdf(cvData)
+            : await this.createPdfDocument(`${role} CV Booster`, [
+                  { heading: 'Professional Summary', lines: [this.createProfessionalSummary(session.cvText, role)] },
+                  { heading: 'Answered Context', lines: answers.map((item) => `${item.question} ${item.answer}`) },
+                  { heading: 'Improvements Applied', lines: improvementNotes },
+              ])
 
         const pdfDataUri = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`
 
@@ -881,6 +887,131 @@ export class OnboardService {
             ? parsed
             : (parsed.improvements ?? parsed.notes ?? Object.values(parsed)[0])
         return this.ensureStringArray(arr).slice(0, 5)
+    }
+
+    private async generateAiQuestions(cvText: string, jobsText: string, role: string): Promise<Record<string, string>> {
+        const apiKey = process.env.GROQ_API_KEY
+        if (!apiKey) return this.fallbackQuestions(role)
+
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: process.env.GROQ_LLM_MODEL || 'llama-3.3-70b-versatile',
+                    temperature: 0.4,
+                    max_tokens: 700,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: [
+                                'You are an expert CV coach. Based on the candidate\'s CV and the target job description, generate exactly 4 targeted questions.',
+                                'Each question must: (1) reference a specific skill, technology, or requirement from the job description, (2) probe for a concrete achievement or experience that is absent or underdeveloped in the CV, (3) be answerable in 2-5 sentences and unlock richer bullet points.',
+                                'Do NOT ask generic questions. Every question must be specific to this CV and this job.',
+                                'Return ONLY valid JSON: {"question_1":"...","question_2":"...","question_3":"...","question_4":"..."}',
+                            ].join(' '),
+                        },
+                        {
+                            role: 'user',
+                            content: `Target role: ${role}\n\nCV (extract):\n${cvText.slice(0, 2000)}\n\nJob description:\n${jobsText.slice(0, 1500)}`,
+                        },
+                    ],
+                    response_format: { type: 'json_object' },
+                }),
+            })
+
+            if (!response.ok) return this.fallbackQuestions(role)
+
+            const payload = await response.json().catch(() => ({}))
+            const content = payload?.choices?.[0]?.message?.content ?? '{}'
+            const parsed = JSON.parse(content.replace(/```json|```/g, '').trim())
+
+            if (parsed.question_1 && parsed.question_2 && parsed.question_3 && parsed.question_4) {
+                return parsed
+            }
+        } catch { /* fall through */ }
+
+        return this.fallbackQuestions(role)
+    }
+
+    private fallbackQuestions(role: string): Record<string, string> {
+        return {
+            question_1: `What project best demonstrates that you can succeed as a ${role}?`,
+            question_2: `Which tools or technologies in your background map most directly to this ${role} role?`,
+            question_3: `Tell us about a challenge you solved that shows ownership and strong results.`,
+            question_4: `What specific contribution are you most proud of, and what was the measurable impact?`,
+        }
+    }
+
+    private async generateRewrittenCvContent(
+        cvText: string,
+        jobsText: string,
+        role: string,
+        answers: Array<{ question: string; answer: string }>,
+    ): Promise<CvData> {
+        const apiKey = process.env.GROQ_API_KEY
+        if (!apiKey) throw new Error('GROQ_API_KEY not configured')
+
+        const answersBlock = answers.map((a, i) => `Q${i + 1}: ${a.question}\nA${i + 1}: ${a.answer}`).join('\n\n')
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: process.env.GROQ_LLM_MODEL || 'llama-3.3-70b-versatile',
+                temperature: 0.35,
+                max_tokens: 3000,
+                messages: [
+                    {
+                        role: 'system',
+                        content: [
+                            'You are a senior CV writer and career strategist. Your task is to REWRITE and ADAPT the candidate\'s CV — not reformat it.',
+                            'You have three sources: the original CV (baseline facts), the job description (target requirements), and the candidate\'s own answers (new insights and achievements to integrate).',
+                            'MANDATORY rules:',
+                            '1. The professional summary MUST be rewritten from scratch to directly address the job description requirements using the candidate\'s real background.',
+                            '2. Experience bullets MUST incorporate the specific achievements, metrics, and details revealed in the candidate answers — do not copy-paste original bullets.',
+                            '3. Skills MUST be reordered so that skills explicitly required by the job description appear first.',
+                            '4. Projects MUST be described in terms of relevance to the target role.',
+                            '5. Use keywords and vocabulary from the job description for ATS alignment.',
+                            '6. Preserve factual accuracy (dates, company names, degrees) but rewrite every narrative element.',
+                            'Return ONLY a valid JSON object (no markdown, no extra text):',
+                            '{"name":"full name","contact":{"email":"...","phone":"...","location":"city/country","linkedin":"url or empty"},"summary":"2-3 sentences targeting the job description directly","experience":[{"title":"job title","company":"company name","period":"date range","bullets":["strong action verb + achievement + metric","...","..."]}],"education":[{"degree":"degree name","school":"institution","period":"year range"}],"skills":["skill1","skill2"],"projects":[{"name":"project name","description":"impact-focused, relevant to target role","tech":"tech stack"}]}',
+                        ].join(' '),
+                    },
+                    {
+                        role: 'user',
+                        content: [
+                            `Target role: ${role}`,
+                            '',
+                            `Job description (requirements to match):\n${jobsText.slice(0, 1500)}`,
+                            '',
+                            `Original CV (facts to preserve, narrative to rewrite):\n${cvText.slice(0, 2500)}`,
+                            '',
+                            `Candidate answers (NEW content to integrate into bullets and summary):\n${answersBlock}`,
+                        ].join('\n'),
+                    },
+                ],
+                response_format: { type: 'json_object' },
+            }),
+        })
+
+        const payload = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(payload?.error?.message || 'Groq rewrite failed')
+
+        const content = payload?.choices?.[0]?.message?.content ?? '{}'
+        const cleaned = content.replace(/```json|```/g, '').trim()
+        const parsed = JSON.parse(cleaned)
+
+        return {
+            name: parsed.name || 'Candidate',
+            jobTitle: role,
+            contact: parsed.contact || {},
+            summary: parsed.summary || '',
+            experience: Array.isArray(parsed.experience) ? parsed.experience : [],
+            education: Array.isArray(parsed.education) ? parsed.education : [],
+            skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+            projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+        }
     }
 
     private async generateCareerGuideInsights(prompt: string) {
@@ -1600,6 +1731,241 @@ export class OnboardService {
             y -= 8
         }
         return Buffer.from(await pdf.save())
+    }
+
+    private async createFormattedCvPdf(cv: CvData): Promise<Buffer> {
+        const doc = await PDFDocument.create()
+        const fontR = await doc.embedFont(StandardFonts.Helvetica)
+        const fontB = await doc.embedFont(StandardFonts.HelveticaBold)
+        const fontI = await doc.embedFont(StandardFonts.HelveticaOblique)
+
+        // ── Page geometry ──────────────────────────────────────────────────────
+        const W = 595, H = 842
+        const SB_W = 208, SB_PAD = 18           // sidebar width + inner padding
+        const MX = SB_W + 24                    // main content left edge
+        const MRX = W - 20                      // main content right edge
+        const MW = MRX - MX                     // main content width (~343)
+        const BOT = 32                          // bottom margin
+
+        // ── Color palette ──────────────────────────────────────────────────────
+        const C_NAVY    = rgb(0.11, 0.17, 0.29)   // sidebar background
+        const C_NAVYDK  = rgb(0.07, 0.11, 0.22)   // sidebar header block (darker)
+        const C_SKY     = rgb(0.32, 0.67, 0.88)   // accent / section labels
+        const C_SKYDIM  = rgb(0.20, 0.44, 0.67)   // accent dimmed (dividers)
+        const C_WHITE   = rgb(1, 1, 1)
+        const C_SBTXT   = rgb(0.83, 0.88, 0.96)   // sidebar body text
+        const C_SBMUT   = rgb(0.56, 0.63, 0.76)   // sidebar muted text
+        const C_DARK    = rgb(0.09, 0.10, 0.16)   // main body text
+        const C_GRAY    = rgb(0.41, 0.45, 0.52)   // main secondary text
+        const C_RULE    = rgb(0.86, 0.89, 0.93)   // horizontal rules (right side)
+        const C_MACC    = rgb(0.10, 0.26, 0.48)   // main section title color
+        const C_TAGBG   = rgb(0.16, 0.24, 0.40)   // skill tag background
+
+        // ── Page factory ──────────────────────────────────────────────────────
+        const makePage = () => {
+            const p = doc.addPage([W, H])
+            p.drawRectangle({ x: 0, y: 0, width: SB_W, height: H, color: C_NAVY })
+            p.drawLine({ start: { x: SB_W, y: H }, end: { x: SB_W, y: 0 }, thickness: 0.5, color: C_SKYDIM })
+            return p
+        }
+
+        let page = makePage()
+        let sbY = H   // sidebar y-cursor (top → bottom)
+        let mY  = H   // main y-cursor  (top → bottom)
+
+        const nextPage = () => {
+            page = makePage()
+            mY  = H - 28
+            sbY = H - 28
+        }
+
+        // ── Sidebar utilities ──────────────────────────────────────────────────
+        const sbSection = (title: string) => {
+            sbY -= 9
+            if (sbY < BOT) return
+            page.drawText(title.toUpperCase(), { x: SB_PAD, y: sbY, size: 8, font: fontB, color: C_SKY })
+            sbY -= 5
+            page.drawLine({ start: { x: SB_PAD, y: sbY }, end: { x: SB_W - SB_PAD, y: sbY }, thickness: 0.4, color: C_SKYDIM })
+            sbY -= 10
+        }
+
+        const sbText = (text: string, size = 9.5, color = C_SBTXT, indent = 0) => {
+            const maxC = Math.floor((SB_W - SB_PAD * 2 - indent) / (size * 0.54))
+            for (const line of this.wrapText(text, maxC)) {
+                if (sbY < BOT) return
+                page.drawText(line, { x: SB_PAD + indent, y: sbY, size, font: fontR, color })
+                sbY -= size + 3.5
+            }
+        }
+
+        // ── Main utilities ─────────────────────────────────────────────────────
+        const mEnsure = (need: number) => {
+            if (mY - need < BOT) nextPage()
+        }
+
+        const mSection = (title: string) => {
+            mEnsure(28)
+            page.drawText(title.toUpperCase(), { x: MX, y: mY, size: 9.5, font: fontB, color: C_MACC })
+            mY -= 6
+            page.drawLine({ start: { x: MX, y: mY }, end: { x: MRX, y: mY }, thickness: 0.5, color: C_RULE })
+            mY -= 12
+        }
+
+        const mWrap = (text: string, size: number, font: typeof fontR, indent = 0, color = C_DARK) => {
+            const maxC = Math.floor((MW - indent) / (size * 0.56))
+            for (const line of this.wrapText(text, maxC)) {
+                mEnsure(size + 4)
+                page.drawText(line, { x: MX + indent, y: mY, size, font, color })
+                mY -= size + 3
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // LEFT SIDEBAR
+        // ══════════════════════════════════════════════════════════════════════
+
+        // Header block (darker navy)
+        page.drawRectangle({ x: 0, y: H - 112, width: SB_W, height: 112, color: C_NAVYDK })
+        sbY = H - 18
+
+        // Name: first part regular, last word bold
+        const nameParts = (cv.name || 'Candidate').trim().split(/\s+/)
+        const fName = (nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0]).slice(0, 20)
+        const lName = (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '').slice(0, 20)
+
+        page.drawText(fName, { x: SB_PAD, y: sbY, size: 15, font: fontR, color: C_WHITE })
+        sbY -= 19
+        if (lName) {
+            page.drawText(lName, { x: SB_PAD, y: sbY, size: 15, font: fontB, color: C_WHITE })
+            sbY -= 19
+        }
+
+        // Job title below name
+        if (cv.jobTitle) {
+            const jt = cv.jobTitle.slice(0, 28)
+            page.drawText(jt, { x: SB_PAD, y: sbY, size: 9, font: fontI, color: C_SKY })
+            sbY -= 12
+        }
+
+        // Sky accent separator
+        page.drawLine({ start: { x: SB_PAD, y: sbY }, end: { x: SB_W - SB_PAD, y: sbY }, thickness: 2.5, color: C_SKY })
+        sbY -= 16
+
+        // ── Contact ────────────────────────────────────────────────────────────
+        const contactItems: Array<[string, string]> = []
+        if (cv.contact.email)    contactItems.push(['Email',    cv.contact.email])
+        if (cv.contact.phone)    contactItems.push(['Phone',    cv.contact.phone])
+        if (cv.contact.location) contactItems.push(['Location', cv.contact.location])
+        if (cv.contact.linkedin) contactItems.push(['LinkedIn', cv.contact.linkedin])
+
+        if (contactItems.length) {
+            sbSection('Contact')
+            for (const [label, value] of contactItems) {
+                if (sbY < BOT) break
+                page.drawText(label, { x: SB_PAD, y: sbY, size: 8, font: fontB, color: C_SKY })
+                sbY -= 11
+                sbText(value, 9, C_SBTXT)
+                sbY -= 3
+            }
+        }
+
+        // ── About Me ───────────────────────────────────────────────────────────
+        if (cv.summary) {
+            sbSection('About Me')
+            sbText(cv.summary, 9, C_SBTXT)
+        }
+
+        // ── Skills ─────────────────────────────────────────────────────────────
+        if (cv.skills?.length) {
+            sbSection('Skills')
+            for (const skill of cv.skills) {
+                if (sbY < BOT) break
+                // Pill-style tag
+                const tagW = Math.min(fontR.widthOfTextAtSize(skill, 9) + 14, SB_W - SB_PAD * 2)
+                page.drawRectangle({ x: SB_PAD, y: sbY - 3, width: tagW, height: 15, color: C_TAGBG })
+                const skillLabel = skill.length > 24 ? skill.slice(0, 23) + '…' : skill
+                page.drawText(skillLabel, { x: SB_PAD + 7, y: sbY, size: 9, font: fontR, color: C_SBTXT })
+                sbY -= 20
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // RIGHT MAIN CONTENT
+        // ══════════════════════════════════════════════════════════════════════
+
+        mY = H - 28
+
+        // Top header: current/target role
+        const headline = cv.jobTitle || cv.experience?.[0]?.title || 'Professional Profile'
+        page.drawText(headline.slice(0, 38), { x: MX, y: mY, size: 18.5, font: fontB, color: C_DARK })
+        mY -= 22
+        page.drawLine({ start: { x: MX, y: mY }, end: { x: MX + 55, y: mY }, thickness: 3.5, color: C_SKY })
+        mY -= 20
+
+        // ── Professional Experience ─────────────────────────────────────────────
+        if (cv.experience?.length) {
+            mSection('Professional Experience')
+            for (const exp of cv.experience) {
+                mEnsure(32)
+                // Role title + period aligned right
+                page.drawText(exp.title || '', { x: MX, y: mY, size: 11.5, font: fontB, color: C_DARK })
+                const pw = fontR.widthOfTextAtSize(exp.period || '', 9)
+                page.drawText(exp.period || '', { x: MRX - pw, y: mY, size: 9, font: fontR, color: C_GRAY })
+                mY -= 15
+
+                // Company name (italic)
+                mEnsure(14)
+                page.drawText(exp.company || '', { x: MX, y: mY, size: 10, font: fontI, color: C_GRAY })
+                mY -= 15
+
+                // Bullet points
+                for (const bullet of exp.bullets || []) {
+                    const wrapped = this.wrapText(bullet, Math.floor((MW - 16) / (10 * 0.56)))
+                    for (let i = 0; i < wrapped.length; i++) {
+                        mEnsure(14)
+                        page.drawText((i === 0 ? '•  ' : '    ') + wrapped[i], {
+                            x: MX + 8, y: mY, size: 10, font: fontR, color: C_DARK,
+                        })
+                        mY -= 14
+                    }
+                }
+                mY -= 8
+            }
+        }
+
+        // ── Projects ───────────────────────────────────────────────────────────
+        if (cv.projects?.length) {
+            mSection('Projects')
+            for (const proj of cv.projects) {
+                mEnsure(30)
+                page.drawText(proj.name || '', { x: MX, y: mY, size: 11.5, font: fontB, color: C_DARK })
+                mY -= 15
+                mWrap(proj.description || '', 10, fontR, 8)
+                if (proj.tech) {
+                    mEnsure(14)
+                    page.drawText('Stack: ' + proj.tech, { x: MX + 8, y: mY, size: 9, font: fontI, color: C_GRAY })
+                    mY -= 14
+                }
+                mY -= 7
+            }
+        }
+
+        // ── Education ──────────────────────────────────────────────────────────
+        if (cv.education?.length) {
+            mSection('Education')
+            for (const edu of cv.education) {
+                mEnsure(28)
+                page.drawText(edu.degree || '', { x: MX, y: mY, size: 11, font: fontB, color: C_DARK })
+                const pw = fontR.widthOfTextAtSize(edu.period || '', 9)
+                page.drawText(edu.period || '', { x: MRX - pw, y: mY, size: 9, font: fontR, color: C_GRAY })
+                mY -= 14
+                mEnsure(13)
+                page.drawText(edu.school || '', { x: MX, y: mY, size: 10, font: fontI, color: C_GRAY })
+                mY -= 16
+            }
+        }
+
+        return Buffer.from(await doc.save())
     }
 
     private wrapText(text: string, maxChars: number) {

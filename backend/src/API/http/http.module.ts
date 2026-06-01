@@ -17,7 +17,7 @@ import { OnboardController } from "./onboard/onboard.controller";
 import { OnboardService } from "./onboard/onboard.service";
 import { SseController } from "./sse/sse.controller";
 import { SseService } from "./sse/sse.service";
-import { SseAuthGuard } from "./sse/sse-auth.guard";
+import { SseAuthGuard } from "./guards/sse-auth.guard";
 import { TrackingController } from "./tracking/tracking.controller";
 import { AdminRecommendationsController } from "./admin/admin-recommendations.controller";
 import { AdminController } from "./admin/admin.controller";
