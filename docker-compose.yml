@@ -1,0 +1,42 @@
+# ML stack only (Qdrant + sidecar + sync worker). The NestJS backend and Next frontend
+# keep running via npm — the sidecar reads the same cloud NeonDB via DATABASE_URL.
+# Bring up in background: docker compose up -d --build
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+
+  ml-service:
+    build: ./ml-service
+    env_file:
+      - ./ml-service/.env
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+    ports:
+      - "8000:8000"
+    volumes:
+      - model-cache:/app/.cache
+    depends_on:
+      - qdrant
+
+  ml-worker:
+    build: ./ml-service
+    command: python -m trainer.scheduler
+    env_file:
+      - ./ml-service/.env
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+    volumes:
+      - model-cache:/app/.cache
+    depends_on:
+      - qdrant
+
+volumes:
+  qdrant-storage:
+  model-cache:
