@@ -12,6 +12,8 @@ import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { RecommendationScore } from '../../../../../Domain/entities/recommendation-score.entity'
 
 const RANKED_FEED_CANDIDATE_LIMIT = 200
+// Stable seed for the fallback tail's explore ranking so pagination is deterministic across pages.
+const FALLBACK_EXPLORE_SEED = 0
 
 export interface RecommendedOfferDto {
     offer: Offer
@@ -55,6 +57,11 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
             return this.newestFallback(query.studentUserId, limit, cursor)
         }
 
+        // Infinite scroll has crossed past the ranked head into the explore-ranked tail of unscored offers.
+        if (cursor?.phase === 'fallback') {
+            return this.fallbackTail(query.studentUserId, new Set(scores.map(s => s.offerId)), limit, cursor)
+        }
+
         return this.rankedFeed(query.studentUserId, scores, limit, cursor)
     }
 
@@ -90,11 +97,77 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const startIdx = cursor
             ? adjusted.findIndex(x => x.score < cursor.score || (x.score === cursor.score && x.offer.id < cursor.id))
             : 0
-        const slice = adjusted.slice(Math.max(0, startIdx), Math.max(0, startIdx) + limit)
+        const start = startIdx < 0 ? adjusted.length : startIdx
+        const slice = adjusted.slice(start, start + limit)
         const last = slice[slice.length - 1]
-        const nextCursor = slice.length === limit && last ? encodeCursor({ score: last.score, id: last.offer.id }) : null
+
+        // More ranked items → keep paging the ranked head; ranked set exhausted → hand off to the
+        // explore-ranked fallback tail (only if unscored eligible offers remain, else end the feed).
+        const nextCursor = start + slice.length < adjusted.length && last
+            ? encodeCursor({ score: last.score, id: last.offer.id, phase: 'ranked' })
+            : await this.fallbackStartCursor(scoreRows)
 
         return { items: slice, nextCursor, source: 'recommendation' }
+    }
+
+    // Tier 2: the explore-ranked tail of eligible offers NOT in the student's scored set, continuing
+    // the same paginated stream after the ranked head. Non-personalized by design (offer-level signals
+    // only) — the long tail never gets per-student scored on the read path.
+    private async fallbackTail(
+        studentUserId: string,
+        scoredOfferIds: Set<string>,
+        limit: number,
+        cursor: FeedCursor,
+    ): Promise<RecommendedOffersPage> {
+        const all = await this.offers.findAll()
+        const remainder = all.filter(o => !o.deletedAt && this.notPastDeadline(o) && !scoredOfferIds.has(o.id))
+        if (remainder.length === 0) {
+            return { items: [], nextCursor: null, source: 'explore' }
+        }
+
+        const offerIds = remainder.map(o => o.id)
+        const [bookmarkedIds, viewCounts, globalViewCounts] = await Promise.all([
+            this.getBookmarkedOfferIds(studentUserId, offerIds),
+            this.views.countByStudent(studentUserId),
+            this.views.countByOffers(offerIds),
+        ])
+        const maxGlobalViews = Math.max(1, ...Array.from(globalViewCounts.values()))
+
+        const items = remainder
+            .map(offer => ({
+                offer,
+                score: this.exploreScore(
+                    offer,
+                    bookmarkedIds.has(offer.id),
+                    viewCounts.get(offer.id) ?? 0,
+                    globalViewCounts.get(offer.id) ?? 0,
+                    maxGlobalViews,
+                    FALLBACK_EXPLORE_SEED,
+                ),
+                breakdown: undefined,
+                bookmarked: bookmarkedIds.has(offer.id),
+            }))
+            .sort((a, b) => b.score - a.score || (a.offer.id < b.offer.id ? 1 : -1))
+
+        const startIdx = items.findIndex(x => x.score < cursor.score || (x.score === cursor.score && x.offer.id < cursor.id))
+        const start = startIdx < 0 ? items.length : startIdx
+        const slice = items.slice(start, start + limit)
+        const last = slice[slice.length - 1]
+        const nextCursor = start + slice.length < items.length && last
+            ? encodeCursor({ score: last.score, id: last.offer.id, phase: 'fallback' })
+            : null
+
+        return { items: slice, nextCursor, source: 'explore' }
+    }
+
+    // Sentinel cursor that starts the fallback tail from the top — only if unscored eligible offers remain.
+    private async fallbackStartCursor(scoreRows: RecommendationScore[]): Promise<string | null> {
+        const scored = new Set(scoreRows.map(s => s.offerId))
+        const all = await this.offers.findAll()
+        const remainderExists = all.some(o => !o.deletedAt && this.notPastDeadline(o) && !scored.has(o.id))
+        return remainderExists
+            ? encodeCursor({ score: Number.MAX_SAFE_INTEGER, id: '', phase: 'fallback' })
+            : null
     }
 
     // No scores yet for this student: return active offers ordered newest-first as a graceful fallback.
