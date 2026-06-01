@@ -37,7 +37,7 @@ export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
             throw new BadRequestException('Skill already assigned')
         }
 
-        return this.skillRepo.save(
+        const assignment = await this.skillRepo.save(
             new SkillAssignment(
                 randomUUID(),
                 command.skillId,
@@ -45,5 +45,9 @@ export class AssignSkillHandler implements ICommandHandler<AssignSkillCommand> {
                 command.level
             )
         )
+        // Bump StudentProfile.updatedAt so the embedding worker re-syncs this student
+        // (a SkillAssignment insert doesn't touch the parent row on its own).
+        await this.studentRepo.update(profile)
+        return assignment
     }
 }

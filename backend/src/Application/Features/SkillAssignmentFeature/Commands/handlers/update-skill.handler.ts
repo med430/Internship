@@ -26,9 +26,12 @@ export class UpdateSkillHandler implements ICommandHandler<UpdateSkillCommand> {
             throw new ForbiddenException()
         }
 
-        return this.skillRepo.updateLevel(
+        const updated = await this.skillRepo.updateLevel(
             command.assignmentId,
             command.level
         )
+        // Bump StudentProfile.updatedAt so the embedding worker re-syncs this student.
+        await this.studentRepo.update(profile)
+        return updated
     }
 }

@@ -29,6 +29,8 @@ export class RemoveSkillHandler implements ICommandHandler<RemoveSkillCommand> {
         }
 
         await this.skillRepo.delete(command.assignmentId)
+        // Bump StudentProfile.updatedAt so the embedding worker re-syncs this student.
+        await this.studentRepo.update(profile)
 
         return { message: 'Skill removed' }
     }
