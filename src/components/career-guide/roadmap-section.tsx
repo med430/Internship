@@ -12,12 +12,10 @@ interface RoadmapSectionProps {
 export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
-  // Icons for each step
   const stepIcons = [MapPin, Navigation, Zap, Navigation, Flag];
 
   return (
     <Card className="p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-lg shadow-primary/5 overflow-hidden">
-      {/* Section Title */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-foreground mb-1">
           Career Roadmap
@@ -27,9 +25,7 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
         </p>
       </div>
 
-      {/* Roadmap Steps */}
       <div className="relative">
-        {/* Steps Container */}
         <div className="relative">
           {roadmap.map((step, index) => {
             const isEven = index % 2 === 0;
@@ -40,13 +36,12 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
               <div
                 key={index}
                 className={cn(
-                  "relative mb-16 lg:mb-24",
+                  "relative mb-6 lg:mb-24",
                   "flex items-center",
                   "lg:justify-start",
                   !isEven && "lg:justify-end",
                 )}
               >
-                {/* Connecting Line */}
                 {index < roadmap.length - 1 && (
                   <div
                     className="absolute top-full left-0 w-full h-20 lg:h-24 pointer-events-none hidden lg:block"
@@ -84,7 +79,6 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
                   onMouseEnter={() => setHoveredStep(index)}
                   onMouseLeave={() => setHoveredStep(null)}
                 >
-                  {/* Step Card */}
                   <div
                     className={cn(
                       "relative p-4 rounded-xl border",
@@ -95,7 +89,6 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
                         "shadow-lg shadow-primary/10 border-primary/40",
                     )}
                   >
-                    {/* Step Number Badge */}
                     <div
                       className={cn(
                         "absolute -top-2 -left-2",
@@ -111,7 +104,6 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
                       {index + 1}
                     </div>
 
-                    {/* Icon */}
                     <div
                       className={cn(
                         "inline-flex p-2 rounded-lg mb-3",
@@ -123,7 +115,6 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
 
-                    {/* Step Content */}
                     <div className="relative">
                       <p className="text-sm leading-relaxed text-foreground/90">
                         {step}

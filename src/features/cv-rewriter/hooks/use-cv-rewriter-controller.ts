@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api/auth";
-import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { checkApiHealth, getClientApiBaseUrl } from "@/lib/api/client-utils";
 import {
   generateQueries,
   rewriteCV,
@@ -16,13 +16,9 @@ import type { QuestionAnswer } from "@/components/cv-rewriter/questions-form";
 import type { CVRewriterStep } from "../types";
 import { buildPdfFilename, collectProfileData } from "../lib/helpers";
 
-function toReviewSummary(
-  improvements: string[] | null | undefined,
-): CVReviewSummary {
+function toReviewSummary(improvements: string[] | null | undefined): CVReviewSummary {
   return {
-    improvements: (improvements ?? [])
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0),
+    improvements: (improvements ?? []).map((item) => item.trim()).filter((item) => item.length > 0),
   };
 }
 
@@ -30,11 +26,7 @@ async function fetchProfile() {
   const response = await fetchWithAuth(`${getClientApiBaseUrl()}/onboard/profile`, {
     method: "GET",
   });
-
-  if (!response.ok) {
-    return null;
-  }
-
+  if (!response.ok) return null;
   return (await response.json()) as {
     name?: string | null;
     skills?: unknown;
@@ -47,20 +39,12 @@ async function fetchProfile() {
 export function useCVRewriterController() {
   const [currentStep, setCurrentStep] = useState<CVRewriterStep>("upload");
   const [cvFile, setCvFile] = useState<File | null>(null);
-  const [jobDescriptions, setJobDescriptions] = useState<JobDescriptionInput[]>(
-    [],
-  );
-  const [questionSessionId, setQuestionSessionId] = useState<string | null>(
-    null,
-  );
-  const [questions, setQuestions] = useState<Record<string, string> | null>(
-    null,
-  );
+  const [jobDescriptions, setJobDescriptions] = useState<JobDescriptionInput[]>([]);
+  const [questionSessionId, setQuestionSessionId] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<Record<string, string> | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
-  const [reviewSummary, setReviewSummary] = useState<CVReviewSummary | null>(
-    null,
-  );
+  const [reviewSummary, setReviewSummary] = useState<CVReviewSummary | null>(null);
   const [isGeneratingQueries, setIsGeneratingQueries] = useState(false);
   const [isGeneratingCV, setIsGeneratingCV] = useState(false);
 
@@ -73,20 +57,13 @@ export function useCVRewriterController() {
   }, [pdfUrl]);
 
   const validateUploads = useCallback((): string | null => {
-    if (!cvFile) {
-      return "Please upload your CV";
-    }
-
+    if (!cvFile) return "Please upload your CV";
     const validJobs = jobDescriptions.filter(
       (job) =>
         (job.type === "file" && job.file) ||
         (job.type === "text" && job.text && job.text.trim().length > 0),
     );
-
-    if (validJobs.length === 0) {
-      return "Please add at least one job description";
-    }
-
+    if (validJobs.length === 0) return "Please add at least one job description";
     return null;
   }, [cvFile, jobDescriptions]);
 
@@ -101,6 +78,13 @@ export function useCVRewriterController() {
     setCurrentStep("questions");
 
     try {
+      const API_BASE_URL = getClientApiBaseUrl();
+
+      const isHealthy = await checkApiHealth(API_BASE_URL);
+      if (!isHealthy) {
+        throw new Error("Service is currently unavailable. Please try again later.");
+      }
+
       const acceptedJob = await generateQueries(cvFile!, jobDescriptions);
       if (!acceptedJob.resource_id) {
         throw new Error("Questions were generated but no session was returned.");
@@ -115,9 +99,7 @@ export function useCVRewriterController() {
       setQuestions(session.questions_json);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to generate questions. Please try again.",
+        error instanceof Error ? error.message : "Failed to generate questions. Please try again.",
       );
       setCurrentStep("upload");
       setQuestionSessionId(null);
@@ -139,6 +121,14 @@ export function useCVRewriterController() {
       setCurrentStep("result");
 
       try {
+        const API_BASE_URL = getClientApiBaseUrl();
+
+        // Fix: health check was missing here — added to match generateQueries behaviour
+        const isHealthy = await checkApiHealth(API_BASE_URL);
+        if (!isHealthy) {
+          throw new Error("Service is currently unavailable. Please try again later.");
+        }
+
         const profile = await fetchProfile();
         const profileData = collectProfileData(
           profile
@@ -165,9 +155,7 @@ export function useCVRewriterController() {
         const generatedCv = await fetchCVById(acceptedJob.resource_id);
         const generatedPdf = await downloadCVPDF(acceptedJob.resource_id);
 
-        if (pdfUrl) {
-          URL.revokeObjectURL(pdfUrl);
-        }
+        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
 
         const generatedPdfUrl = URL.createObjectURL(generatedPdf);
         const generatedFilename = buildPdfFilename(profile?.name ?? null);
@@ -190,10 +178,7 @@ export function useCVRewriterController() {
   );
 
   const handleRestart = useCallback(() => {
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-    }
-
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     setCvFile(null);
     setJobDescriptions([]);
     setQuestionSessionId(null);

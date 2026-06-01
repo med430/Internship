@@ -60,7 +60,7 @@ type GeneratedJobOffer = {
     workMode?: string
     description?: string
     requirements?: string[] | string
-    benefits?: string[] | string
+    compensation?: string[] | string
     recruiterName?: string
 }
 
@@ -304,7 +304,7 @@ Rules:
             workMode: this.toText(offer.workMode),
             description: this.toText(offer.description),
             requirements: this.toList(offer.requirements),
-            benefits: this.toList(offer.benefits),
+            compensation: this.toList(offer.compensation),
             recruiterName: this.toText(offer.recruiterName),
         }
     }
