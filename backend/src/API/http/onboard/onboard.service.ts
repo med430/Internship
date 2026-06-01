@@ -1163,19 +1163,300 @@ export class OnboardService {
         return { id: interview.id, user_id: interview.sessionKey, interviewer_name: interview.interviewerName, interviewer_role: interview.interviewerRole, interview_style: interview.interviewStyle, difficulty_level: interview.difficultyLevel, total_exchanges: interview.totalExchanges, overall_score: interview.overallScore, technical_competency: interview.technicalCompetency, communication_skills: interview.communicationSkills, problem_solving: interview.problemSolving, cultural_fit: interview.culturalFit, acceptance_probability: interview.acceptanceProbability, key_strengths: interview.keyStrengths, areas_for_improvement: interview.areasForImprovement, recommendations: interview.recommendations, next_steps: interview.nextSteps, summary: interview.summary, pdf_url: `${baseUrl}/onboard/interviews/${interview.id}/pdf`, created_at: interview.createdAt.toISOString(), updated_at: interview.updatedAt.toISOString() }
     }
 
-    private buildPortfolioHtml(input: { profile: { name: string; email: string | null; location: string | null; targetedRole: string | null; skills: string[]; education: string[]; experiences: string[]; achievements: string[]; githubUrl: string | null; linkedinUrl: string | null; twitterUrl: string | null; avatarUrl: string | null }; cvText: string; wireframe: string; theme: string; personalInfo: Record<string, unknown>; photoUrl?: string }) {
-        const profile = input.profile
-        const mergedSkills = this.uniqueStrings([...profile.skills, ...(Array.isArray(input.personalInfo.skills) ? input.personalInfo.skills.map((v) => String(v)) : [])]).slice(0, 8)
-        const experiences = this.collectListField(input.personalInfo.experiences, profile.experiences)
-        const education = this.collectListField(input.personalInfo.education, profile.education)
-        const achievements = this.collectListField(input.personalInfo.achievements, profile.achievements)
-        const summary = this.createProfessionalSummary(input.cvText || JSON.stringify(input.personalInfo), profile.targetedRole || 'Software Engineer')
-        const accent = this.resolvePortfolioAccent(input.theme)
-        const photoUrl = input.photoUrl || profile.avatarUrl
-        const renderList = (items: string[]) => items.length ? items.map((item) => `<li>${this.escapeHtml(item)}</li>`).join('') : '<li>Content coming soon.</li>'
-        const socials = [profile.githubUrl ? `<a href="${this.escapeHtml(profile.githubUrl)}" target="_blank" rel="noreferrer">GitHub</a>` : '', profile.linkedinUrl ? `<a href="${this.escapeHtml(profile.linkedinUrl)}" target="_blank" rel="noreferrer">LinkedIn</a>` : '', profile.twitterUrl ? `<a href="${this.escapeHtml(profile.twitterUrl)}" target="_blank" rel="noreferrer">X</a>` : ''].filter(Boolean).join(' · ')
+    // ── Portfolio data resolution ─────────────────────────────────────────────
 
-        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${this.escapeHtml(profile.name)} Portfolio</title><style>:root{--accent:${accent};--bg:#f7f7fb;--card:#ffffff;--text:#121826;--muted:#5b6475;--border:#d8dce6}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top left,rgba(255,255,255,0.9),transparent 35%),linear-gradient(135deg,#eef2ff,var(--bg));color:var(--text)}.page{max-width:1080px;margin:0 auto;padding:48px 24px 64px}.hero{display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:28px;padding:32px;box-shadow:0 24px 60px rgba(15,23,42,0.08)}.avatar{width:140px;height:140px;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,var(--accent),#ffffff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:700}.avatar img{width:100%;height:100%;object-fit:cover}h1,h2,h3,p{margin:0}h1{font-size:40px;line-height:1.05}h2{font-size:14px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent)}h3{font-size:20px;margin-bottom:14px}.lede{margin-top:14px;color:var(--muted);font-size:17px;line-height:1.7}.meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:14px}.chip{padding:8px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.7)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:24px}.card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:24px;box-shadow:0 12px 30px rgba(15,23,42,0.05)}ul{margin:0;padding-left:18px;color:var(--muted);line-height:1.7}.skills{display:flex;flex-wrap:wrap;gap:10px}.skill{padding:10px 14px;border-radius:14px;background:rgba(79,70,229,0.08);color:var(--text);font-size:14px;font-weight:600}.footer{margin-top:24px;text-align:center;color:var(--muted);font-size:14px}a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,0,0,0.15)}@media(max-width:760px){.hero{grid-template-columns:1fr;text-align:center}.avatar{margin:0 auto}.meta,.skills{justify-content:center}}</style></head><body><main class="page" data-wireframe="${this.escapeHtml(input.wireframe)}" data-theme="${this.escapeHtml(input.theme)}"><section class="hero"><div class="avatar">${photoUrl ? `<img src="${this.escapeHtml(photoUrl)}" alt="${this.escapeHtml(profile.name)}"/>` : this.escapeHtml(profile.name.split(' ').map((p) => p.charAt(0)).join('').slice(0, 2).toUpperCase())}</div><div><h2>${this.escapeHtml(profile.targetedRole || 'Professional Portfolio')}</h2><h1>${this.escapeHtml(profile.name)}</h1><p class="lede">${this.escapeHtml(summary)}</p><div class="meta">${profile.location ? `<span class="chip">${this.escapeHtml(profile.location)}</span>` : ''}${profile.email ? `<span class="chip">${this.escapeHtml(profile.email)}</span>` : ''}${socials ? `<span class="chip">${socials}</span>` : ''}</div></div></section><section class="grid"><article class="card"><h3>Core Skills</h3><div class="skills">${mergedSkills.length ? mergedSkills.map((s) => `<span class="skill">${this.escapeHtml(s)}</span>`).join('') : '<span class="skill">Professional communication</span>'}</div></article><article class="card"><h3>Key Achievements</h3><ul>${renderList(achievements)}</ul></article><article class="card"><h3>Experience Highlights</h3><ul>${renderList(experiences)}</ul></article><article class="card"><h3>Education</h3><ul>${renderList(education)}</ul></article></section><p class="footer">Generated from the ${this.escapeHtml(input.wireframe)} wireframe with a ${this.escapeHtml(input.theme)} theme.</p></main></body></html>`
+    private resolvePortfolioData(input: {
+        profile: { name: string; email: string | null; location: string | null; targetedRole: string | null; skills: string[]; education: string[]; experiences: string[]; achievements: string[]; githubUrl: string | null; linkedinUrl: string | null; twitterUrl: string | null; avatarUrl: string | null }
+        personalInfo: Record<string, unknown>
+        photoUrl?: string
+    }) {
+        const pi = input.personalInfo
+        const pr = input.profile
+        const toStr = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+        return {
+            name:         toStr(pi.name)          || pr.name          || 'Portfolio',
+            email:        toStr(pi.email)         || pr.email         || '',
+            location:     toStr(pi.location)      || pr.location      || '',
+            role:         toStr(pi.targeted_role) || pr.targetedRole  || 'Professional',
+            github:       toStr(pi.github_url)    || pr.githubUrl     || '',
+            linkedin:     toStr(pi.linkedin_url)  || pr.linkedinUrl   || '',
+            twitter:      toStr(pi.twitter_url)   || pr.twitterUrl    || '',
+            photo:        input.photoUrl          || pr.avatarUrl     || '',
+            skills:       this.uniqueStrings([...pr.skills, ...(Array.isArray(pi.skills) ? pi.skills.map(String) : [])]).slice(0, 14),
+            experiences:  this.collectListField(pi.experiences,  pr.experiences),
+            education:    this.collectListField(pi.education,    pr.education),
+            achievements: this.collectListField(pi.achievements, pr.achievements),
+        }
+    }
+
+    private resolveThemePalette(theme: string): { accent: string; accent2: string; bg: string; card: string; text: string; muted: string; border: string; headerBg: string; headerText: string; chipBg: string; chipText: string; sidebarBg: string; sidebarText: string; sidebarMuted: string } {
+        const t = theme.toLowerCase()
+        if (t.includes('creative')) return { accent: '#db2777', accent2: '#9333ea', bg: '#fdf2f8', card: '#ffffff', text: '#1a1a2e', muted: '#6b7280', border: '#f0abcb', headerBg: 'linear-gradient(135deg,#be185d,#7c3aed)', headerText: '#ffffff', chipBg: '#fce7f3', chipText: '#be185d', sidebarBg: '#1a1a2e', sidebarText: '#f9a8d4', sidebarMuted: '#c4b5d0' }
+        if (t.includes('minimal')) return { accent: '#0d9488', accent2: '#0891b2', bg: '#f0fdfa', card: '#ffffff', text: '#134e4a', muted: '#6b7280', border: '#99f6e4', headerBg: 'linear-gradient(135deg,#0d9488,#0284c7)', headerText: '#ffffff', chipBg: '#ccfbf1', chipText: '#115e59', sidebarBg: '#134e4a', sidebarText: '#99f6e4', sidebarMuted: '#6ee7b7' }
+        if (t.includes('tech')) return { accent: '#4f46e5', accent2: '#06b6d4', bg: '#f8fafc', card: '#ffffff', text: '#0f172a', muted: '#475569', border: '#c7d2fe', headerBg: 'linear-gradient(135deg,#1e1b4b,#312e81)', headerText: '#e0e7ff', chipBg: '#e0e7ff', chipText: '#3730a3', sidebarBg: '#0f172a', sidebarText: '#a5b4fc', sidebarMuted: '#64748b' }
+        if (t.includes('elegant')) return { accent: '#7c3aed', accent2: '#d97706', bg: '#f5f3ff', card: '#ffffff', text: '#1c1917', muted: '#78716c', border: '#ddd6fe', headerBg: 'linear-gradient(135deg,#1c1917,#3b0764)', headerText: '#ede9fe', chipBg: '#ede9fe', chipText: '#6d28d9', sidebarBg: '#1c1917', sidebarText: '#e9d5ff', sidebarMuted: '#a78bfa' }
+        if (t.includes('dynamic')) return { accent: '#2563eb', accent2: '#7c3aed', bg: '#eff6ff', card: '#ffffff', text: '#0f172a', muted: '#475569', border: '#bfdbfe', headerBg: 'linear-gradient(135deg,#1d4ed8,#6d28d9)', headerText: '#ffffff', chipBg: '#dbeafe', chipText: '#1d4ed8', sidebarBg: '#1e1b4b', sidebarText: '#93c5fd', sidebarMuted: '#64748b' }
+        // professional (explicit + default fallback for custom themes)
+        return { accent: '#1e40af', accent2: '#0284c7', bg: '#f8fafc', card: '#ffffff', text: '#0f172a', muted: '#475569', border: '#bfdbfe', headerBg: 'linear-gradient(135deg,#1e3a5f,#1d4ed8)', headerText: '#ffffff', chipBg: '#dbeafe', chipText: '#1d4ed8', sidebarBg: '#1e3a5f', sidebarText: '#93c5fd', sidebarMuted: '#64748b' }
+    }
+
+    private buildPortfolioHtml(input: { profile: { name: string; email: string | null; location: string | null; targetedRole: string | null; skills: string[]; education: string[]; experiences: string[]; achievements: string[]; githubUrl: string | null; linkedinUrl: string | null; twitterUrl: string | null; avatarUrl: string | null }; cvText: string; wireframe: string; theme: string; personalInfo: Record<string, unknown>; photoUrl?: string }) {
+        const d = this.resolvePortfolioData(input)
+
+        // Augment skills with keywords extracted from the uploaded CV
+        if (input.cvText) {
+            const cvSkills = this.extractSkillKeywords(input.cvText)
+            d.skills = this.uniqueStrings([...d.skills, ...cvSkills]).slice(0, 14)
+        }
+
+        const t = this.resolveThemePalette(input.theme)
+        const e = (s: string) => this.escapeHtml(s)
+        // Summary is generated from the CV text when provided, otherwise from profile data
+        const summarySource = input.cvText || [d.name, d.role, ...d.skills].join(' ')
+        const summary = this.createProfessionalSummary(summarySource, d.role)
+
+        const initials = d.name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase()
+        const avatarHtml = d.photo
+            ? `<img src="${e(d.photo)}" alt="${e(d.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`
+            : `<span style="font-size:32px;font-weight:700;color:#fff;">${e(initials)}</span>`
+
+        const socialLinks = [
+            d.linkedin ? `<a href="${e(d.linkedin)}" target="_blank" rel="noreferrer" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.3);">LinkedIn</a>` : '',
+            d.github   ? `<a href="${e(d.github)}"   target="_blank" rel="noreferrer" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.3);">GitHub</a>`   : '',
+            d.twitter  ? `<a href="${e(d.twitter)}"  target="_blank" rel="noreferrer" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.3);">X / Twitter</a>` : '',
+        ].filter(Boolean)
+
+        const listItems = (items: string[], empty = 'Not specified') =>
+            items.length
+                ? items.map((item) => `<li style="padding:5px 0;line-height:1.6;">${e(item)}</li>`).join('')
+                : `<li style="color:#aaa;font-style:italic;">${empty}</li>`
+
+        const skillChips = d.skills.length
+            ? d.skills.map((s) => `<span style="display:inline-block;padding:6px 14px;margin:4px;border-radius:999px;background:${t.chipBg};color:${t.chipText};font-size:13px;font-weight:500;border:1px solid ${t.border};">${e(s)}</span>`).join('')
+            : `<span style="color:#aaa;font-style:italic;">No skills listed</span>`
+
+        const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>`
+
+        const wf = input.wireframe.toLowerCase()
+        if (wf.includes('side') || wf.includes('panel')) return this.buildSidePanelPortfolio({ d, t, summary, e, avatarHtml, skillChips, listItems, socialLinks, fontLink })
+        if (wf.includes('hero'))    return this.buildHeroPortfolio   ({ d, t, summary, e, avatarHtml, skillChips, listItems, socialLinks, fontLink })
+        if (wf.includes('blog'))    return this.buildBlogPortfolio   ({ d, t, summary, e, avatarHtml, skillChips, listItems, socialLinks, fontLink })
+        if (wf.includes('gallery')) return this.buildGalleryPortfolio({ d, t, summary, e, avatarHtml, skillChips, listItems, socialLinks, fontLink })
+        return this.buildClassicPortfolio({ d, t, summary, e, avatarHtml, skillChips, listItems, socialLinks, fontLink })
+    }
+
+    // ── Classic wireframe ─────────────────────────────────────────────────────
+    private buildClassicPortfolio(ctx: { d: ReturnType<OnboardService['resolvePortfolioData']>; t: ReturnType<OnboardService['resolveThemePalette']>; summary: string; e: (s: string) => string; avatarHtml: string; skillChips: string; listItems: (items: string[], empty?: string) => string; socialLinks: string[]; fontLink: string }) {
+        const { d, t, e, avatarHtml, skillChips, listItems, socialLinks, fontLink } = ctx
+        const soc = socialLinks.join(' &nbsp;·&nbsp; ')
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${e(d.name)} — Portfolio</title>${fontLink}<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:${t.bg};color:${t.text}}a{color:${t.accent};text-decoration:none}.wrap{max-width:960px;margin:0 auto;padding:0 24px 64px}</style></head><body>
+<header style="background:${t.headerBg};padding:48px 24px 40px;color:${t.headerText};">
+  <div style="max-width:960px;margin:0 auto;display:grid;grid-template-columns:120px 1fr;gap:28px;align-items:center;">
+    <div style="width:120px;height:120px;border-radius:20px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avatarHtml}</div>
+    <div>
+      <p style="font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;opacity:0.75;margin-bottom:6px;">${e(d.role)}</p>
+      <h1 style="font-size:36px;font-weight:700;line-height:1.1;margin-bottom:12px;">${e(d.name)}</h1>
+      <p style="font-size:15px;line-height:1.7;opacity:0.85;max-width:600px;">${e(ctx.summary)}</p>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;font-size:13px;opacity:0.8;">
+        ${d.location ? `<span>📍 ${e(d.location)}</span>` : ''}
+        ${d.email    ? `<span>✉ ${e(d.email)}</span>` : ''}
+        ${soc ? `<span>${soc}</span>` : ''}
+      </div>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section style="margin-top:32px;background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Core Skills</h2>
+    <div style="display:flex;flex-wrap:wrap;">${skillChips}</div>
+  </section>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+    <section style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Experience</h2>
+      <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.experiences, 'No experience listed')}</ul>
+    </section>
+    <section style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Education</h2>
+      <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.education, 'No education listed')}</ul>
+    </section>
+  </div>
+  <section style="margin-top:20px;background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Key Achievements</h2>
+    <ul style="list-style:none;padding:0;color:${t.muted};display:grid;grid-template-columns:1fr 1fr;gap:4px;">${listItems(d.achievements, 'No achievements listed')}</ul>
+  </section>
+  <footer style="margin-top:32px;text-align:center;font-size:13px;color:${t.muted};">
+    ${d.email ? `<a href="mailto:${e(d.email)}" style="color:${t.accent};">${e(d.email)}</a> · ` : ''}
+    ${socialLinks.map((l) => l.replace(/color:inherit/, `color:${t.accent}`).replace(/rgba\(255,255,255,0\.3\)/, t.border)).join(' · ')}
+  </footer>
+</main></body></html>`
+    }
+
+    // ── Side Panel wireframe ──────────────────────────────────────────────────
+    private buildSidePanelPortfolio(ctx: { d: ReturnType<OnboardService['resolvePortfolioData']>; t: ReturnType<OnboardService['resolveThemePalette']>; summary: string; e: (s: string) => string; avatarHtml: string; skillChips: string; listItems: (items: string[], empty?: string) => string; socialLinks: string[]; fontLink: string }) {
+        const { d, t, e, avatarHtml, listItems, socialLinks, fontLink } = ctx
+        const sbChips = d.skills.map((s) => `<span style="display:inline-block;padding:5px 11px;margin:3px;border-radius:999px;background:rgba(255,255,255,0.12);color:${t.sidebarText};font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,0.18);">${e(s)}</span>`).join('')
+        const sbSoc = socialLinks.map((l) => l.replace(/color:inherit/, `color:${t.sidebarText}`).replace(/rgba\(255,255,255,0\.3\)/, 'rgba(255,255,255,0.25)')).join('<br/>')
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${e(d.name)} — Portfolio</title>${fontLink}<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:${t.bg};color:${t.text};display:flex;min-height:100vh}a{text-decoration:none}</style></head><body>
+<aside style="width:260px;min-height:100vh;background:${t.sidebarBg};padding:36px 20px;display:flex;flex-direction:column;gap:0;flex-shrink:0;">
+  <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.1);">
+    <div style="width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 14px;">${avatarHtml}</div>
+    <p style="font-size:18px;font-weight:700;color:#fff;">${e(d.name)}</p>
+    <p style="font-size:12px;color:${t.sidebarText};margin-top:4px;letter-spacing:0.05em;">${e(d.role)}</p>
+  </div>
+  <div style="padding:20px 0;border-bottom:1px solid rgba(255,255,255,0.1);">
+    <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.sidebarText};margin-bottom:10px;">Contact</p>
+    ${d.email    ? `<p style="font-size:13px;color:${t.sidebarMuted};margin-bottom:6px;">✉ ${e(d.email)}</p>` : ''}
+    ${d.location ? `<p style="font-size:13px;color:${t.sidebarMuted};margin-bottom:6px;">📍 ${e(d.location)}</p>` : ''}
+    ${sbSoc ? `<div style="margin-top:8px;font-size:13px;line-height:2;">${sbSoc}</div>` : ''}
+  </div>
+  <div style="padding:20px 0;">
+    <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.sidebarText};margin-bottom:10px;">Skills</p>
+    <div style="display:flex;flex-wrap:wrap;">${sbChips || `<span style="color:${t.sidebarMuted};font-size:13px;">No skills listed</span>`}</div>
+  </div>
+</aside>
+<main style="flex:1;padding:40px 36px;max-width:720px;">
+  <section style="margin-bottom:32px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:12px;">About Me</h2>
+    <p style="font-size:15px;line-height:1.8;color:${t.muted};">${e(ctx.summary)}</p>
+  </section>
+  <section style="margin-bottom:32px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:12px;">Experience</h2>
+    ${d.experiences.length ? d.experiences.map((exp) => `<div style="padding:14px 0;border-bottom:1px solid ${t.border};"><p style="font-size:14px;font-weight:500;color:${t.text};">${e(exp)}</p></div>`).join('') : `<p style="color:${t.muted};font-style:italic;">No experience listed</p>`}
+  </section>
+  <section style="margin-bottom:32px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:12px;">Education</h2>
+    <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.education, 'No education listed')}</ul>
+  </section>
+  <section>
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:12px;">Key Achievements</h2>
+    <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.achievements, 'No achievements listed')}</ul>
+  </section>
+</main></body></html>`
+    }
+
+    // ── Hero wireframe ────────────────────────────────────────────────────────
+    private buildHeroPortfolio(ctx: { d: ReturnType<OnboardService['resolvePortfolioData']>; t: ReturnType<OnboardService['resolveThemePalette']>; summary: string; e: (s: string) => string; avatarHtml: string; skillChips: string; listItems: (items: string[], empty?: string) => string; socialLinks: string[]; fontLink: string }) {
+        const { d, t, e, avatarHtml, skillChips, listItems, socialLinks, fontLink } = ctx
+        const soc = socialLinks.map((l) => l.replace(/color:inherit/, `color:${t.headerText}`).replace(/rgba\(255,255,255,0\.3\)/, 'rgba(255,255,255,0.35)')).join(' &nbsp;·&nbsp; ')
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${e(d.name)} — Portfolio</title>${fontLink}<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:${t.bg};color:${t.text}}a{text-decoration:none}.wrap{max-width:960px;margin:0 auto;padding:0 24px 64px}</style></head><body>
+<header style="background:${t.headerBg};padding:80px 24px 64px;text-align:center;color:${t.headerText};">
+  <div style="width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 20px;">${avatarHtml}</div>
+  <p style="font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;opacity:0.7;margin-bottom:8px;">${e(d.role)}</p>
+  <h1 style="font-size:48px;font-weight:700;line-height:1.1;margin-bottom:18px;">${e(d.name)}</h1>
+  <p style="font-size:16px;line-height:1.8;opacity:0.82;max-width:620px;margin:0 auto 24px;">${e(ctx.summary)}</p>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px;">${skillChips.replace(new RegExp(t.chipBg, 'g'), 'rgba(255,255,255,0.15)').replace(new RegExp(t.chipText, 'g'), t.headerText).replace(new RegExp(t.border, 'g'), 'rgba(255,255,255,0.2)')}</div>
+  <div style="font-size:13px;opacity:0.75;">
+    ${d.location ? `<span>📍 ${e(d.location)} &nbsp;·&nbsp; </span>` : ''}
+    ${d.email    ? `<span>✉ ${e(d.email)}</span>` : ''}
+    ${soc        ? `<span> &nbsp;·&nbsp; ${soc}</span>` : ''}
+  </div>
+</header>
+<main class="wrap">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px;">
+    <div style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <p style="font-size:32px;font-weight:700;color:${t.accent};">${d.experiences.length}</p>
+      <p style="font-size:13px;color:${t.muted};margin-top:4px;">Experience entries</p>
+    </div>
+    <div style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <p style="font-size:32px;font-weight:700;color:${t.accent};">${d.skills.length}</p>
+      <p style="font-size:13px;color:${t.muted};margin-top:4px;">Skills</p>
+    </div>
+    <div style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <p style="font-size:32px;font-weight:700;color:${t.accent};">${d.achievements.length}</p>
+      <p style="font-size:13px;color:${t.muted};margin-top:4px;">Achievements</p>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+    <section style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Experience</h2>
+      <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.experiences, 'No experience listed')}</ul>
+    </section>
+    <section style="background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Education</h2>
+      <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.education, 'No education listed')}</ul>
+    </section>
+  </div>
+  <section style="margin-top:20px;background:${t.card};border:1px solid ${t.border};border-radius:16px;padding:24px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;">Key Achievements</h2>
+    <ul style="list-style:none;padding:0;color:${t.muted};columns:2;gap:20px;">${listItems(d.achievements, 'No achievements listed')}</ul>
+  </section>
+</main></body></html>`
+    }
+
+    // ── Blog wireframe ────────────────────────────────────────────────────────
+    private buildBlogPortfolio(ctx: { d: ReturnType<OnboardService['resolvePortfolioData']>; t: ReturnType<OnboardService['resolveThemePalette']>; summary: string; e: (s: string) => string; avatarHtml: string; skillChips: string; listItems: (items: string[], empty?: string) => string; socialLinks: string[]; fontLink: string }) {
+        const { d, t, e, avatarHtml, skillChips, listItems, socialLinks, fontLink } = ctx
+        const soc = socialLinks.map((l) => l.replace(/color:inherit/, `color:${t.accent}`).replace(/rgba\(255,255,255,0\.3\)/, t.border)).join(' · ')
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${e(d.name)} — Portfolio</title>${fontLink}<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:${t.bg};color:${t.text}}a{text-decoration:none}</style></head><body>
+<header style="background:${t.card};border-bottom:3px solid ${t.accent};padding:20px 24px;">
+  <div style="max-width:760px;margin:0 auto;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:52px;height:52px;border-radius:50%;background:${t.headerBg};display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avatarHtml}</div>
+      <div>
+        <p style="font-size:19px;font-weight:700;color:${t.text};">${e(d.name)}</p>
+        <p style="font-size:13px;color:${t.accent};font-weight:500;">${e(d.role)}</p>
+      </div>
+    </div>
+    <div style="font-size:13px;color:${t.muted};text-align:right;">
+      ${d.email    ? `<p>${e(d.email)}</p>` : ''}
+      ${d.location ? `<p>${e(d.location)}</p>` : ''}
+      ${soc        ? `<p style="margin-top:4px;">${soc}</p>` : ''}
+    </div>
+  </div>
+</header>
+<main style="max-width:760px;margin:0 auto;padding:40px 24px 64px;">
+  <section style="margin-bottom:36px;padding:24px;background:${t.card};border-left:4px solid ${t.accent};border-radius:0 12px 12px 0;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:10px;">About Me</h2>
+    <p style="font-size:16px;line-height:1.8;color:${t.muted};font-style:italic;">${e(ctx.summary)}</p>
+  </section>
+  <section style="margin-bottom:36px;">
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid ${t.border};">Experience</h2>
+    ${d.experiences.length ? d.experiences.map((exp) => `<div style="padding:16px 0 16px 20px;border-left:2px solid ${t.border};margin-bottom:4px;position:relative;"><div style="position:absolute;left:-5px;top:20px;width:8px;height:8px;border-radius:50%;background:${t.accent};"></div><p style="font-size:14px;color:${t.text};line-height:1.6;">${e(exp)}</p></div>`).join('') : `<p style="color:${t.muted};font-style:italic;">No experience listed</p>`}
+  </section>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:36px;">
+    <section>
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid ${t.border};">Education</h2>
+      <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.education, 'No education listed')}</ul>
+    </section>
+    <section>
+      <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid ${t.border};">Skills</h2>
+      <div style="display:flex;flex-wrap:wrap;">${skillChips}</div>
+    </section>
+  </div>
+  <section>
+    <h2 style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${t.accent};margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid ${t.border};">Achievements</h2>
+    <ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.achievements, 'No achievements listed')}</ul>
+  </section>
+</main></body></html>`
+    }
+
+    // ── Gallery wireframe ─────────────────────────────────────────────────────
+    private buildGalleryPortfolio(ctx: { d: ReturnType<OnboardService['resolvePortfolioData']>; t: ReturnType<OnboardService['resolveThemePalette']>; summary: string; e: (s: string) => string; avatarHtml: string; skillChips: string; listItems: (items: string[], empty?: string) => string; socialLinks: string[]; fontLink: string }) {
+        const { d, t, e, avatarHtml, skillChips, listItems, socialLinks, fontLink } = ctx
+        const soc = socialLinks.map((l) => l.replace(/color:inherit/, `color:${t.accent}`).replace(/rgba\(255,255,255,0\.3\)/, t.border)).join(' · ')
+        const card = (icon: string, title: string, body: string) =>
+            `<article style="background:${t.card};border:1px solid ${t.border};border-radius:18px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.04);"><div style="font-size:28px;margin-bottom:12px;">${icon}</div><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:${t.accent};margin-bottom:14px;">${title}</h3>${body}</article>`
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${e(d.name)} — Portfolio</title>${fontLink}<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:${t.bg};color:${t.text}}a{text-decoration:none}</style></head><body style="padding:0 0 64px;">
+<header style="background:${t.headerBg};padding:48px 24px;text-align:center;color:${t.headerText};">
+  <div style="display:flex;justify-content:center;margin-bottom:16px;"><div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;">${avatarHtml}</div></div>
+  <h1 style="font-size:32px;font-weight:700;">${e(d.name)}</h1>
+  <p style="font-size:14px;opacity:0.75;margin-top:6px;">${e(d.role)}</p>
+  <p style="font-size:14px;opacity:0.7;margin-top:10px;max-width:540px;margin-left:auto;margin-right:auto;line-height:1.6;">${e(ctx.summary)}</p>
+  ${soc ? `<div style="margin-top:14px;font-size:13px;opacity:0.8;">${soc}</div>` : ''}
+</header>
+<div style="max-width:1000px;margin:0 auto;padding:32px 24px;">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+    ${card('🛠️', 'Core Skills', `<div style="display:flex;flex-wrap:wrap;">${skillChips}</div>`)}
+    ${card('💼', 'Experience', `<ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.experiences, 'No experience listed')}</ul>`)}
+    ${card('🎓', 'Education', `<ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.education, 'No education listed')}</ul>`)}
+    ${card('🏆', 'Achievements', `<ul style="list-style:none;padding:0;color:${t.muted};">${listItems(d.achievements, 'No achievements listed')}</ul>`)}
+  </div>
+  <footer style="margin-top:32px;text-align:center;font-size:13px;color:${t.muted};">
+    ${d.email    ? `<a href="mailto:${e(d.email)}" style="color:${t.accent};">${e(d.email)}</a>` : ''}
+    ${d.location ? ` · ${e(d.location)}` : ''}
+    ${soc        ? ` · ${soc}` : ''}
+  </footer>
+</div></body></html>`
     }
 
     private async loadLiveJobs(filters: JobSearchFilters, resumeContent?: string, limit = 200) {
@@ -1596,15 +1877,6 @@ export class OnboardService {
 
     private uniqueStrings(values: string[]) {
         return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)))
-    }
-
-    private resolvePortfolioAccent(theme: string) {
-        const n = theme.toLowerCase()
-        if (n.includes('minimal')) return '#0f766e'
-        if (n.includes('creative')) return '#db2777'
-        if (n.includes('dynamic')) return '#2563eb'
-        if (n.includes('elegant')) return '#7c3aed'
-        return '#4f46e5'
     }
 
     private escapeHtml(value: string) {
