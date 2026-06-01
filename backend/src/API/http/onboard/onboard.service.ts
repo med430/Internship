@@ -1030,16 +1030,16 @@ export class OnboardService {
                         role: 'system',
                         content: [
                             'You are a senior career coach and ATS analyst.',
-                            'Analyze the candidate CV against the target job and return JSON only.',
-                            'The output must be highly specific to the provided CV and job.',
-                            'Do not reuse generic strengths or roadmaps across different roles.',
+                            'Analyze the candidate profile and CV against the target job and return JSON only.',
+                            'The output must be highly specific to the provided CV, skills, and job — never generic.',
+                            'ALL values must be plain strings or numbers — NO nested objects, NO sub-arrays.',
                             'Keys required: current_strengths, readiness_score, skills_to_learn, projects_to_work_on, soft_skills_to_develop, career_roadmap.',
-                            'current_strengths: 3-4 short bullets grounded in actual CV evidence.',
-                            'readiness_score: integer 0-100 representing similarity between the CV and target job. Be realistic.',
-                            'skills_to_learn: 3-5 missing skills or tools needed for the target job.',
-                            'projects_to_work_on: 3-4 job-specific project ideas.',
-                            'soft_skills_to_develop: 3-4 behavioral skills relevant to the role.',
-                            'career_roadmap: 5 concrete steps with timeline labels such as Week 1-2, Month 1, Month 2, Month 3, Month 4+.',
+                            'current_strengths: array of 3-4 plain strings, each citing a specific skill or achievement from the candidate profile.',
+                            'readiness_score: single integer 0-100. Compare declared skills vs must-have skills. Be strict.',
+                            'skills_to_learn: array of 3-5 plain strings naming specific missing skills/tools for the target job.',
+                            'projects_to_work_on: array of 3-4 plain strings describing concrete project ideas to address skill gaps.',
+                            'soft_skills_to_develop: array of 3-4 plain strings naming behavioral skills for the role.',
+                            'career_roadmap: array of EXACTLY 5 plain strings. Each string must start with a timeline label (Week 1-2:, Month 1:, Month 2:, Month 3:, Month 4+:) followed by a concrete action. Example: "Week 1-2: Complete a React fundamentals course and build a todo app." Do NOT use objects.',
                         ].join(' '),
                     },
                     { role: 'user', content: prompt },
@@ -1362,26 +1362,49 @@ export class OnboardService {
 
     private buildCareerGuidePrompt(input: { currentJob: string; domain: string; targetRole: string; roleBlueprint: CareerBlueprint; extractedCv: string; profileData: string[]; cvSkills: string[] }) {
         const cvBlock = input.extractedCv ? input.extractedCv.slice(0, 4000) : 'No CV text available'
-        const profileBlock = input.profileData.length ? input.profileData.map((line) => `- ${line}`).join('\n') : '- No extra structured profile data provided'
+
+        // Separate profile signals into named groups for clarity
+        const skillsSignal   = input.profileData.find((s) => s.startsWith('skills:'))      ?? ''
+        const eduSignal      = input.profileData.find((s) => s.startsWith('education:'))   ?? ''
+        const expSignal      = input.profileData.find((s) => s.startsWith('experiences:')) ?? ''
+        const achieveSignal  = input.profileData.find((s) => s.startsWith('achievements:')) ?? ''
+        const orgSignal      = input.profileData.find((s) => s.startsWith('organization:')) ?? ''
+        const otherSignals   = input.profileData.filter((s) =>
+            !s.startsWith('skills:') && !s.startsWith('education:') &&
+            !s.startsWith('experiences:') && !s.startsWith('achievements:') &&
+            !s.startsWith('organization:'),
+        )
+
         return [
-            `Current job: ${input.currentJob}`,
-            `Target job: ${input.targetRole}`,
+            '=== CANDIDATE PROFILE ===',
+            `Current role: ${input.currentJob}`,
+            `Target role: ${input.targetRole}`,
             `Domain: ${input.domain}`,
-            `Role blueprint: ${JSON.stringify(input.roleBlueprint)}`,
-            `Detected CV skills: ${input.cvSkills.length ? input.cvSkills.join(', ') : 'none found'}`,
-            'Structured profile data:',
-            profileBlock,
-            'Full CV text:',
+            orgSignal      ? `Organization: ${orgSignal.replace('organization:', '').trim()}` : '',
+            skillsSignal   ? `Declared skills: ${skillsSignal.replace('skills:', '').trim()}` : '',
+            `CV-detected skills: ${input.cvSkills.length ? input.cvSkills.join(', ') : 'none found'}`,
+            eduSignal      ? `Education: ${eduSignal.replace('education:', '').trim()}` : '',
+            expSignal      ? `Experience entries: ${expSignal.replace('experiences:', '').trim()}` : '',
+            achieveSignal  ? `Achievements / certifications: ${achieveSignal.replace('achievements:', '').trim()}` : '',
+            otherSignals.length ? `Other profile data:\n${otherSignals.map((l) => `  - ${l}`).join('\n')}` : '',
+            '',
+            '=== TARGET ROLE BLUEPRINT ===',
+            `Must-have skills: ${input.roleBlueprint.mustHaveSkills.join(', ')}`,
+            `Strengths focus: ${input.roleBlueprint.strengthsFocus.join(', ')}`,
+            `Roadmap focus: ${input.roleBlueprint.roadmapFocus.join(', ')}`,
+            '',
+            '=== FULL CV TEXT ===',
             cvBlock,
             '',
-            'Instructions:',
-            '1. Compare the CV evidence with the target job and explain the strongest matches in current_strengths.',
-            '2. Compute readiness_score from actual overlap — be strict and realistic.',
-            '3. List only missing or weak areas in skills_to_learn.',
-            '4. Create project ideas that would help this candidate become credible for the target job.',
-            '5. Make the roadmap concrete and role-specific.',
+            '=== INSTRUCTIONS ===',
+            '1. current_strengths: 3-4 bullets that name SPECIFIC skills or achievements from the declared skills, CV-detected skills, and achievements above — not generic.',
+            '2. readiness_score: compare the candidate\'s declared+detected skills against the must-have skills. Be strict and realistic.',
+            '3. skills_to_learn: list only skills from the must-have blueprint that are ABSENT from declared and CV-detected skills.',
+            '4. projects_to_work_on: suggest 3-4 projects that directly address the gaps identified in skills_to_learn, relevant to the domain.',
+            '5. soft_skills_to_develop: 3-4 behavioral skills specific to the target role.',
+            '6. career_roadmap: 5 concrete steps with timeline labels (Week 1-2, Month 1, Month 2, Month 3, Month 4+) that account for the candidate\'s CURRENT education and experience level.',
             'Return JSON only.',
-        ].join('\n')
+        ].filter((line) => line !== '').join('\n')
     }
 
     private collectCareerGuideSignals(profileData?: Record<string, unknown>) {
@@ -1513,7 +1536,24 @@ export class OnboardService {
 
     private ensureStringArray(value: unknown) {
         if (!Array.isArray(value)) return [] as string[]
-        return this.uniqueStrings(value.map((item) => String(item).trim()).filter(Boolean))
+        return this.uniqueStrings(
+            value.map((item) => {
+                if (item === null || item === undefined) return ''
+                if (typeof item === 'string') return item.trim()
+                if (typeof item === 'object') {
+                    // AI sometimes returns objects like {step, timeline} or {label, description}
+                    const obj = item as Record<string, unknown>
+                    const primary = obj.step ?? obj.description ?? obj.label ?? obj.title ?? obj.text ?? obj.action ?? obj.detail
+                    if (primary) return String(primary).trim()
+                    // Fallback: join all string values with a separator
+                    const parts = Object.values(obj)
+                        .filter((v) => typeof v === 'string' && (v as string).trim())
+                        .map((v) => (v as string).trim())
+                    return parts.join(' — ')
+                }
+                return String(item).trim()
+            }).filter(Boolean),
+        )
     }
 
     private ensureReadinessScore(value: unknown) {

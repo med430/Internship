@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Navigation, MapPin, Flag, Zap } from "lucide-react";
+import { Navigation, MapPin, Flag, Zap, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RoadmapSectionProps {
@@ -12,10 +12,12 @@ interface RoadmapSectionProps {
 export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
-  const stepIcons = [MapPin, Navigation, Zap, Navigation, Flag];
+  const stepIcons = [MapPin, Navigation, Zap, Target, Flag];
+
+  if (!roadmap || roadmap.length === 0) return null;
 
   return (
-    <Card className="p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-lg shadow-primary/5 overflow-hidden">
+    <Card className="p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-lg shadow-primary/5">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-foreground mb-1">
           Career Roadmap
@@ -25,107 +27,116 @@ export function RoadmapSection({ roadmap }: RoadmapSectionProps) {
         </p>
       </div>
 
-      <div className="relative">
-        <div className="relative">
-          {roadmap.map((step, index) => {
-            const isEven = index % 2 === 0;
-            const Icon = stepIcons[index] || Navigation;
-            const isHovered = hoveredStep === index;
+      {/* Mobile: simple vertical list */}
+      <div className="flex flex-col gap-4 md:hidden">
+        {roadmap.map((step, index) => {
+          const Icon = stepIcons[index] ?? Navigation;
+          return (
+            <div
+              key={index}
+              className="flex gap-4 items-start p-4 rounded-xl border border-border bg-card"
+            >
+              <div className="shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+                {index + 1}
+              </div>
+              <div className="flex-1">
+                <div className="inline-flex p-1.5 rounded-lg bg-primary/10 mb-2">
+                  <Icon className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-sm leading-relaxed text-foreground/90">{step}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "relative mb-6 lg:mb-24",
-                  "flex items-center",
-                  "lg:justify-start",
-                  !isEven && "lg:justify-end",
-                )}
-              >
-                {index < roadmap.length - 1 && (
-                  <div
-                    className="absolute top-full left-0 w-full h-20 lg:h-24 pointer-events-none hidden lg:block"
-                    style={{ zIndex: 0 }}
+      {/* Desktop: zigzag GPS-style map */}
+      <div className="relative hidden md:block">
+        {roadmap.map((step, index) => {
+          const isEven = index % 2 === 0;
+          const Icon = stepIcons[index] ?? Navigation;
+          const isHovered = hoveredStep === index;
+          const isLast = index === roadmap.length - 1;
+
+          return (
+            <div
+              key={index}
+              className={cn(
+                "relative mb-6 lg:mb-20 flex items-start",
+                isEven ? "justify-start" : "justify-end",
+              )}
+            >
+              {/* SVG connector to next step */}
+              {!isLast && (
+                <div
+                  className="absolute top-full left-0 w-full pointer-events-none"
+                  style={{ height: "5rem", zIndex: 1 }}
+                >
+                  <svg
+                    className="w-full h-full overflow-visible"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
                   >
-                    <svg
-                      className="w-full h-full"
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <path
-                        d={
-                          isEven
-                            ? "M 22.5 0 C 22.5 25, 40 45, 50 50 C 60 55, 77.5 75, 77.5 100"
-                            : "M 77.5 0 C 77.5 25, 60 45, 50 50 C 40 55, 22.5 75, 22.5 100"
-                        }
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                        strokeLinecap="round"
-                        className="text-neutral-300 dark:text-neutral-700"
-                        opacity="0.5"
-                      />
-                    </svg>
-                  </div>
-                )}
+                    <path
+                      d={
+                        isEven
+                          ? "M 22 0 C 22 30, 42 50, 50 50 C 58 50, 78 70, 78 100"
+                          : "M 78 0 C 78 30, 58 50, 50 50 C 42 50, 22 70, 22 100"
+                      }
+                      className="stroke-primary"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray="6 4"
+                      strokeOpacity="0.5"
+                    />
+                  </svg>
+                </div>
+              )}
 
+              {/* Step card */}
+              <div
+                className={cn(
+                  "relative w-full lg:w-[44%] transform transition-all duration-300 ease-out",
+                  isHovered && "scale-[1.02]",
+                )}
+                style={{ zIndex: 10 }}
+                onMouseEnter={() => setHoveredStep(index)}
+                onMouseLeave={() => setHoveredStep(null)}
+              >
                 <div
                   className={cn(
-                    "group relative w-full lg:w-[45%]",
-                    "transform transition-all duration-300 ease-out",
-                    isHovered && "scale-[1.02]",
+                    "relative p-4 rounded-xl border transition-all duration-300 bg-card border-border",
+                    isHovered && "shadow-lg shadow-primary/15 border-primary/50",
                   )}
-                  style={{ zIndex: 10 }}
-                  onMouseEnter={() => setHoveredStep(index)}
-                  onMouseLeave={() => setHoveredStep(null)}
                 >
+                  {/* Step number badge */}
                   <div
                     className={cn(
-                      "relative p-4 rounded-xl border",
-                      "transition-all duration-300",
-                      "bg-card",
-                      "border-border",
-                      isHovered &&
-                        "shadow-lg shadow-primary/10 border-primary/40",
+                      "absolute -top-2.5 -left-2.5 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-md transition-all duration-300 bg-primary text-primary-foreground",
+                      isHovered && "scale-110",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "absolute -top-2 -left-2",
-                        "w-8 h-8 rounded-full",
-                        "flex items-center justify-center",
-                        "font-semibold text-sm",
-                        "shadow-md transition-all duration-300",
-                        "bg-primary",
-                        "text-primary-foreground",
-                        isHovered && "scale-110 shadow-primary/30",
-                      )}
-                    >
-                      {index + 1}
-                    </div>
-
-                    <div
-                      className={cn(
-                        "inline-flex p-2 rounded-lg mb-3",
-                        "transition-all duration-300",
-                        "bg-primary/10",
-                        isHovered && "scale-105 bg-primary/20",
-                      )}
-                    >
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-
-                    <div className="relative">
-                      <p className="text-sm leading-relaxed text-foreground/90">
-                        {step}
-                      </p>
-                    </div>
+                    {index + 1}
                   </div>
+
+                  <div
+                    className={cn(
+                      "inline-flex p-2 rounded-lg mb-3 transition-all duration-300 bg-primary/10",
+                      isHovered && "bg-primary/20 scale-105",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-foreground/90">
+                    {step}
+                  </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );

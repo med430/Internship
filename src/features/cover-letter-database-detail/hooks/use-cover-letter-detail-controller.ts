@@ -37,7 +37,7 @@ export function useCoverLetterDetailController(letterId: string) {
         try {
           const apiUrl = getClientApiBaseUrl();
           // Try onboard download first, then uploaded cover-letters download
-          const tryUrls = [`${apiUrl}/onboard/cover-letters/${letterId}/download`, `${apiUrl}/cover-letters/${letterId}/download`]
+          const tryUrls = [`${apiUrl}/cover-letters/${letterId}/download`]
           let gotBlob: Blob | null = null
           for (const url of tryUrls) {
             try {
@@ -88,7 +88,7 @@ export function useCoverLetterDetailController(letterId: string) {
       setDownloading(true);
       const apiUrl = getClientApiBaseUrl();
       // Try both download endpoints
-      const tryUrls = [`${apiUrl}/onboard/cover-letters/${letterId}/download`, `${apiUrl}/cover-letters/${letterId}/download`]
+      const tryUrls = [`${apiUrl}/cover-letters/${letterId}/download`]
       let blob: Blob | null = null
       for (const url of tryUrls) {
         try {

@@ -38,7 +38,7 @@ export function SelectedDatabaseCoverLetter({ letter, onRemove }: SelectedDataba
             try {
               const apiUrl = getClientApiBaseUrl();
               // Prefer onboard download, then uploaded route
-              const tryUrls = [`${apiUrl}/onboard/cover-letters/${letter.id}/download`, `${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
+              const tryUrls = [`${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
               let blob: Blob | null = null;
               for (const url of tryUrls) {
                 if (!url) continue;
@@ -68,7 +68,7 @@ export function SelectedDatabaseCoverLetter({ letter, onRemove }: SelectedDataba
           onClick={async () => {
             try {
               const apiUrl = getClientApiBaseUrl();
-              const tryUrls = [`${apiUrl}/onboard/cover-letters/${letter.id}/download`, `${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
+              const tryUrls = [`${apiUrl}/cover-letters/${letter.id}/download`, letter.file_url];
               let blob: Blob | null = null;
               for (const url of tryUrls) {
                 if (!url) continue;
