@@ -6,10 +6,14 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class ContentCandidate(BaseModel):
+    offerId: str
+    contentScore: float
+
+
 class RecommendJobsRequest(BaseModel):
-    studentId: str
-    studentText: str
-    contentScores: dict[str, float]  # keys = candidate offer ids to score
+    studentId: str  # student's stored vector is looked up by this id in the `students` collection
+    contentCandidates: list[ContentCandidate]  # top-K offers to score (retrieval source), not the whole catalog
     limit: int = 200
 
 

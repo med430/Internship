@@ -11,10 +11,16 @@ export interface MlStudentScore {
     cfScore: number
 }
 
+export interface ContentCandidate {
+    offerId: string
+    contentScore: number
+}
+
 export interface RecommendJobsRequest {
     studentId: string
-    studentText: string
-    contentScores: Record<string, number>
+    // Top-K offers by content score (the retrieval source), not the whole catalog. Python
+    // fetches the student's stored vector from Qdrant by studentId — no studentText sent.
+    contentCandidates: ContentCandidate[]
     limit: number
 }
 

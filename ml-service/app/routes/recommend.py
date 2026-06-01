@@ -1,9 +1,10 @@
 """POST /recommend/jobs (+ /recommend/users stub) — the core scoring call.
 
 Called once per student during the backend recompute (ComputeRecommendationsHandler
-→ ScoringService → IMlClient.recommendJobs). Phase 1: embed the student text, cosine
-it against each candidate offer's stored vector → semanticScore. cfScore/finalMlScore
-stay 0 so the backend does the 0.6*content + 0.4*semantic blend.
+→ ScoringService → IMlClient.recommendJobs). Phase 1: look up the student's stored
+vector (the worker already embedded it), cosine it against each candidate offer's stored
+vector → semanticScore. cfScore/finalMlScore stay 0 so the backend does the
+0.6*content + 0.4*semantic blend. No live embedding here — the worker owns the text.
 """
 
 from fastapi import APIRouter, Depends, Request
@@ -16,7 +17,7 @@ from app.schemas.responses import (
     RecommendUsersResponse,
 )
 from app.security import require_internal_token
-from app.services.qdrant_service import OFFERS
+from app.services.qdrant_service import OFFERS, STUDENTS
 
 router = APIRouter()
 
@@ -27,12 +28,19 @@ router = APIRouter()
     dependencies=[Depends(require_internal_token)],
 )
 async def recommend_jobs(req: RecommendJobsRequest, request: Request) -> RecommendJobsResponse:
-    candidate_ids = list(req.contentScores.keys())
+    candidate_ids = [c.offerId for c in req.contentCandidates]
     if not candidate_ids:
         return RecommendJobsResponse(offers=[])
 
-    student_vec = request.app.state.embedder.embed_one(req.studentText)
-    offer_vecs = await request.app.state.qdrant.retrieve_vectors(OFFERS, candidate_ids)
+    qdrant = request.app.state.qdrant
+    # Cold-start: student not embedded yet (new/changed <5 min ago) → no semantic signal this
+    # run. Backend falls to content-only; self-heals on the next worker sweep + recompute.
+    student_vecs = await qdrant.retrieve_vectors(STUDENTS, [req.studentId])
+    student_vec = student_vecs.get(req.studentId)
+    if student_vec is None:
+        return RecommendJobsResponse(offers=[])
+
+    offer_vecs = await qdrant.retrieve_vectors(OFFERS, candidate_ids)
 
     # Offers not yet in the index are omitted → backend treats them as no ML signal.
     offers = [
