@@ -188,7 +188,7 @@ function fallbackContent(
     const bullets: Record<number, string[]> = {}
     profile.experiences.forEach((exp, i) => {
         bullets[i] = exp.highlights.length
-            ? exp.highlights.slice(0, 3)
+            ? exp.highlights
             : [`Contributed to projects at ${exp.company || 'organisation'}`, 'Collaborated with cross-functional teams to deliver results']
     })
     return {
@@ -212,48 +212,62 @@ async function buildAiContent(profileRaw: GeneratedDocumentProfile, offerRaw: Ge
     const offer = normalizeOffer(offerRaw)
     const experienceCount = profile.experiences.length
 
+    const onlinePresence = [
+        profile.linkedinUrl && `LinkedIn: ${profile.linkedinUrl}`,
+        profile.githubUrl   && `GitHub: ${profile.githubUrl}`,
+        profile.websiteUrl  && `Website: ${profile.websiteUrl}`,
+    ].filter(Boolean).join(', ') || 'Not provided'
+
     const prompt = `
 You are a professional career coach and copywriter. Generate tailored, high-quality content for a CV and cover letter.
+Use EVERY piece of information provided — do not ignore any field.
 
 CANDIDATE:
 - Name: ${profile.name || 'Candidate'}
+- Organization / School: ${profile.organization || 'Not specified'}
 - Targeted Role: ${profile.targetedRole || offer.title}
-- Summary: ${profile.summary || 'Not provided'}
+- Location: ${profile.location || 'Not specified'}
+- Online presence: ${onlinePresence}
+- Summary (candidate-written): ${profile.summary || 'Not provided'}
 - Skills: ${profile.skills.join(', ') || 'Not provided'}
 - Languages: ${profile.languages.join(', ') || 'Not provided'}
 - Certifications: ${profile.certifications.join(', ') || 'None'}
-- Experiences (${experienceCount}): ${JSON.stringify(profile.experiences.map((e) => ({ role: e.role, company: e.company, period: e.period, highlights: e.highlights.slice(0, 3) })))}
-- Education: ${JSON.stringify(profile.education.map((e) => ({ school: e.school, degree: e.degree, period: e.period })))}
+- Experiences (${experienceCount}): ${JSON.stringify(profile.experiences.map((e) => ({ role: e.role, company: e.company, location: e.location, period: e.period, highlights: e.highlights })))}
+- Education: ${JSON.stringify(profile.education.map((e) => ({ school: e.school, degree: e.degree, period: e.period, details: e.details })))}
 
 JOB OFFER:
 - Title: ${offer.title}
 - Company: ${offer.company}
 - Location: ${offer.location || 'Not specified'}
-- Domain: ${offer.domain || 'Not specified'}
+- Domain / Industry: ${offer.domain || 'Not specified'}
+- Type: ${offer.type || 'Not specified'}
 - Work mode: ${offer.workMode || 'Not specified'}
+- Compensation: ${offer.compensation.join(', ') || 'Not specified'}
 - Requirements: ${offer.requirements.join(', ') || 'Not specified'}
-- Description: ${offer.description ? offer.description.slice(0, 400) : 'Not provided'}
+- Recruiter: ${offer.recruiterName || 'Not specified'}
+- Description: ${offer.description ? offer.description.slice(0, 700) : 'Not provided'}
 
 Respond ONLY with a valid JSON object (no markdown, no backticks):
 {
   "cv": {
-    "summary": "2-3 sentence professional summary tailored to this specific role and company.",
-    "skillsHighlight": "One sentence framing the candidate's skill set in the context of this job.",
-    "experienceBullets": { "0": ["Bullet 1", "Bullet 2", "Bullet 3"], "1": ["Bullet 1", "Bullet 2"] },
-    "educationNote": "One sentence about how their education is relevant to this role."
+    "summary": "2-3 sentence professional summary targeting this specific role. Reference the candidate's actual skills, organization, and relevant experience.",
+    "skillsHighlight": "One sentence framing the candidate's skill set in the context of this job's requirements.",
+    "experienceBullets": { "0": ["Action verb + specific achievement from highlights + measurable impact", "Bullet 2", "Bullet 3"], "1": ["Bullet 1", "Bullet 2"] },
+    "educationNote": "One sentence connecting their education and certifications to this specific role."
   },
   "coverLetter": {
-    "opening": "Engaging first paragraph (2-3 sentences). Mention the specific role and company.",
-    "whyFit": "Second paragraph (2-3 sentences). Connect the candidate's skills and experience to the role requirements.",
-    "whyCompany": "Third paragraph (1-2 sentences). Show enthusiasm for this specific company.",
-    "closing": "Closing paragraph (2 sentences). Express interest in next steps."
+    "opening": "Engaging first paragraph (2-3 sentences). Mention the exact role, company, and a specific reason for applying based on the offer details.",
+    "whyFit": "Second paragraph (2-3 sentences). Connect the candidate's specific skills, experience highlights, and certifications to the job requirements.",
+    "whyCompany": "Third paragraph (1-2 sentences). Show genuine knowledge of the company domain or type of work.",
+    "closing": "Closing paragraph (2 sentences). Invite next steps. Reference the recruiter name if provided."
   }
 }
 
 Rules:
-- experienceBullets keys are 0-based indices for each experience entry (${experienceCount} total)
-- Every bullet must start with a strong past-tense action verb
-- Be concrete — reference actual skills, companies, and technologies from the profile
+- experienceBullets keys are 0-based indices (${experienceCount} total)
+- Every bullet MUST start with a strong past-tense action verb and reference the actual highlights provided
+- If education details include GPA or notable courses, work them into the educationNote
+- Be concrete — use the actual technologies, company names, and domains from the profile
 `
 
     try {
@@ -382,7 +396,8 @@ export async function createCvPdf(
     // SIDEBAR CONTENT
     // ══════════════════════════════════════════════════════════════════════════
 
-    page.drawRectangle({ x: 0, y: H - 108, width: SB_W, height: 108, color: C_DARK2 })
+    const hdrH = profile.organization ? 122 : 108
+    page.drawRectangle({ x: 0, y: H - hdrH, width: SB_W, height: hdrH, color: C_DARK2 })
     sbY = H - 18
 
     const nameParts = (profile.name || 'Candidate').trim().split(/\s+/)
@@ -399,6 +414,11 @@ export async function createCvPdf(
     const roleStr = (profile.targetedRole || offer.title || '').slice(0, 27)
     if (roleStr) {
         page.drawText(roleStr, { x: SB_PAD, y: sbY, size: 8.5, font: fontI, color: C_SKY })
+        sbY -= 13
+    }
+
+    if (profile.organization) {
+        page.drawText(profile.organization.slice(0, 28), { x: SB_PAD, y: sbY, size: 8, font: fontR, color: C_SBMUT })
         sbY -= 12
     }
 

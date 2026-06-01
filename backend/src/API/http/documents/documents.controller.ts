@@ -131,13 +131,23 @@ export class DocumentsController {
     ): Promise<AiGeneratedContent> {
         const experienceCount = profile.experiences.length
 
+        const onlinePresence = [
+            profile.linkedinUrl && `LinkedIn: ${profile.linkedinUrl}`,
+            profile.githubUrl   && `GitHub: ${profile.githubUrl}`,
+            profile.websiteUrl  && `Website: ${profile.websiteUrl}`,
+        ].filter(Boolean).join(', ') || 'Not provided'
+
         const prompt = `
 You are a professional career coach and copywriter. Generate tailored, high-quality content for a CV and cover letter.
+Use EVERY piece of information provided — do not ignore any field.
 
 CANDIDATE:
 - Name: ${profile.name || 'Candidate'}
+- Organization / School: ${profile.organization || 'Not specified'}
 - Targeted Role: ${profile.targetedRole || offer.title}
-- Summary: ${profile.summary || 'Not provided'}
+- Location: ${profile.location || 'Not specified'}
+- Online presence: ${onlinePresence}
+- Summary (candidate-written): ${profile.summary || 'Not provided'}
 - Skills: ${profile.skills.join(', ') || 'Not provided'}
 - Languages: ${profile.languages.join(', ') || 'Not provided'}
 - Certifications: ${profile.certifications.join(', ') || 'None'}
@@ -145,48 +155,52 @@ CANDIDATE:
             profile.experiences.map((e) => ({
                 role: e.role,
                 company: e.company,
+                location: e.location,
                 period: e.period,
-                highlights: e.highlights.slice(0, 3),
+                highlights: e.highlights,
             })),
         )}
 - Education: ${JSON.stringify(
-            profile.education.map((e) => ({ school: e.school, degree: e.degree, period: e.period })),
+            profile.education.map((e) => ({ school: e.school, degree: e.degree, period: e.period, details: e.details })),
         )}
 
 JOB OFFER:
 - Title: ${offer.title}
 - Company: ${offer.company}
 - Location: ${offer.location || 'Not specified'}
-- Domain: ${offer.domain || 'Not specified'}
+- Domain / Industry: ${offer.domain || 'Not specified'}
+- Type: ${offer.type || 'Not specified'}
 - Work mode: ${offer.workMode || 'Not specified'}
+- Compensation: ${offer.compensation.join(', ') || 'Not specified'}
 - Requirements: ${offer.requirements.join(', ') || 'Not specified'}
-- Description: ${offer.description ? offer.description.slice(0, 400) : 'Not provided'}
+- Recruiter: ${offer.recruiterName || 'Not specified'}
+- Description: ${offer.description ? offer.description.slice(0, 700) : 'Not provided'}
 
 Respond ONLY with a valid JSON object (no markdown, no backticks):
 {
   "cv": {
-    "summary": "2-3 sentence professional summary tailored to this specific role and company. Be specific, use the candidate's actual skills and experience.",
-    "skillsHighlight": "One sentence that frames the candidate's skill set in the context of this job.",
+    "summary": "2-3 sentence professional summary tailored to this specific role. Reference the candidate's actual skills, organization, and relevant experience.",
+    "skillsHighlight": "One sentence that frames the candidate's skill set specifically in the context of this job's requirements.",
     "experienceBullets": {
-      "0": ["Action-oriented bullet 1 for first experience", "Bullet 2", "Bullet 3"],
+      "0": ["Action verb + specific achievement from highlights + measurable impact", "Bullet 2", "Bullet 3"],
       "1": ["Bullet 1 for second experience", "Bullet 2"]
     },
-    "educationNote": "One sentence about how their education is relevant to this role."
+    "educationNote": "One sentence connecting their education and certifications to this specific role."
   },
   "coverLetter": {
-    "opening": "Engaging first paragraph (2-3 sentences). Mention the specific role and company. Show genuine interest.",
-    "whyFit": "Second paragraph (2-3 sentences). Connect the candidate's specific skills and experience to the role requirements.",
-    "whyCompany": "Third paragraph (1-2 sentences). Show knowledge of or enthusiasm for this specific company/domain.",
-    "closing": "Closing paragraph (2 sentences). Express interest in next steps. Professional and warm."
+    "opening": "Engaging first paragraph (2-3 sentences). Mention the exact role, company, and a specific reason for applying based on the offer details.",
+    "whyFit": "Second paragraph (2-3 sentences). Connect the candidate's specific skills, experience highlights, and certifications to the job requirements.",
+    "whyCompany": "Third paragraph (1-2 sentences). Show genuine knowledge of the company domain, type of work, or compensation structure.",
+    "closing": "Closing paragraph (2 sentences). Invite next steps. Reference the recruiter name if provided."
   }
 }
 
 Rules:
-- experienceBullets keys are 0-based numeric indices for each experience entry (${experienceCount} total)
-- Every bullet must start with a strong past-tense action verb
-- Be concrete — reference actual skills, companies, and technologies from the profile
-- Keep the tone professional but human, not robotic
-- If information is sparse, make reasonable inferences based on the role and domain
+- experienceBullets keys are 0-based numeric indices (${experienceCount} total)
+- Every bullet MUST start with a strong past-tense action verb and reference the actual highlights provided
+- Reference the candidate's online presence (GitHub/LinkedIn) in the cover letter if relevant to the role
+- If education details include GPA or notable courses, work them into the educationNote
+- Be concrete — use the actual technologies, company names, and domains from the profile
 `
 
         try {
@@ -246,7 +260,7 @@ Rules:
         const bullets: Record<number, string[]> = {}
         profile.experiences.forEach((exp, i) => {
             bullets[i] = exp.highlights.length
-                ? exp.highlights.slice(0, 3)
+                ? exp.highlights
                 : [`Contributed to projects at ${exp.company || 'organisation'}`, 'Collaborated with cross-functional teams to deliver results']
         })
 
