@@ -9,7 +9,10 @@ import {
     RecommendUsersRequest,
 } from './ml-client.interface'
 
-const TIMEOUT_MS = 5000
+// recommend/jobs embeds the student text on the CPU sidecar; a rich profile (long text)
+// under concurrent recompute load or a cold model can take several seconds. 5s was too
+// tight and aborted whole students into content-only — give real headroom.
+const TIMEOUT_MS = 15000
 
 @Injectable()
 export class MlClientService extends IMlClient {

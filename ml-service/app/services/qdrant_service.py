@@ -4,12 +4,24 @@ Used by app/main.py (startup bootstrap), routes/recommend.py (retrieve candidate
 offer vectors), and trainer/refresh_embeddings.py (upsert embeddings).
 """
 
+import asyncio
+import logging
+
 from qdrant_client import AsyncQdrantClient, models
+from qdrant_client.http.exceptions import ResponseHandlingException
 
 from app.config import get_settings
 
 OFFERS = "offers"
 STUDENTS = "students"
+
+log = logging.getLogger("ml-service")
+
+# A long-lived AsyncQdrantClient drops idle keep-alive connections; the next call
+# then raises a transient ReadError (ResponseHandlingException). Retrying re-opens a
+# fresh connection. Without this, one blip 500s the whole call and zeroes every
+# semanticScore for that student (rows still tagged with the live model version).
+_RETRIEVE_RETRIES = 3
 
 
 class QdrantService:
@@ -55,10 +67,18 @@ class QdrantService:
     ) -> dict[str, list[float]]:
         if not ids:
             return {}
-        records = await self._client.retrieve(
-            collection_name=collection, ids=ids, with_vectors=True
-        )
-        return {str(r.id): r.vector for r in records if r.vector is not None}
+        for attempt in range(_RETRIEVE_RETRIES):
+            try:
+                records = await self._client.retrieve(
+                    collection_name=collection, ids=ids, with_vectors=True
+                )
+                return {str(r.id): r.vector for r in records if r.vector is not None}
+            except ResponseHandlingException as e:
+                if attempt == _RETRIEVE_RETRIES - 1:
+                    raise
+                log.warning("qdrant retrieve transient error (attempt %d): %s", attempt + 1, e)
+                await asyncio.sleep(0.1 * (attempt + 1))
+        return {}  # unreachable; the loop either returns or re-raises
 
     async def close(self) -> None:
         await self._client.close()

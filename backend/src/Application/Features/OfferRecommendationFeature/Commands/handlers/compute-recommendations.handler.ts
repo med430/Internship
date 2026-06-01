@@ -12,6 +12,11 @@ import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { RecommendationsRecomputedEvent } from '../../../../../Domain/events/recommendations-recomputed.event'
 
 const STUDENT_BATCH_SIZE = 50
+// The ML sidecar embeds on CPU and serializes requests (~0.18s each), so firing a
+// whole batch at once just queues them: past ~27 concurrent the tail exceeds the
+// client's 5s timeout → AbortError → null → zeroed semantic scores. Cap the fan-out
+// so tail latency stays well under the timeout without losing throughput.
+const ML_CONCURRENCY = 8
 
 export interface ComputeResult {
     studentsProcessed: number
@@ -67,12 +72,26 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
         return result
     }
 
-    // Scores one batch of students in parallel, then upserts all their rows in one chunked write.
+    // Scores one batch of students (bounded ML fan-out), then upserts all their rows in one chunked write.
     private async processBatch(students: StudentProfile[], offers: Offer[], modelVersion: string): Promise<number> {
-        const rowsPerStudent = await Promise.all(
-            students.map(s => this.scoring.scoreStudent(s, offers, modelVersion)),
+        const rowsPerStudent = await this.mapLimited(
+            students, ML_CONCURRENCY, s => this.scoring.scoreStudent(s, offers, modelVersion),
         )
         return this.scores.upsertMany(rowsPerStudent.flat())
+    }
+
+    // Runs fn over items with at most `limit` in flight, preserving input order in the result.
+    private async mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+        const results = new Array<R>(items.length)
+        let next = 0
+        const worker = async (): Promise<void> => {
+            while (next < items.length) {
+                const i = next++
+                results[i] = await fn(items[i])
+            }
+        }
+        await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+        return results
     }
 
     // Returns either every student profile, or just the one scoped by the command (for single-user reruns).
