@@ -193,9 +193,22 @@ export class OnboardController {
                 mandatory: sr.mandatory,
             })),
             bookmarked,
-            match_score: scoreRow ? Math.round(scoreRow.finalScore * 100) : null,
+            match_score: scoreRow ? Math.round(this.adjustedScore(scoreRow.finalScore, offer, bookmarked) * 100) : null,
             score_breakdown: scoreRow ? this.sanitizeBreakdown(scoreRow.breakdown, offer) ?? null : null,
         }
+    }
+
+    // Same modifiers as GetRecommendedOffersHandler.adjustScore but without the view-count penalty
+    // (the detail page IS a view, so demoting there is wrong UX). Keeps the displayed score
+    // consistent with the card the student tapped to get here.
+    private adjustedScore(finalScore: number, offer: Offer, isBookmarked: boolean): number {
+        const ageDays = offer.createdAt ? (Date.now() - offer.createdAt.getTime()) / 86_400_000 : 0
+        const freshness = Math.max(0.5, Math.exp(-ageDays / 14))
+        const deadlineUrgency = offer.applicationDeadline
+            ? (() => { const d = (offer.applicationDeadline!.getTime() - Date.now()) / 86_400_000; return d > 0 && d < 3 ? 1.2 : 1.0 })()
+            : 1.0
+        const bookmarkBoost = isBookmarked ? 0.1 : 0
+        return Math.max(0, Math.min(1, finalScore * freshness * deadlineUrgency + bookmarkBoost))
     }
 
     // Renders the stipend range or the binary paid/unpaid label as a single human-readable string.
