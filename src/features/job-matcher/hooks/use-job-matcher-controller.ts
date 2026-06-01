@@ -180,12 +180,13 @@ export function useJobMatcherController() {
   const filteredAllJobs = useMemo(() => {
     let jobs = allJobs || [];
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      jobs = jobs.filter(
-        (job) =>
-          job.title.toLowerCase().includes(query) ||
-          job.company.toLowerCase().includes(query),
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      jobs = jobs.filter((job) =>
+        [job.title, job.company, job.description]
+          .join(" ")
+          .toLowerCase()
+          .includes(query),
       );
     }
 
@@ -257,7 +258,7 @@ export function useJobMatcherController() {
   }, []);
 
   const handleView = useCallback((jobId: string) => {
-    tracking.trackView(jobId, "feed");
+    tracking.markOfferViewSource(jobId, "feed");
   }, []);
 
   // Debounced search-query tracking. Fires 400ms after the user stops typing.

@@ -135,7 +135,7 @@ export function JobMatcherToolbar({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search by title, company…"
+                  placeholder="Search by title, company, description..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   className="pl-10 h-9"

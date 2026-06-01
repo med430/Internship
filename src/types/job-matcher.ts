@@ -78,13 +78,22 @@ export interface JobFilterRequest {
   posted_within_days?: number;
   resume_content?: string;
   limit?: number;
+  // Opaque base64 cursor from the previous response's `next_cursor`. Omit to fetch the first page.
+  cursor?: string;
+  // Ask the authenticated recommendation feed for active bookmarks only.
+  savedOnly?: boolean;
+  // Ask for the Offers explore feed instead of personalised matcher ranking.
+  explore?: boolean;
+  exploreSeed?: number;
 }
 
 export interface JobFilterResponse {
   success: boolean;
   jobs: JobDocument[];
   total_found: number;
-  filter_stats: {
+  next_cursor?: string | null;
+  source?: "recommendation" | "newest-fallback" | "explore";
+  filter_stats?: {
     jobs_found: number;
     used_resume_matching: boolean;
     filters_applied: Record<string, unknown>;
@@ -141,6 +150,8 @@ export interface JobCardProps {
   isPaid?: boolean;
   applicationDeadline?: Date | null;
   workModel?: string;
+  detailSource?: "matcher" | "offers";
+  showMatchScore?: boolean;
   onLike?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
   onView?: (jobId: string) => void;

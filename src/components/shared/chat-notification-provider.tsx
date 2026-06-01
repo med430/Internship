@@ -21,7 +21,10 @@ export function ChatNotificationProvider() {
   const addNotification = useNotificationStore((s) => s.addNotification);
   const currentUserIdRef = useRef<string>("");
   const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000";

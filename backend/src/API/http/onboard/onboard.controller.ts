@@ -32,6 +32,8 @@ import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supa
 import { IOfferRepository } from '../../../Application/repositories/offer.repository'
 import { IOfferBookmarkRepository } from '../../../Application/repositories/offer-bookmark.repository'
 import { IRecommendationScoreRepository } from '../../../Application/repositories/recommendation-score.repository'
+import { Offer } from '../../../Domain/entities/offer.entity'
+import type { ScoreBreakdown } from '../../../Domain/entities/recommendation-score.entity'
 
 @Controller()
 export class OnboardController {
@@ -76,6 +78,9 @@ export class OnboardController {
             bearerToken: this.extractBearerToken(req.header('authorization')),
             limit: typeof body.limit === 'number' ? body.limit : 20,
             cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+            savedOnly: body.savedOnly === true,
+            explore: body.explore === true,
+            exploreSeed: typeof body.exploreSeed === 'number' ? body.exploreSeed : undefined,
         })
 
         if (outcome.kind === 'authenticated') {
@@ -99,6 +104,8 @@ export class OnboardController {
             bearerToken: this.extractBearerToken(req.header('authorization')),
             limit: typeof body.limit === 'number' ? body.limit : 20,
             cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+            savedOnly: body.savedOnly === true,
+            explore: false,
         })
 
         if (outcome.kind === 'authenticated') {
@@ -119,7 +126,7 @@ export class OnboardController {
     }
 
     // Shapes a ranked offer into the JobDocument format the frontend expects.
-    private mapItemToJobDocument(item: { offer: any; score: number; breakdown?: any; bookmarked: boolean }) {
+    private mapItemToJobDocument(item: { offer: Offer; score: number; breakdown?: ScoreBreakdown; bookmarked: boolean }) {
         const offer = item.offer
         const salary = offer.stipendMin && offer.stipendMax
             ? `${offer.stipendMin}-${offer.stipendMax} TND`
@@ -135,10 +142,10 @@ export class OnboardController {
             job_function: offer.domain,
             salary,
             source: 'stagio',
-            source_url: `/services/jobmatcher/${offer.id}`,
+            source_url: `/services/offers/${offer.id}`,
             posted_date: (offer.createdAt ?? new Date()).toISOString(),
             match_score: Math.round(item.score * 100),
-            score_breakdown: item.breakdown,
+            score_breakdown: this.sanitizeBreakdown(item.breakdown, offer),
             bookmarked: item.bookmarked,
             is_paid: !!offer.isPaid,
             application_deadline: offer.applicationDeadline?.toISOString() ?? null,
@@ -179,22 +186,44 @@ export class OnboardController {
             end_date: offer.endDate?.toISOString() ?? null,
             application_deadline: offer.applicationDeadline?.toISOString() ?? null,
             posted_date: (offer.createdAt ?? new Date()).toISOString(),
-            skills: (offer.skillRequirements ?? []).map((sr: any) => ({
-                id: sr.skill?.id ?? sr.id,
-                name: sr.skill?.name ?? 'Unknown',
+            skills: (offer.skillRequirements ?? []).map((sr) => ({
+                id: sr.skill.id,
+                name: sr.skill.name,
                 level: sr.level,
                 mandatory: sr.mandatory,
             })),
             bookmarked,
             match_score: scoreRow ? Math.round(scoreRow.finalScore * 100) : null,
-            score_breakdown: scoreRow?.breakdown ?? null,
+            score_breakdown: scoreRow ? this.sanitizeBreakdown(scoreRow.breakdown, offer) ?? null : null,
         }
     }
 
     // Renders the stipend range or the binary paid/unpaid label as a single human-readable string.
-    private formatSalary(offer: any): string {
+    private formatSalary(offer: Offer): string {
         if (offer.stipendMin && offer.stipendMax) return `${offer.stipendMin}-${offer.stipendMax} TND`
         return offer.isPaid ? 'Paid' : 'Unpaid'
+    }
+
+    private sanitizeBreakdown(
+        breakdown: unknown,
+        offer: Pick<Offer, 'skillRequirements'>,
+    ): Record<string, number> | undefined {
+        if (!breakdown || typeof breakdown !== 'object' || Array.isArray(breakdown)) {
+            return undefined
+        }
+
+        const sanitized: Record<string, number> = {}
+        for (const [key, value] of Object.entries(breakdown as Record<string, unknown>)) {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                sanitized[key] = value
+            }
+        }
+
+        if ((offer.skillRequirements ?? []).length === 0) {
+            delete sanitized.skillMatch
+        }
+
+        return Object.keys(sanitized).length > 0 ? sanitized : undefined
     }
 
     @Get('virtual-interviewer/personas')

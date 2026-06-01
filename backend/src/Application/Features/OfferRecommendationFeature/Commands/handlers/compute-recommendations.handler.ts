@@ -1,7 +1,7 @@
 // Orchestrator: loads active students × offers, fans scoring out to ScoringService, persists the rows.
 
 import { Inject, Logger } from '@nestjs/common'
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs'
 import { ComputeRecommendationsCommand } from '../compute-recommendations.command'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
 import { IOfferRepository } from '../../../../repositories/offer.repository'
@@ -9,6 +9,7 @@ import { IRecommendationScoreRepository } from '../../../../repositories/recomme
 import { ScoringService } from '../../../../Services/RecommendationService/scoring.service'
 import { StudentProfile } from '../../../../../Domain/entities/student-profile.entity'
 import { Offer } from '../../../../../Domain/entities/offer.entity'
+import { RecommendationsRecomputedEvent } from '../../../../../Domain/events/recommendations-recomputed.event'
 
 const STUDENT_BATCH_SIZE = 50
 
@@ -25,6 +26,7 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
     private readonly logger = new Logger(ComputeRecommendationsHandler.name)
 
     constructor(
+        private readonly eventBus: EventBus,
         @Inject(IStudentProfileRepository)      private readonly students: IStudentProfileRepository,
         @Inject(IOfferRepository)               private readonly offers:   IOfferRepository,
         @Inject(IRecommendationScoreRepository) private readonly scores:   IRecommendationScoreRepository,
@@ -36,7 +38,7 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
         const start = Date.now()
         const modelVersion = await this.scoring.resolveModelVersion()
 
-        const activeOffers = (await this.offers.findAll()).filter(this.isActiveOffer)
+        const activeOffers = (await this.offers.findAll()).filter(offer => this.isActiveOffer(offer))
         const allStudents = await this.loadStudents(cmd.studentUserId)
 
         let pairsWritten = 0
@@ -53,6 +55,15 @@ export class ComputeRecommendationsHandler implements ICommandHandler<ComputeRec
             modelVersion,
         }
         this.logger.log(`recompute done: ${JSON.stringify(result)}`)
+        if (allStudents.length > 0) {
+            this.eventBus.publish(new RecommendationsRecomputedEvent(
+                allStudents.map(student => student.userId),
+                result.offersConsidered,
+                result.pairsWritten,
+                cmd.trigger,
+                new Date(),
+            ))
+        }
         return result
     }
 

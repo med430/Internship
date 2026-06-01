@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
@@ -35,10 +36,14 @@ const JobCard = ({
   isSaved = false,
   isPaid,
   applicationDeadline,
+  detailSource = "matcher",
+  showMatchScore = true,
   onSave,
   onView,
 }: JobCardProps) => {
+  const [now] = useState(() => Date.now());
   const displayScore = Math.round(matchScore);
+  const href = `/services/offers/${jobId}?from=${detailSource}`;
 
   // Match score colour ramp — green → blue → violet → orange.
   const matchTone =
@@ -51,13 +56,13 @@ const JobCard = ({
           : "bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400";
 
   const daysLeft = applicationDeadline
-    ? Math.ceil((applicationDeadline.getTime() - Date.now()) / 86_400_000)
+    ? Math.ceil((applicationDeadline.getTime() - now) / 86_400_000)
     : null;
   const isUrgent = daysLeft !== null && daysLeft > 0 && daysLeft <= 3;
 
   return (
     <Link
-      href={`/services/offers/${jobId}?from=matcher`}
+      href={href}
       onClick={() => onView?.(jobId)}
       className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
     >
@@ -91,14 +96,16 @@ const JobCard = ({
             </div>
           </div>
 
-          <div
-            className={cn(
-              "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums",
-              matchTone,
-            )}
-          >
-            {displayScore}% match
-          </div>
+          {showMatchScore && (
+            <div
+              className={cn(
+                "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums",
+                matchTone,
+              )}
+            >
+              {displayScore}% match
+            </div>
+          )}
         </header>
 
         {/* Title + meta */}
@@ -200,4 +207,4 @@ const JobCard = ({
   );
 };
 
-export default JobCard;
+export default memo(JobCard);

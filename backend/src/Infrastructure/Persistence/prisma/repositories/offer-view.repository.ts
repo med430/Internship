@@ -46,6 +46,16 @@ export class OfferViewRepositoryImpl
         return new Map(groups.map(g => [g.offerId, g._count._all]))
     }
 
+    async countByOffers(offerIds: string[]): Promise<Map<string, number>> {
+        if (offerIds.length === 0) return new Map()
+        const groups = await this.prisma.offerView.groupBy({
+            by: ['offerId'],
+            where: { offerId: { in: offerIds } },
+            _count: { _all: true },
+        })
+        return new Map(groups.map(g => [g.offerId, g._count._all]))
+    }
+
     async deleteOlderThan(cutoff: Date): Promise<number> {
         const result = await this.prisma.offerView.deleteMany({
             where: { viewedAt: { lt: cutoff } },

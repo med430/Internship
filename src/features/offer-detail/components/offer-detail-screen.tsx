@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ interface OfferDetailScreenProps {
 }
 
 export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
-  const isPremiumView = from === "matcher";
+  const showMatchContext = from === "matcher";
   const router = useRouter();
   const [offer, setOffer] = useState<OfferDetailDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +63,8 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
   const [selectedCoverLetter, setSelectedCoverLetter] =
     useState<CoverLetterSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [now] = useState(() => Date.now());
+  const trackedViewRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +76,10 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
       } else {
         setOffer(data);
         setIsSaved(data.bookmarked);
+        if (trackedViewRef.current !== offerId) {
+          trackedViewRef.current = offerId;
+          tracking.trackView(offerId, tracking.consumeOfferViewSource(offerId));
+        }
       }
       setLoading(false);
     })();
@@ -91,13 +97,14 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
     });
   }, [offerId]);
 
+  const applicationDeadline = offer?.application_deadline ?? null;
   const daysLeft = useMemo(() => {
-    if (!offer?.application_deadline) return null;
+    if (!applicationDeadline) return null;
     return Math.ceil(
-      (new Date(offer.application_deadline).getTime() - Date.now()) /
+      (new Date(applicationDeadline).getTime() - now) /
         86_400_000,
     );
-  }, [offer?.application_deadline]);
+  }, [applicationDeadline, now]);
 
   const handleApply = useCallback(async () => {
     if (!offer || !selectedCv) {
@@ -141,6 +148,7 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
   }
 
   const matchScore = offer.match_score ?? 0;
+  const breakdownItems = getBreakdownItems(offer.score_breakdown, offer.skills.length > 0);
   const matchTone =
     matchScore >= 80
       ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
@@ -194,7 +202,7 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
             </div>
           </div>
 
-          {isPremiumView && offer.match_score !== null && (
+          {showMatchContext && offer.match_score !== null && (
             <div
               className={cn(
                 "shrink-0 self-start rounded-xl border px-4 py-3 text-center",
@@ -350,23 +358,19 @@ export function OfferDetailScreen({ offerId, from }: OfferDetailScreenProps) {
             />
           </SidebarCard>
 
-          {isPremiumView &&
-            offer.score_breakdown &&
-            Object.keys(offer.score_breakdown).length > 0 && (
-              <SidebarCard title="Why we matched you">
-                <div className="space-y-2.5">
-                  {Object.entries(offer.score_breakdown).map(([key, value]) =>
-                    value == null ? null : (
-                      <ScoreBar
-                        key={key}
-                        label={prettifyBreakdownKey(key)}
-                        value={value}
-                      />
-                    ),
-                  )}
-                </div>
-              </SidebarCard>
-            )}
+          {showMatchContext && breakdownItems.length > 0 && (
+            <SidebarCard title="Why we matched you">
+              <div className="space-y-2.5">
+                {breakdownItems.map((item) => (
+                  <ScoreBar
+                    key={item.key}
+                    label={item.label}
+                    value={item.value}
+                  />
+                ))}
+              </div>
+            </SidebarCard>
+          )}
         </aside>
       </div>
 
@@ -481,7 +485,8 @@ function SidebarRow({ label, value }: { label: string; value: string }) {
 }
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
-  const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+  const normalized = value > 1 ? value / 100 : value;
+  const pct = Math.round(Math.max(0, Math.min(1, normalized)) * 100);
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1">
@@ -498,13 +503,30 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-function prettifyBreakdownKey(key: string): string {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (c) => c.toUpperCase())
-    .replace(/Match$/, "")
-    .replace(/Score$/, "")
-    .trim();
+const BREAKDOWN_LABELS = [
+  { key: "skillMatch", label: "Required skills" },
+  { key: "domainMatch", label: "Domain preference" },
+  { key: "locationMatch", label: "Location preference" },
+  { key: "workModeMatch", label: "Work mode" },
+  { key: "availabilityScore", label: "Availability" },
+  { key: "languageMatch", label: "Languages" },
+  { key: "offerTypeMatch", label: "Offer type" },
+] as const;
+
+function getBreakdownItems(
+  breakdown: Record<string, number | undefined> | null,
+  hasRequiredSkills: boolean,
+) {
+  if (!breakdown) return [];
+
+  return BREAKDOWN_LABELS.flatMap(({ key, label }) => {
+    if (key === "skillMatch" && !hasRequiredSkills) return [];
+
+    const value = breakdown[key];
+    if (typeof value !== "number" || !Number.isFinite(value)) return [];
+
+    return [{ key, label, value }];
+  });
 }
 
 async function resolveCvId(source: CVSource): Promise<string> {

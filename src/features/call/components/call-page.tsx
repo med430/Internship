@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Copy, Check, Phone, PhoneOff, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { useCallSocket } from '@/hooks/use-call-socket';
@@ -19,11 +19,28 @@ function createEmptyMedia(): PeerMedia {
     return { ms: null, sb: null, pending: [], liveEdgeInterval: null };
 }
 
+function subscribeToLocationChange() {
+    return () => {};
+}
+
+function getLocationOrigin() {
+    return window.location.origin;
+}
+
+function getServerLocationOrigin() {
+    return '';
+}
+
 export default function CallPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
     const roomFromUrl = searchParams.get('room') ?? '';
+    const locationOrigin = useSyncExternalStore(
+        subscribeToLocationChange,
+        getLocationOrigin,
+        getServerLocationOrigin,
+    );
     const [joined, setJoined] = useState(false);
     const [text, setText] = useState('');
     const [peers, setPeers] = useState<string[]>([]);
@@ -48,10 +65,9 @@ export default function CallPage() {
         });
     }, []);
 
-    const callLink =
-        typeof window !== 'undefined'
-            ? `${window.location.origin}/services/call?room=${roomFromUrl}`
-            : '';
+    const callLink = roomFromUrl && locationOrigin
+        ? `${locationOrigin}/services/call?room=${roomFromUrl}`
+        : '';
 
     const handleNewCall = () => {
         const id = crypto.randomUUID();
@@ -59,6 +75,7 @@ export default function CallPage() {
     };
 
     const handleCopyLink = async () => {
+        if (!callLink) return;
         await navigator.clipboard.writeText(callLink);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
