@@ -17,7 +17,7 @@ import { Roles } from '../decorators/roles.decorator'
 
 @Controller('me')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.STUDENT, Role.RECRUITER)
+@Roles(Role.STUDENT, Role.RECRUITER, Role.ADMIN)
 export class ProfileController {
     constructor(private commandBus: CommandBus) {}
 

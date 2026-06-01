@@ -62,7 +62,10 @@ export const updateSession = async (request: NextRequest) => {
     }
     // Recruiter landed on student area → send to recruiter dashboard
     if (isRecruiter) return redirect("/recruiter/offers");
-    // Admin gating for /services/admin is handled in the layout (needs NeonDB call)
+    // Admin must stay within /services/admin — redirect anything else to admin dashboard
+    if (isAdmin && !path.startsWith("/services/admin")) {
+      return redirect("/services/admin");
+    }
   }
 
   // ── 2. Recruiter-only area (exclude auth pages handled in rule 4) ────────

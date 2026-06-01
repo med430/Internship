@@ -19,9 +19,10 @@ interface ProfileTabsProps {
   profile: Profile;
   userEmail: string;
   isOAuthUser: boolean;
+  role?: string;
 }
 
-const tabs = [
+const ALL_TABS = [
   { id: "profile", label: "About me", icon: User },
   { id: "preferences", label: "Job preferences", icon: Sparkles },
   { id: "avatar", label: "Avatar", icon: Image },
@@ -30,11 +31,17 @@ const tabs = [
   { id: "danger", label: "Danger Zone", icon: AlertTriangle, isDanger: true },
 ];
 
+const ADMIN_HIDDEN_TABS = new Set(["preferences", "subscription"]);
+
 export function ProfileTabs({
   profile,
   userEmail,
   isOAuthUser,
+  role,
 }: ProfileTabsProps) {
+  const tabs = role === "ADMIN"
+    ? ALL_TABS.filter((t) => !ADMIN_HIDDEN_TABS.has(t.id))
+    : ALL_TABS;
   const [activeTab, setActiveTab] = useState("profile");
 
   return (
