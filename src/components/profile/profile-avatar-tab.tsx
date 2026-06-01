@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -37,12 +37,35 @@ async function getToken(): Promise<string | null> {
 
 export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  // Initialise from prop; will be overridden by the backend fetch below
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     profile.avatar_url || null,
   );
-  const [, startTransition] = useTransition();
+
+  // Fetch the latest avatarUrl from the authenticated backend profile on mount.
+  // This ensures the correct Cloudinary URL is shown even when the Supabase
+  // session profile (used by the page server component) is out of sync.
+  useEffect(() => {
+    let cancelled = false;
+    async function syncAvatar() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const res = await fetch(`${getClientApiBaseUrl()}/me/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { avatarUrl?: string | null };
+        if (data.avatarUrl) setPreviewUrl(data.avatarUrl);
+      } catch { /* silent */ }
+    }
+    void syncAvatar();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -88,6 +111,7 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
       const { avatarUrl } = (await res.json()) as { avatarUrl: string };
       setPreviewUrl(avatarUrl);
       toast.success("Avatar uploaded successfully!");
+      // Refresh the server layout so UserNav picks up the new avatar immediately
       startTransition(() => router.refresh());
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "An unexpected error occurred");

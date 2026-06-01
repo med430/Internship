@@ -5,6 +5,7 @@ import { UpdateStudentProfileCommand } from '../update-student-profile.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
 import { GenericCommandHandler } from '../../../GenericFeature/Commands/handlers/generic-command.handler'
+import { PrismaService } from '../../../../../Infrastructure/Persistence/prisma/prisma.service'
 
 import { User } from '../../../../../Domain/entities/user.entity'
 import {ProfileResponseDTO} from "../../../../../API/http/profile/dto/profile-response.dto";
@@ -22,7 +23,9 @@ ProfileResponseDTO
         private userRepo: IUserRepository,
 
         @Inject(IStudentProfileRepository)
-        private studentProfileRepo: IStudentProfileRepository
+        private studentProfileRepo: IStudentProfileRepository,
+
+        private readonly prisma: PrismaService,
     ) { super() }
 
     protected async map(command: UpdateStudentProfileCommand): Promise<UpdateStudentContext> {
@@ -69,6 +72,17 @@ ProfileResponseDTO
 
     protected async persist(ctx: UpdateStudentContext): Promise<ProfileResponseDTO> {
         const savedUser = await this.userRepo.update(ctx.user)
+
+        // Sync display fields to publicSessionProfile so the services layout nav
+        // (UserNav) reflects name/avatar/email changes after router.refresh()
+        await this.prisma.publicSessionProfile.updateMany({
+            where: { sessionKey: savedUser.id },
+            data: {
+                name:      savedUser.name      ?? '',
+                email:     savedUser.email     ?? null,
+                avatarUrl: savedUser.avatarUrl ?? null,
+            },
+        })
 
         return new ProfileResponseDTO(
             savedUser.id,

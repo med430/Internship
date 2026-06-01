@@ -9,7 +9,7 @@ import { NotificationBell } from "@/components/shared/notification-bell";
 import { ChatNotificationProvider } from "@/components/shared/chat-notification-provider";
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
-import { getServerProfile } from "@/lib/profile/backend";
+import { getServerProfile, getStudentNavData } from "@/lib/profile/backend";
 import { getServerMe } from "@/lib/auth/me";
 
 export default async function ServicesLayout({
@@ -31,15 +31,19 @@ export default async function ServicesLayout({
     redirect("/login");
   }
 
-  const [profile, me] = await Promise.all([getServerProfile(), getServerMe()]);
+  const [profile, me, navData] = await Promise.all([
+    getServerProfile(),
+    getServerMe(),
+    getStudentNavData(),
+  ]);
   // Role is sourced from NeonDB (the backend's RolesGuard reads the same place). JWT app_metadata is the fallback.
   const role = me?.role ?? (user?.app_metadata?.role as string | undefined) ?? undefined;
 
   const userData = {
-    name: profile?.name || user?.user_metadata?.name || "User",
+    // Prefer navData (reads User entity directly) so name/avatar are always fresh
+    name: navData?.name || profile?.name || user?.user_metadata?.name || "User",
     email: profile?.email || user?.email || "",
-    avatar:
-      (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
+    avatar: navData?.avatarUrl || (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
     profileCompletion: calculateProfileCompletion(profile),
     role,
   };

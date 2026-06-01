@@ -3,6 +3,7 @@ import { Inject, NotFoundException } from '@nestjs/common'
 import { UploadAvatarCommand } from '../upload-avatar.command'
 import { IUserRepository } from '../../../../repositories/user.repository'
 import { FileStorageService } from '../../../../Services/FileStorageService/FileStorageService'
+import { PrismaService } from '../../../../../Infrastructure/Persistence/prisma/prisma.service'
 
 @CommandHandler(UploadAvatarCommand)
 export class UploadAvatarHandler implements ICommandHandler<UploadAvatarCommand> {
@@ -13,6 +14,8 @@ export class UploadAvatarHandler implements ICommandHandler<UploadAvatarCommand>
 
         @Inject(FileStorageService)
         private readonly fileService: FileStorageService,
+
+        private readonly prisma: PrismaService,
     ) {}
 
     async execute(command: UploadAvatarCommand): Promise<{ avatarUrl: string }> {
@@ -23,6 +26,12 @@ export class UploadAvatarHandler implements ICommandHandler<UploadAvatarCommand>
 
         user.avatarUrl = avatarUrl
         await this.userRepo.update(user)
+
+        // Sync avatarUrl to publicSessionProfile so getServerProfile() reflects the upload immediately
+        await this.prisma.publicSessionProfile.updateMany({
+            where: { sessionKey: command.userId },
+            data: { avatarUrl },
+        })
 
         return { avatarUrl }
     }
