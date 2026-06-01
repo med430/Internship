@@ -666,6 +666,14 @@ model RecommendationScore {
   @@index([computedAt])
 }
 
+// Per-collection watermark for the ML sidecar's incremental embedding sync.
+// Written only by the Python worker; declared here so Prisma owns the schema (no drift).
+model EmbeddingSyncState {
+  collection   String    @id
+  lastSyncedAt DateTime
+  lastRunAt    DateTime?
+}
+
 // ─────────────────────────────────────────
 // ONBOARD PUBLIC SESSION DATA (continued)
 // ─────────────────────────────────────────
