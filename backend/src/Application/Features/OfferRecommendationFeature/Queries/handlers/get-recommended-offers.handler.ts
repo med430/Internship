@@ -13,6 +13,7 @@ import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { RecommendationScore } from '../../../../../Domain/entities/recommendation-score.entity'
 
 const RANKED_FEED_CANDIDATE_LIMIT = 200
+const MATCH_FRESHNESS_FLOOR = 0.7
 // Stable seed for the fallback tail's explore ranking so pagination is deterministic across pages.
 const FALLBACK_EXPLORE_SEED = 0
 
@@ -302,7 +303,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         viewCount: number,
     ): number {
         const ageDays = offer.createdAt ? (Date.now() - offer.createdAt.getTime()) / 86_400_000 : 0
-        const freshness = Math.max(0.5, Math.exp(-ageDays / 14))
+        const freshness = Math.max(MATCH_FRESHNESS_FLOOR, Math.exp(-ageDays / 14))
 
         const deadlineUrgency = this.deadlineFactor(offer.applicationDeadline)
         const bookmarkBoost = isBookmarked ? 0.1 : 0

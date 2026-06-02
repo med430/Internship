@@ -35,6 +35,8 @@ import { IRecommendationScoreRepository } from '../../../Application/repositorie
 import { Offer } from '../../../Domain/entities/offer.entity'
 import type { ScoreBreakdown } from '../../../Domain/entities/recommendation-score.entity'
 
+const MATCH_FRESHNESS_FLOOR = 0.7
+
 @Controller()
 export class OnboardController {
     constructor(
@@ -203,7 +205,7 @@ export class OnboardController {
     // consistent with the card the student tapped to get here.
     private adjustedScore(finalScore: number, offer: Offer, isBookmarked: boolean): number {
         const ageDays = offer.createdAt ? (Date.now() - offer.createdAt.getTime()) / 86_400_000 : 0
-        const freshness = Math.max(0.5, Math.exp(-ageDays / 14))
+        const freshness = Math.max(MATCH_FRESHNESS_FLOOR, Math.exp(-ageDays / 14))
         const deadlineUrgency = offer.applicationDeadline
             ? (() => { const d = (offer.applicationDeadline!.getTime() - Date.now()) / 86_400_000; return d > 0 && d < 3 ? 1.2 : 1.0 })()
             : 1.0
