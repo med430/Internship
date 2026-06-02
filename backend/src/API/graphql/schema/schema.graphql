@@ -137,6 +137,8 @@ type Offer implements BaseEntity {
     domain: String!
 
     isPaid: Boolean!
+    stipendMin: Float
+    stipendMax: Float
     workMode: WorkMode!
     startDate: Date!
     endDate: Date!
