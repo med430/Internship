@@ -14,4 +14,13 @@ export class ExperienceRepositoryImpl
     constructor(prisma: PrismaService, mapper: ExperienceMapper) {
         super(prisma, 'experience', mapper)
     }
+
+    // current student's experiences, excluding soft-deleted
+    async findByStudentProfileId(studentProfileId: string): Promise<Experience[]> {
+        const rows = await (this.prisma as any).experience.findMany({
+            where: { studentProfileId, deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+        })
+        return rows.map((r: any) => this.mapper.toDomain(r))
+    }
 }

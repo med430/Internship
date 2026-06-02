@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database.types";
+import type { MyProfile } from "@/lib/api/me-profile-client";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -66,6 +67,24 @@ export async function getProfileWithAccessToken(
   return (await response.json()) as Profile;
 }
 
+export async function getMeProfileWithAccessToken(
+  accessToken: string,
+): Promise<MyProfile | null> {
+  const response = await fetch(`${API_BASE_URL}/me/profile`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as MyProfile;
+}
+
 export async function getServerProfile(): Promise<Profile | null> {
   const accessToken = await getAccessToken();
 
@@ -74,6 +93,16 @@ export async function getServerProfile(): Promise<Profile | null> {
   }
 
   return getProfileWithAccessToken(accessToken);
+}
+
+export async function getServerMyProfile(): Promise<MyProfile | null> {
+  const accessToken = await getAccessToken();
+
+  if (!accessToken) {
+    return null;
+  }
+
+  return getMeProfileWithAccessToken(accessToken);
 }
 
 export async function patchServerProfile(

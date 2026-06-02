@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -76,6 +77,9 @@ export default function OfferFilterModal({
             <Building className="w-5 h-5" />
             Filter offers
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Choose offer type, work mode, domain, and location filters.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

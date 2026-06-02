@@ -11,9 +11,13 @@ import {
 import { useProfileInfoController } from "../hooks/use-profile-info-controller";
 import { ProfileCompletionCard } from "./profile-completion-card";
 import { ProfileInfoForm } from "./profile-info-form";
+import { EducationsEditor } from "./collections/educations-editor";
+import { ExperiencesEditor } from "./collections/experiences-editor";
+import { ProjectsEditor } from "./collections/projects-editor";
+import { CertificationsEditor } from "./collections/certifications-editor";
 
 export function ProfileInfoTabScreen() {
-  const { completion, form, isSubmitting, loading, onSubmit } =
+  const { completion, form, isSubmitting, loading, onSubmit, profile } =
     useProfileInfoController();
 
   if (loading) {
@@ -43,6 +47,12 @@ export function ProfileInfoTabScreen() {
           />
         </CardContent>
       </Card>
+
+      {/* CV / background collections — each saves immediately via the /me/* endpoints */}
+      <EducationsEditor initial={profile?.educations ?? []} />
+      <ExperiencesEditor initial={profile?.experiences ?? []} />
+      <ProjectsEditor initial={profile?.projects ?? []} />
+      <CertificationsEditor initial={profile?.certifications ?? []} />
     </div>
   );
 }

@@ -35,6 +35,9 @@ export class DeleteEducationHandler
 
         await this.repo.save(edu)
 
+        // bump the parent profile so the embedding worker re-syncs this student
+        await this.studentRepo.update(profile)
+
         return { message: 'Education deleted' }
     }
 }

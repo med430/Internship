@@ -11,6 +11,44 @@ export interface MyProfileSkill {
   level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
 }
 
+export interface MyProfileProject {
+  id: string;
+  title: string;
+  description: string;
+  technologies: string[];
+  githubUrl: string | null;
+  demoUrl: string | null;
+}
+
+export interface MyProfileExperience {
+  id: string;
+  company: string;
+  role: string;
+  startDate: string | null;
+  endDate: string | null;
+  description: string | null;
+}
+
+export interface MyProfileEducation {
+  id: string;
+  school: string;
+  degree: string;
+  field: string;
+  startDate: string | null;
+  endDate: string | null;
+  description: string | null;
+}
+
+export interface MyProfileCertification {
+  id: string;
+  name: string;
+  organization: string;
+  issueDate: string | null;
+  expirationDate: string | null;
+  credentialId: string | null;
+  credentialUrl: string | null;
+}
+
 export interface MyProfile {
   // User entity fields
   name: string | null;
@@ -40,10 +78,17 @@ export interface MyProfile {
   availableFrom: string | null;
   availableTo: string | null;
   skills: MyProfileSkill[];
+  projects: MyProfileProject[];
+  experiences: MyProfileExperience[];
+  educations: MyProfileEducation[];
+  certifications: MyProfileCertification[];
 }
 
 export type MyProfilePatch = Partial<
-  Omit<MyProfile, "id" | "userId" | "skills">
+  Omit<
+    MyProfile,
+    "id" | "userId" | "skills" | "projects" | "experiences" | "educations" | "certifications"
+  >
 >;
 
 export async function getMyProfile(): Promise<MyProfile | null> {

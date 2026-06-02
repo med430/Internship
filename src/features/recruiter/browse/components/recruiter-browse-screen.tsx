@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -373,6 +374,9 @@ export function RecruiterBrowseScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <DialogTitle className="text-xl">{detailOffer.title}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Review offer details including company, location, dates, description, and required skills.
+                    </DialogDescription>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
                       {detailOffer.company && (
                         <span className="flex items-center gap-1">

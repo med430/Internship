@@ -54,4 +54,10 @@ export class UpdateProjectHandler extends GenericCommandHandler<
     protected async persist(entity: Project) {
         return this.repo.save(entity)
     }
+
+    // bump the parent profile so the embedding worker re-syncs this student
+    protected async afterPersist(_result: Project, cmd: UpdateProjectCommand): Promise<void> {
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (profile) await this.studentRepo.update(profile)
+    }
 }

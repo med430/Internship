@@ -18,6 +18,10 @@ import { SupabaseUser } from '../decorators/supabase-user.decorator'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
 import { IStudentProfileRepository } from '../../../Application/repositories/student-profile.repository'
 import { IUserRepository } from '../../../Application/repositories/user.repository'
+import { IProjectRepository } from '../../../Application/repositories/project.repository'
+import { IExperienceRepository } from '../../../Application/repositories/experience.repository'
+import { IEducationRepository } from '../../../Application/repositories/education.repository'
+import { ICertificationRepository } from '../../../Application/repositories/certification.repository'
 import { UpdateStudentProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-student-profile.command'
 import { Gender } from '../../../Domain/enums/gender'
 import { UpdateMeProfileDto } from './dto/update-me-profile.dto'
@@ -31,6 +35,10 @@ export class MeProfileController {
         private readonly commandBus: CommandBus,
         @Inject(IStudentProfileRepository) private readonly studentRepo: IStudentProfileRepository,
         @Inject(IUserRepository) private readonly userRepo: IUserRepository,
+        @Inject(IProjectRepository) private readonly projectRepo: IProjectRepository,
+        @Inject(IExperienceRepository) private readonly experienceRepo: IExperienceRepository,
+        @Inject(IEducationRepository) private readonly educationRepo: IEducationRepository,
+        @Inject(ICertificationRepository) private readonly certificationRepo: ICertificationRepository,
     ) {}
 
     // Returns the current student's full profile: User fields + StudentProfile fields + skills.
@@ -41,6 +49,13 @@ export class MeProfileController {
             this.userRepo.findById(user.id),
         ])
         if (!profile) throw new NotFoundException('Student profile not found')
+
+        const [projects, experiences, educations, certifications] = await Promise.all([
+            this.projectRepo.findByStudentProfileId(profile.id),
+            this.experienceRepo.findByStudentProfileId(profile.id),
+            this.educationRepo.findByStudentProfileId(profile.id),
+            this.certificationRepo.findByStudentProfileId(profile.id),
+        ])
 
         return {
             // User fields
@@ -75,6 +90,41 @@ export class MeProfileController {
                 id: sa.id,
                 skillId: sa.skillId,
                 level: sa.level,
+            })),
+
+            projects: projects.map(p => ({
+                id: p.id,
+                title: p.title,
+                description: p.description,
+                technologies: p.technologies,
+                githubUrl: p.githubUrl ?? null,
+                demoUrl: p.demoUrl ?? null,
+            })),
+            experiences: experiences.map(e => ({
+                id: e.id,
+                company: e.company,
+                role: e.role,
+                startDate: e.startDate?.toISOString() ?? null,
+                endDate: e.endDate?.toISOString() ?? null,
+                description: e.description ?? null,
+            })),
+            educations: educations.map(ed => ({
+                id: ed.id,
+                school: ed.school,
+                degree: ed.degree,
+                field: ed.field,
+                startDate: ed.startDate?.toISOString() ?? null,
+                endDate: ed.endDate?.toISOString() ?? null,
+                description: ed.description ?? null,
+            })),
+            certifications: certifications.map(c => ({
+                id: c.id,
+                name: c.name,
+                organization: c.organization,
+                issueDate: c.issueDate?.toISOString() ?? null,
+                expirationDate: c.expirationDate?.toISOString() ?? null,
+                credentialId: c.credentialId ?? null,
+                credentialUrl: c.credentialUrl ?? null,
             })),
         }
     }

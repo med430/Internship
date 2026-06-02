@@ -1,6 +1,6 @@
 import type { Database } from "@/types/database.types";
 import { calculateProfileCompletion } from "@/lib/profile/completion";
-import { getServerProfile, patchServerProfile } from "@/lib/profile/backend";
+import { getServerMyProfile, getServerProfile, patchServerProfile } from "@/lib/profile/backend";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -23,8 +23,15 @@ export async function updateUserProfile(
 }
 
 export async function getProfileCompletion(): Promise<number> {
+  const myProfile = await getServerMyProfile();
+  if (myProfile) {
+    return calculateProfileCompletion(myProfile);
+  }
+
   const profile = await getUserProfile();
-  return calculateProfileCompletion(profile);
+  return typeof profile?.profile_completion === "number"
+    ? profile.profile_completion
+    : calculateProfileCompletion(profile);
 }
 
 export async function hasActiveSubscription(): Promise<boolean> {

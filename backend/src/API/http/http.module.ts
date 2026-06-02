@@ -25,6 +25,10 @@ import { ChatController } from "./chat/chat.controller";
 import { MeController } from "./auth-me/me.controller";
 import { MeProfileController } from "./me-profile/me-profile.controller";
 import { MeSkillsController } from "./me-profile/me-skills.controller";
+import { MeProjectsController } from "./me-profile/me-projects.controller";
+import { MeExperiencesController } from "./me-profile/me-experiences.controller";
+import { MeEducationsController } from "./me-profile/me-educations.controller";
+import { MeCertificationsController } from "./me-profile/me-certifications.controller";
 import { ReferenceController } from "./reference/reference.controller";
 import { NotificationController } from "./notifications/notification.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
@@ -70,6 +74,10 @@ const chatEnabled = !!process.env.CHAT_DB_URL;
         MeController,
         MeProfileController,
         MeSkillsController,
+        MeProjectsController,
+        MeExperiencesController,
+        MeEducationsController,
+        MeCertificationsController,
         ReferenceController,
         NotificationController,
         InterviewSlotController,

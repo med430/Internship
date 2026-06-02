@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { getMyProfile, patchMyProfile, type MyProfile } from "@/lib/api/me-profile-client";
+import { calculateProfileCompletion } from "@/lib/profile/completion";
 import {
   buildDefaultValues,
   mapFormToProfilePayload,
@@ -50,7 +51,7 @@ export function useProfileInfoController() {
     return () => { cancelled = true; };
   }, [form]);
 
-  const completion = profile ? computeCompletion(profile) : 0;
+  const completion = calculateProfileCompletion(profile);
 
   const onSubmit = async (data: ProfileInfoFormValues) => {
     setIsSubmitting(true);
@@ -66,16 +67,5 @@ export function useProfileInfoController() {
     }
   };
 
-  return { form, onSubmit, completion, isSubmitting, loading };
-}
-
-function computeCompletion(profile: MyProfile): number {
-  const fields: (keyof MyProfile)[] = [
-    "name", "lastname", "bio", "birthDate", "gender", "address", "city", "username", "phone",
-  ];
-  const filled = fields.filter((f) => {
-    const v = profile[f];
-    return v !== null && v !== undefined && v !== "";
-  }).length;
-  return Math.round((filled / fields.length) * 100);
+  return { form, onSubmit, completion, isSubmitting, loading, profile };
 }

@@ -36,6 +36,9 @@ export class DeleteExperienceHandler
 
         await this.repo.save(exp)
 
+        // bump the parent profile so the embedding worker re-syncs this student
+        await this.studentRepo.update(profile)
+
         return { message: 'Experience deleted' }
     }
 }

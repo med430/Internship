@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getServerProfile } from "@/lib/profile/backend";
+import { getServerMyProfile, getServerProfile } from "@/lib/profile/backend";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -19,11 +19,19 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const profile = await getServerProfile();
+  const [profile, myProfile] = await Promise.all([
+    getServerProfile(),
+    getServerMyProfile(),
+  ]);
 
   if (!profile) {
     redirect("/complete-profile");
   }
+
+  const profileWithCanonicalAvatar = {
+    ...profile,
+    avatar_url: myProfile?.avatarUrl ?? profile.avatar_url,
+  };
 
   const isOAuthUser = user.identities?.some(
     (identity) => identity.provider !== "email",
@@ -57,7 +65,7 @@ export default async function ProfilePage() {
 
           <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
             <ProfileTabs
-              profile={profile}
+              profile={profileWithCanonicalAvatar}
               userEmail={user.email || ""}
               isOAuthUser={isOAuthUser || false}
             />

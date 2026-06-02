@@ -14,4 +14,13 @@ export class CertificationRepositoryImpl
     constructor(prisma: PrismaService, mapper: CertificationMapper) {
         super(prisma, 'certification', mapper)
     }
+
+    // current student's certifications, excluding soft-deleted
+    async findByStudentProfileId(studentProfileId: string): Promise<Certification[]> {
+        const rows = await (this.prisma as any).certification.findMany({
+            where: { studentProfileId, deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+        })
+        return rows.map((r: any) => this.mapper.toDomain(r))
+    }
 }

@@ -9,8 +9,15 @@ import { NotificationBell } from "@/components/shared/notification-bell";
 import { ChatNotificationProvider } from "@/components/shared/chat-notification-provider";
 import { calculateProfileCompletion } from "@/lib/profile/completion";
 import LogoLink from "@/components/logo-link";
-import { getServerProfile } from "@/lib/profile/backend";
+import { getServerMyProfile, getServerProfile } from "@/lib/profile/backend";
 import { getServerMe } from "@/lib/auth/me";
+
+function formatName(first?: string | null, last?: string | null) {
+  return [first, last]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" ")
+    .trim();
+}
 
 export default async function ServicesLayout({
   children,
@@ -31,16 +38,29 @@ export default async function ServicesLayout({
     redirect("/login");
   }
 
-  const [profile, me] = await Promise.all([getServerProfile(), getServerMe()]);
+  const [profile, myProfile, me] = await Promise.all([
+    getServerProfile(),
+    getServerMyProfile(),
+    getServerMe(),
+  ]);
   // Role is sourced from NeonDB (the backend's RolesGuard reads the same place). JWT app_metadata is the fallback.
   const role = me?.role ?? (user?.app_metadata?.role as string | undefined) ?? undefined;
+  const name =
+    formatName(myProfile?.name, myProfile?.lastname) ||
+    profile?.name ||
+    user?.user_metadata?.name ||
+    "User";
+  const profileCompletion = myProfile
+    ? calculateProfileCompletion(myProfile)
+    : typeof profile?.profile_completion === "number"
+      ? profile.profile_completion
+      : calculateProfileCompletion(profile);
 
   const userData = {
-    name: profile?.name || user?.user_metadata?.name || "User",
+    name,
     email: profile?.email || user?.email || "",
-    avatar:
-      (profile?.avatar_url as string) || user?.user_metadata?.avatar_url || "",
-    profileCompletion: calculateProfileCompletion(profile),
+    avatar: myProfile?.avatarUrl || profile?.avatar_url || user?.user_metadata?.avatar_url || "",
+    profileCompletion,
     role,
   };
 

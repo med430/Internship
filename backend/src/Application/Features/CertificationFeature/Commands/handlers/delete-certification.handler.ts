@@ -34,6 +34,9 @@ export class DeleteCertificationHandler
 
         await this.repo.save(cert)
 
+        // bump the parent profile so the embedding worker re-syncs this student
+        await this.studentRepo.update(profile)
+
         return { message: 'Certification deleted' }
     }
 }

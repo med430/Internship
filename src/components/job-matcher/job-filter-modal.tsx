@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -117,6 +118,9 @@ export default function JobFilterModal({
             <Building className="w-5 h-5" />
             Job Filters
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Choose job function, type, work model, experience, location, skill, and date filters.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

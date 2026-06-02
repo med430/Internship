@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
 import type { Database } from "@/types/database.types";
 
@@ -24,14 +25,15 @@ interface ProfileAvatarTabProps {
   profile: Profile;
 }
 
-async function getToken(): Promise<string | null> {
+async function syncPublicProfileAvatar(avatarUrl: string) {
   try {
-    const res = await fetch("/auth/session", { credentials: "include", cache: "no-store" });
-    if (!res.ok) return null;
-    const { accessToken } = (await res.json()) as { accessToken?: string };
-    return accessToken ?? null;
+    await fetchWithAuth(`${getClientApiBaseUrl()}/onboard/profile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatar_url: avatarUrl }),
+    });
   } catch {
-    return null;
+    // The canonical avatar is already saved by /me/avatar; this only keeps legacy profile consumers in sync.
   }
 }
 
@@ -68,15 +70,11 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
   const handleUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
-
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const res = await fetch(`${getClientApiBaseUrl()}/me/avatar`, {
+      const res = await fetchWithAuth(`${getClientApiBaseUrl()}/me/avatar`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -86,6 +84,7 @@ export function ProfileAvatarTab({ profile }: ProfileAvatarTabProps) {
       }
 
       const { avatarUrl } = (await res.json()) as { avatarUrl: string };
+      await syncPublicProfileAvatar(avatarUrl);
       setPreviewUrl(avatarUrl);
       toast.success("Avatar uploaded successfully!");
       startTransition(() => router.refresh());

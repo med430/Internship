@@ -14,4 +14,13 @@ export class EducationRepositoryImpl
     constructor(prisma: PrismaService, mapper: EducationMapper) {
         super(prisma, 'education', mapper)
     }
+
+    // current student's education, excluding soft-deleted
+    async findByStudentProfileId(studentProfileId: string): Promise<Education[]> {
+        const rows = await (this.prisma as any).education.findMany({
+            where: { studentProfileId, deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+        })
+        return rows.map((r: any) => this.mapper.toDomain(r))
+    }
 }

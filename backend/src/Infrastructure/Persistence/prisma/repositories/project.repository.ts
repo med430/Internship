@@ -14,4 +14,10 @@ export class ProjectRepositoryImpl
     constructor(prisma: PrismaService, mapper: ProjectMapper) {
         super(prisma, 'project', mapper)
     }
+
+    // current student's projects (Project has no soft-delete column)
+    async findByStudentProfileId(studentProfileId: string): Promise<Project[]> {
+        const rows = await (this.prisma as any).project.findMany({ where: { studentProfileId } })
+        return rows.map((r: any) => this.mapper.toDomain(r))
+    }
 }

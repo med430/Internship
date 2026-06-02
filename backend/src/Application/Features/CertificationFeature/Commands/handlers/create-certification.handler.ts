@@ -47,4 +47,10 @@ export class CreateCertificationHandler extends GenericCommandHandler<
     protected async persist(entity: Certification) {
         return this.repo.save(entity)
     }
+
+    // bump the parent profile so the embedding worker re-syncs this student
+    protected async afterPersist(_result: Certification, cmd: CreateCertificationCommand): Promise<void> {
+        const profile = await this.studentRepo.findByUserId(cmd.userId)
+        if (profile) await this.studentRepo.update(profile)
+    }
 }

@@ -41,12 +41,16 @@ SELECT sp."userId"                                              AS point_id,
                    FROM "Project" p WHERE p."studentProfileId" = sp.id) q), '{}') AS projects,
        COALESCE((SELECT array_agg(item ORDER BY item COLLATE "C") FROM (
                    SELECT e.role || ' @ ' || e.company || ': ' || COALESCE(e.description, '') AS item
-                   FROM "Experience" e WHERE e."studentProfileId" = sp.id) q), '{}') AS experiences,
+                   FROM "Experience" e WHERE e."studentProfileId" = sp.id
+                     AND e."deletedAt" IS NULL) q), '{}') AS experiences,
        COALESCE((SELECT array_agg(item ORDER BY item COLLATE "C") FROM (
-                   SELECT ed.degree || ' ' || ed.field AS item
-                   FROM "Education" ed WHERE ed."studentProfileId" = sp.id) q), '{}') AS educations,
-       COALESCE((SELECT array_agg(c.name ORDER BY c.name COLLATE "C")
-                 FROM "Certification" c WHERE c."studentProfileId" = sp.id), '{}') AS cert_names
+                   SELECT ed.degree || ' ' || ed.field || ' @ ' || ed.school
+                          || ': ' || COALESCE(ed.description, '') AS item
+                   FROM "Education" ed WHERE ed."studentProfileId" = sp.id
+                     AND ed."deletedAt" IS NULL) q), '{}') AS educations,
+       COALESCE((SELECT array_agg((c.name || ' @ ' || c.organization) ORDER BY c.name COLLATE "C")
+                 FROM "Certification" c WHERE c."studentProfileId" = sp.id
+                   AND c."deletedAt" IS NULL), '{}') AS cert_names
 FROM "StudentProfile" sp
 JOIN "User" u ON u.id = sp."userId"
 WHERE sp."updatedAt" > $1
