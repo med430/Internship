@@ -1,0 +1,74 @@
+% ─── Diagramme de classes — Phase 3 : Moteur de Recommandation ───────────────
+% Entités : RecommendationScore, OfferView, OfferBookmark,
+%           OfferImpression, SearchQuery, EmbeddingSyncState
+\begin{tikzpicture}[
+  assoc/.style={-{Stealth[length=5pt]}, draw=gray!70, thin},
+  lbl/.style={font=\scriptsize, fill=white, inner sep=1pt, midway},
+]
+
+% ── Rangée haute : RecommendationScore (entité centrale) ─────────────────────
+\umlclass{reco}{5.0}{0}{5cm}{RecommendationScore}{%
+\textbf{FK} studentId : UUID\\
+\textbf{FK} offerId : UUID\\
+contentScore : Float\\
+semanticScore : Float\\
+finalScore : Float\\
+updatedAt : DateTime}{%
++compute()\\
++blend(content, semantic)}
+
+% ── Rangée milieu : signaux comportementaux ───────────────────────────────────
+\umlclass{view}{0}{-6.5}{4.2cm}{OfferView}{%
+\textbf{PK} id : UUID\\
+\textbf{FK} studentId : UUID\\
+\textbf{FK} offerId : UUID\\
+clickPosition : Int?\\
+dwellTime : Int?\\
+createdAt : DateTime}{%
++track()}
+
+\umlclass{bookmark}{5.5}{-6.5}{4.2cm}{OfferBookmark}{%
+\textbf{PK} id : UUID\\
+\textbf{FK} studentId : UUID\\
+\textbf{FK} offerId : UUID\\
+createdAt : DateTime}{%
++save()\\
++remove()}
+
+\umlclass{query}{11}{-6.5}{4cm}{SearchQuery}{%
+\textbf{PK} id : UUID\\
+\textbf{FK} studentId : UUID\\
+query : String\\
+createdAt : DateTime}{%
++record()}
+
+% ── Rangée basse : watermark ML ──────────────────────────────────────────────
+\umlclass{sync}{5.0}{-13}{5cm}{EmbeddingSyncState}{%
+\textbf{PK} collection : String\\
+lastSyncedAt : DateTime\\
+modelVersion : String}{%
++getWatermark()\\
++update(timestamp)}
+
+% ── Note explicative ──────────────────────────────────────────────────────────
+\node[draw=gray!40, fill=gray!8, rounded corners=3pt,
+      font=\scriptsize, align=left, inner sep=6pt,
+      text width=4.5cm] at (11, -12.5) {
+  \textbf{EmbeddingSyncState}\\
+  Maintient le \textit{watermark}\\
+  de synchronisation vers\\
+  Qdrant. Une ligne par\\
+  collection (\texttt{students},\\
+  \texttt{offers}).
+};
+
+% ── Relations : signaux alimentent le score ───────────────────────────────────
+\draw[assoc, dashed] (view.north)     -- node[lbl, right]{alimente} (reco.south west);
+\draw[assoc, dashed] (bookmark.north) -- node[lbl, right]{alimente} (reco.south);
+\draw[assoc, dashed] (query.north)    -- node[lbl, left]{alimente} (reco.south east);
+
+% EmbeddingSyncState indirectement liée (via le worker ML)
+\draw[assoc, dashed, gray] (sync.north) -- ++(0,0.8)
+  node[above, font=\scriptsize, gray]{Worker utilise ce watermark};
+
+\end{tikzpicture}

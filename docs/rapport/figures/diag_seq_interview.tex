@@ -1,0 +1,122 @@
+% ─── Diagramme de séquence — Simulateur d'entretien ─────────────────────────
+\begin{tikzpicture}[
+  life/.style={draw=gray!50, dashed, thick},
+  head/.style={draw=primary, fill=primary!10, rounded corners=3pt,
+               font=\small\bfseries, minimum width=2.8cm,
+               minimum height=0.75cm, align=center, text centered},
+  activ/.style={draw=primary!50, fill=primary!12,
+                minimum width=0.28cm},
+  msg/.style={-{Stealth[length=5pt]}, draw=primary, thick},
+  ret/.style={-{Stealth[length=5pt]}, draw=gray!55, dashed, thick},
+  lbl/.style={font=\scriptsize, fill=white, inner sep=1pt},
+  sidenote/.style={draw=gray!40, fill=gray!8, rounded corners=3pt,
+                   font=\scriptsize, align=left, inner sep=5pt},
+]
+
+% ── Coordonnées X des participants ────────────────────────────────────────────
+\def\xA{0}    % Étudiant
+\def\xB{3.2}  % Frontend Next.js
+\def\xC{7.0}  % NestJS API
+\def\xD{11.0} % Groq API (Whisper STT + LLM)
+\def\xE{15.0} % ElevenLabs TTS
+
+% ── En-têtes ──────────────────────────────────────────────────────────────────
+\node[head] at (\xA,0) {\'{E}tudiant};
+\node[head] at (\xB,0) {Frontend\\Next.js};
+\node[head] at (\xC,0) {NestJS\\API};
+\node[head] at (\xD,0) {Groq API\\(STT + LLM)};
+\node[head] at (\xE,0) {ElevenLabs\\TTS};
+
+% ── Lignes de vie ─────────────────────────────────────────────────────────────
+\foreach \x in {\xA,\xB,\xC,\xD,\xE}{
+  \draw[life] (\x,-0.4) -- (\x,-16.5);
+}
+
+% ── Barres d'activation ───────────────────────────────────────────────────────
+\node[activ, minimum height=14.0cm, anchor=north] at (\xB,-0.4) {};
+\node[activ, minimum height=9.0cm,  anchor=north] at (\xC,-2.2) {};
+
+% ── Barre MediaPipe (client-side, parallèle) ──────────────────────────────────
+% Barre grise fine à droite de l'activation Frontend
+\draw[draw=gray!45, fill=gray!12, very thin]
+  (\xB+0.2, -0.9) rectangle (\xB+0.55, -12.9);
+\node[font=\tiny\bfseries, gray!60, rotate=90, anchor=south]
+  at (\xB+0.38, -6.9) {MediaPipe — 52 blendshapes / 400 ms};
+
+% Note explicative MediaPipe à gauche ─────────────────────────────────────────
+\node[sidenote, text width=2.5cm] at (-2.4, -5.5) {
+  \textbf{MediaPipe}\\
+  \textit{(client-side)}\\[2pt]
+  Flux webcam\\
+  52 blendshapes\\
+  1 \'{e}ch.~/ 400~ms\\
+  10 m\'{e}triques\\
+  aucun stockage
+};
+\draw[-{Stealth[length=4pt]}, gray!50, thin]
+  (-1.1, -5.5) -- (-0.15, -5.5);
+
+% ── Messages ──────────────────────────────────────────────────────────────────
+
+% 1
+\draw[msg] (\xA,-1.2) --
+  node[lbl,above]{1.\ Parole enregistr\'{e}e (micro)} (\xB,-1.2);
+
+% 2
+\draw[msg] (\xB,-2.2) --
+  node[lbl,above]{2.\ Audio chunk (WebSocket)} (\xC,-2.2);
+
+% 3 — Whisper STT
+\draw[msg] (\xC,-3.4) --
+  node[lbl,above]{3.\ POST /audio/transcriptions (Whisper)} (\xD,-3.4);
+
+% 4
+\draw[ret] (\xD,-4.5) --
+  node[lbl,above]{4.\ transcript : String} (\xC,-4.5);
+
+% 5 — LLM
+\draw[msg] (\xC,-5.8) --
+  node[lbl,above]{5.\ POST /chat/completions (llama-3.3-70b)} (\xD,-5.8);
+
+% 6
+\draw[ret] (\xD,-7.0) --
+  node[lbl,above]{6.\ \{nextQuestion, feedback\}} (\xC,-7.0);
+
+% 7 — ElevenLabs TTS
+\draw[msg] (\xC,-8.2) --
+  node[lbl,above]{7.\ POST /text-to-speech} (\xE,-8.2);
+
+% 8
+\draw[ret] (\xE,-9.2) --
+  node[lbl,above]{8.\ audioBuffer (MP3)} (\xC,-9.2);
+
+% 9
+\draw[ret] (\xC,-10.5) --
+  node[lbl,above]{9.\ \{transcript, feedback, audio\}} (\xB,-10.5);
+
+% 10
+\draw[ret] (\xB,-11.8) --
+  node[lbl,above]{10.\ Lecture audio (Web Audio API)} (\xA,-11.8);
+
+% ── Séparateur fin de session ──────────────────────────────────────────────────
+\draw[gray!40, dashed] (-0.5,-12.9) -- (16.2,-12.9);
+\node[font=\scriptsize\itshape, gray!70] at (7.5,-12.65)
+  {Fin de session --- soumission m\'{e}triques + g\'{e}n\'{e}ration rapport};
+
+% 11 — Soumission facialMetrics
+\draw[msg] (\xB,-13.5) --
+  node[lbl,above]{11.\ POST /answer \{audio + \textbf{facialMetrics}\}} (\xC,-13.5);
+
+% 12 — Scoring LLM
+\draw[msg] (\xC,-14.4) --
+  node[lbl,above]{12.\ Scoring final (LLM)} (\xD,-14.4);
+
+% 13
+\draw[ret] (\xD,-15.4) --
+  node[lbl,above]{13.\ Score + feedback + \textit{facial coaching} (PDF)} (\xC,-15.4);
+
+% 14 — retour frontend
+\draw[ret] (\xC,-16.2) --
+  node[lbl,above]{14.\ Rapport sauvegard\'{e}} (\xB,-16.2);
+
+\end{tikzpicture}

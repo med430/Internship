@@ -1,0 +1,99 @@
+% ─── Diagramme de cas d'utilisation global ───────────────────────────────────
+% Espacement vertical : 2.2cm  |  Colonnes : x=2.8 / 7.0 / 11.2
+% Acteurs : Student x=-2, Recruiter x=14, Admin x=14
+\begin{tikzpicture}[
+  actor/.style={font=\small\bfseries, text centered, text width=2cm},
+  uc/.style={ellipse, draw=primary, fill=primary!7,
+             font=\scriptsize, text centered, text width=2.8cm,
+             minimum height=0.75cm, inner sep=2pt, line width=0.7pt},
+  sys/.style={rectangle, draw=gray!50, dashed, rounded corners=6pt,
+              inner sep=14pt},
+  rel/.style={draw=gray!55, thin},
+]
+
+% ── Boîte système ──────────────────────────────────────────────────────────
+\node[sys, minimum width=15.5cm, minimum height=22cm]
+      (sys) at (7, 0.5) {};
+\node[above, font=\small\bfseries\color{primary}] at (sys.north)
+  {Syst\`{e}me \textsc{Stagio}};
+
+% ── Acteur Étudiant ──────────────────────────────────────────────────────────
+\node[actor] (student) at (-2.2, 2.6) {
+  \begin{tikzpicture}[baseline=(char.base)]
+    \fill[primary!25] (0,0.38) circle (0.24cm);
+    \draw[primary, line width=0.9pt] (0,0.12) -- (0,-0.42);
+    \draw[primary, line width=0.9pt] (-0.32,-0.12) -- (0.32,-0.12);
+    \draw[primary, line width=0.9pt] (0,-0.42) -- (-0.22,-0.80);
+    \draw[primary, line width=0.9pt] (0,-0.42) -- ( 0.22,-0.80);
+    \node (char) at (0,-0.4) {};
+  \end{tikzpicture}\\[3pt]
+  \'{E}tudiant
+};
+
+% ── Acteur Recruteur ─────────────────────────────────────────────────────────
+\node[actor] (recruiter) at (16.2, 3.0) {
+  \begin{tikzpicture}[baseline=(char.base)]
+    \fill[orange!35] (0,0.38) circle (0.24cm);
+    \draw[orange!70!black, line width=0.9pt] (0,0.12) -- (0,-0.42);
+    \draw[orange!70!black, line width=0.9pt] (-0.32,-0.12) -- (0.32,-0.12);
+    \draw[orange!70!black, line width=0.9pt] (0,-0.42) -- (-0.22,-0.80);
+    \draw[orange!70!black, line width=0.9pt] (0,-0.42) -- ( 0.22,-0.80);
+    \node (char) at (0,-0.4) {};
+  \end{tikzpicture}\\[3pt]
+  Recruteur
+};
+
+% ── Acteur Administrateur ────────────────────────────────────────────────────
+\node[actor] (admin) at (16.2, -6.0) {
+  \begin{tikzpicture}[baseline=(char.base)]
+    \fill[red!25] (0,0.38) circle (0.24cm);
+    \draw[red!60!black, line width=0.9pt] (0,0.12) -- (0,-0.42);
+    \draw[red!60!black, line width=0.9pt] (-0.32,-0.12) -- (0.32,-0.12);
+    \draw[red!60!black, line width=0.9pt] (0,-0.42) -- (-0.22,-0.80);
+    \draw[red!60!black, line width=0.9pt] (0,-0.42) -- ( 0.22,-0.80);
+    \node (char) at (0,-0.4) {};
+  \end{tikzpicture}\\[3pt]
+  Administrateur
+};
+
+% ── Colonne 1 — Étudiant uniquement (x=2.8) ──────────────────────────────────
+\node[uc] (u1) at (2.8,  9.0) {S'inscrire \&\\ se connecter};
+\node[uc] (u2) at (2.8,  6.8) {Compl\'{e}ter\\ le profil};
+\node[uc] (u3) at (2.8,  4.6) {R\'{e}\'{e}crire\\ le CV (IA)};
+\node[uc] (u4) at (2.8,  2.4) {Passer un entretien\\ simul\'{e} (IA)};
+\node[uc] (u5) at (2.8,  0.2) {Obtenir un guide\\ de carri\`{e}re (IA)};
+\node[uc] (u6) at (2.8, -2.0) {Cr\'{e}er un\\ portfolio (IA)};
+\node[uc] (u7) at (2.8, -4.2) {G\'{e}rer\\ l'abonnement};
+
+% ── Colonne 2 — Partagées (x=7.0) ────────────────────────────────────────────
+\node[uc] (s1) at (7.0,  7.9) {Consulter \&\\ filtrer les offres};
+\node[uc] (s2) at (7.0,  5.7) {Postuler \`{a}\\ une offre};
+\node[uc] (s3) at (7.0,  3.5) {Messagerie\\ temps r\'{e}el};
+\node[uc] (s4) at (7.0,  1.3) {Planifier un\\ entretien};
+\node[uc] (s5) at (7.0, -0.9) {Consulter le\\ calendrier};
+\node[uc] (s6) at (7.0, -3.1) {Recevoir des\\ notifications};
+
+% ── Colonne 3 — Recruteur (x=11.2) ───────────────────────────────────────────
+\node[uc] (r1) at (11.2,  7.9) {Publier \&\\ g\'{e}rer des offres};
+\node[uc] (r2) at (11.2,  5.7) {G\'{e}rer le pipeline\\ candidatures};
+\node[uc] (r3) at (11.2,  3.5) {Parcourir les\\ profils \'{e}tudiants};
+\node[uc] (r4) at (11.2,  1.3) {Consulter les\\ statistiques};
+
+% ── Colonne 3 bas — Administrateur (x=11.2) ──────────────────────────────────
+\node[uc] (a1) at (11.2, -0.9) {G\'{e}rer les\\ utilisateurs};
+\node[uc] (a2) at (11.2, -3.1) {Mod\'{e}rer\\ les offres};
+\node[uc] (a3) at (7.0,  -5.3) {Recalculer les\\ recommandations};
+
+% ── Relations Étudiant ────────────────────────────────────────────────────────
+\foreach \t in {u1,u2,u3,u4,u5,u6,u7,s1,s2,s3,s4,s5,s6}
+  \draw[rel] (student.east) -- (\t.west);
+
+% ── Relations Recruteur ───────────────────────────────────────────────────────
+\foreach \t in {r1,r2,r3,r4,s1,s3,s4,s5}
+  \draw[rel] (recruiter.west) -- (\t.east);
+
+% ── Relations Administrateur ──────────────────────────────────────────────────
+\foreach \t in {a1,a2,a3}
+  \draw[rel] (admin.west) -- (\t.east);
+
+\end{tikzpicture}

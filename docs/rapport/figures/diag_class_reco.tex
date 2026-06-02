@@ -1,0 +1,126 @@
+% ─── Diagramme de classes — Moteur de recommandation ────────────────────────
+\begin{tikzpicture}[
+  box/.style={draw=primary, fill=primary!8, rounded corners=3pt,
+              font=\small, align=left, inner sep=6pt},
+  pybox/.style={draw=green!50!black, fill=green!8, rounded corners=3pt,
+                font=\small, align=left, inner sep=6pt},
+  arr/.style={-{Stealth[length=5pt]}, thick, draw=primary},
+  retarr/.style={-{Stealth[length=5pt]}, thick, draw=green!50!black},
+  lbl/.style={font=\scriptsize, fill=white, inner sep=1pt},
+]
+
+% ── NestJS side ──────────────────────────────────────────────────────────────
+\node[box, minimum width=5cm] (scoring) at (0, 0) {
+  \textbf{ScoringService (NestJS)}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{+ computeScores(studentId)}\\
+  \texttt{+ blendScores(content, semantic)}\\
+  \texttt{+ buildStudentText(profile)}
+};
+
+\node[box, minimum width=5cm] (handler) at (0, -3.5) {
+  \textbf{ComputeRecommendationsHandler}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{+ execute(command)}\\
+  \texttt{  → for each student:}\\
+  \texttt{    1. fetch candidates (content)}\\
+  \texttt{    2. call IMlClient.recommend()}\\
+  \texttt{    3. blend \& persist scores}
+};
+
+\node[box, minimum width=5cm] (reco_score) at (0, -7.5) {
+  \textbf{RecommendationScore (Prisma)}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{studentId : UUID}\\
+  \texttt{offerId : UUID}\\
+  \texttt{contentScore : Float}\\
+  \texttt{semanticScore : Float}\\
+  \texttt{finalScore : Float}\\
+  \texttt{updatedAt : DateTime}
+};
+
+\node[box, minimum width=5cm] (ml_interface) at (0, -11.5) {
+  \textbf{\textlangle\textlangle interface\textrangle\textrangle\ IMlClient}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{+ recommendJobs(req) : Promise}\\
+  \texttt{+ embed(text) : Promise}
+};
+
+% ── Python ML side ───────────────────────────────────────────────────────────
+\node[pybox, minimum width=5cm] (fastapi) at (8, 0) {
+  \textbf{FastAPI ML Service (Python)}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{POST /recommend/jobs}\\
+  \texttt{POST /embed}\\
+  \texttt{POST /similar}\\
+  \texttt{POST /feedback}\\
+  \texttt{GET  /health}
+};
+
+\node[pybox, minimum width=5cm] (embedder) at (8, -3.5) {
+  \textbf{Embedder (BGE-M3)}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{model: BAAI/bge-m3}\\
+  \texttt{dim: 1024}\\
+  \texttt{+ encode(text) : np.ndarray}\\
+  \texttt{+ cosine(u, v) : float}
+};
+
+\node[pybox, minimum width=5cm] (qdrant_svc) at (8, -7.5) {
+  \textbf{QdrantService}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{collections: students, offers}\\
+  \texttt{+ ensure\_collections()}\\
+  \texttt{+ upsert\_vector(id, vec)}\\
+  \texttt{+ retrieve\_vectors(ids)}
+};
+
+\node[pybox, minimum width=5cm] (worker) at (8, -11.5) {
+  \textbf{APScheduler Worker}\\
+  \rule{4.5cm}{0.4pt}\\[4pt]
+  \texttt{interval: 5 min}\\
+  \texttt{watermark: EmbeddingSyncState}\\
+  \texttt{+ refresh\_embeddings()}\\
+  \texttt{+ build\_student\_text()}\\
+  \texttt{+ build\_offer\_text()}
+};
+
+% ── Qdrant DB ─────────────────────────────────────────────────────────────────
+\node[draw=purple!50, fill=purple!8, rounded corners=3pt,
+      font=\small, align=center, inner sep=6pt,
+      minimum width=3.5cm] (qdrant_db) at (4, -14.5) {
+  \textbf{Qdrant Vector DB}\\
+  \rule{3.0cm}{0.4pt}\\[4pt]
+  \texttt{algo: HNSW}\\
+  \texttt{metric: Cosine}\\
+  \texttt{dim: 1024}
+};
+
+% ── Flèches NestJS ────────────────────────────────────────────────────────────
+\draw[arr] (handler) -- (scoring);
+\draw[arr] (scoring) -- (reco_score);
+\draw[arr] (scoring) -- (ml_interface);
+
+% ── Flèches Python ────────────────────────────────────────────────────────────
+\draw[retarr] (fastapi) -- (embedder);
+\draw[retarr] (fastapi) -- (qdrant_svc);
+\draw[retarr] (worker) -- (embedder);
+\draw[retarr] (worker) -- (qdrant_svc);
+\draw[retarr, dashed] (qdrant_svc) -- (qdrant_db);
+\draw[retarr, dashed] (worker.south) -- ++(0,-0.5) -| (qdrant_db.north);
+
+% ── Flèche interface → FastAPI ────────────────────────────────────────────────
+\draw[arr, dashed] (ml_interface.east) --
+  node[lbl, above]{\scriptsize HTTP (ML\_INTERNAL\_TOKEN)} (fastapi.west |- ml_interface);
+\draw[arr, <->, dashed] (ml_interface.east |- handler) --
+  node[lbl, above]{\scriptsize appel} (fastapi.west |- handler);
+
+% ── Formule de scoring ────────────────────────────────────────────────────────
+\node[draw=gray!50, fill=gray!8, rounded corners=4pt,
+      font=\footnotesize, align=center, inner sep=8pt] (formula) at (4, -9.5) {
+  \textbf{Formule de scoring final}\\[4pt]
+  $\text{score} = 0{,}6 \times \text{content} + 0{,}4 \times \text{semantic}$\\[4pt]
+  $\text{semantic} = \cos(\vec{u}_{student},\; \vec{v}_{offer})$
+};
+
+\end{tikzpicture}

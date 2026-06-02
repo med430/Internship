@@ -1,0 +1,61 @@
+% ─── Diagramme d'états — Cycle de vie d'une candidature ─────────────────────
+\begin{tikzpicture}[
+  state/.style={rectangle, rounded corners=6pt, draw=primary,
+                fill=primary!8, font=\small\bfseries,
+                minimum width=3.2cm, minimum height=0.85cm, text centered},
+  init/.style={circle, fill=primary, minimum size=0.35cm, inner sep=0pt},
+  final/.style={circle, draw=primary, fill=primary!20,
+                minimum size=0.45cm, inner sep=0pt,
+                label={[font=\tiny]center:$\bullet$}},
+  trans/.style={-{Stealth[length=5pt]}, thick, draw=primary},
+  lbl/.style={font=\scriptsize, fill=white, inner sep=2pt},
+]
+
+% ── État initial ──────────────────────────────────────────────────────────────
+\node[init] (start) at (0,0) {};
+
+% ── États ────────────────────────────────────────────────────────────────────
+\node[state] (submitted) at (0,-1.8)  {SUBMITTED};
+\node[state] (review)    at (0,-3.8)  {IN\_REVIEW};
+\node[state] (accepted)  at (-4.5,-7.0) {ACCEPTED};
+\node[state] (withdrawn) at ( 0,  -7.0) {WITHDRAWN};
+\node[state] (rejected)  at ( 4.5,-7.0) {REJECTED};
+
+% ── Transitions ──────────────────────────────────────────────────────────────
+\draw[trans] (start) -- (submitted);
+\draw[trans] (submitted) -- node[lbl, right]{Recruteur examine} (review);
+
+\draw[trans] (review.south west) -- ++(0,-0.5) -|
+  node[lbl, pos=0.2, left]{Recruteur accepte} (accepted.north);
+\draw[trans] (review.south) --
+  node[lbl, right=5pt]{Candidat retire} (withdrawn.north);
+\draw[trans] (review.south east) -- ++(0,-0.5) -|
+  node[lbl, pos=0.2, right]{Recruteur refuse} (rejected.north);
+
+% Retrait possible depuis SUBMITTED aussi
+\draw[trans] (submitted.east)
+  -- node[lbl, above]{Candidat retire} ++(2.5,0)
+  |- (withdrawn.east);
+
+% ── États finaux ──────────────────────────────────────────────────────────────
+\node[final] (f1) at (-4.5,-8.4) {};
+\node[final] (f2) at ( 0,  -8.4) {};
+\node[final] (f3) at ( 4.5,-8.4) {};
+
+\draw[trans] (accepted)  -- (f1);
+\draw[trans] (withdrawn) -- (f2);
+\draw[trans] (rejected)  -- (f3);
+
+% ── Légende déclencheurs ──────────────────────────────────────────────────────
+\node[draw=gray!40, fill=gray!8, rounded corners=3pt,
+      font=\scriptsize, align=left, inner sep=6pt] at (7.5,-2.8) {
+  \textbf{Acteur déclencheur}\\[3pt]
+  \textcolor{primary}{$\rightarrow$ Étudiant} : soumettre, retirer\\
+  \textcolor{orange!80!black}{$\rightarrow$ Recruteur} : examiner,\\
+  \quad\quad accepter, refuser\\[3pt]
+  Chaque transition déclenche\\
+  un événement SSE vers\\
+  l'étudiant concerné.
+};
+
+\end{tikzpicture}

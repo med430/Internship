@@ -1,0 +1,1683 @@
+﻿\documentclass[12pt,a4paper]{report}
+
+% ── Encodage & langue ──────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Mise en page ───────────────────────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm, headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Couleurs & graphiques ──────────────────────────────────────────────────────
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{font=small, labelfont=bf}
+\captionsetup[table]{position=below}
+\graphicspath{{figures/}}
+\definecolor{primary}{RGB}{0,70,140}
+\colorlet{chaptercolor}{primary}   % alias utilisé par les fichiers de diagrammes
+
+% ── TikZ ───────────────────────────────────────────────────────────────────────
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit,
+                backgrounds, calc, decorations.pathreplacing}
+
+% ── Maths ──────────────────────────────────────────────────────────────────────
+\usepackage{amsmath,amssymb}
+
+% ── Tableaux ───────────────────────────────────────────────────────────────────
+\usepackage{booktabs,longtable,tabularx,multirow,array,makecell}
+\renewcommand{\arraystretch}{1.35}
+
+% ── Listes ─────────────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, topsep=3pt, itemsep=2pt}
+\setlist[enumerate]{leftmargin=1.5em, topsep=3pt, itemsep=2pt}
+
+% ── Code ───────────────────────────────────────────────────────────────────────
+\usepackage{listings}
+\lstdefinestyle{ts}{
+  language=Java,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray!70},
+  stringstyle=\color{primary!80},
+  numberstyle=\tiny\color{gray},
+  numbers=left, numbersep=8pt,
+  frame=single, framerule=0.4pt,
+  xleftmargin=15pt, framexleftmargin=12pt,
+  breaklines=true, showstringspaces=false,
+  tabsize=2, captionpos=b,
+}
+\lstdefinestyle{bash}{
+  language=bash,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  frame=single, framerule=0.4pt,
+  xleftmargin=10pt, framexleftmargin=8pt,
+  breaklines=true, showstringspaces=false,
+}
+\lstset{style=ts}
+
+% ── Boîtes ─────────────────────────────────────────────────────────────────────
+\usepackage{mdframed}
+\newmdenv[linewidth=0.8pt, linecolor=primary, backgroundcolor=primary!6,
+  innerleftmargin=8pt, innerrightmargin=8pt, innertopmargin=6pt,
+  innerbottommargin=6pt, skipabove=6pt, skipbelow=6pt]{infobox}
+\newmdenv[linewidth=0.8pt, linecolor=orange!70!black, backgroundcolor=orange!8,
+  innerleftmargin=8pt, innerrightmargin=8pt, innertopmargin=6pt,
+  innerbottommargin=6pt, skipabove=6pt, skipbelow=6pt]{warningbox}
+
+% ── En-têtes ───────────────────────────────────────────────────────────────────
+\usepackage{fancyhdr,emptypage}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Projet Personnel Professionnel — Stagio}
+\fancyhead[R]{\small\itshape\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Style des chapitres ────────────────────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{primary}}
+  {\chaptertitlename~\thechapter}{10pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{25pt}
+\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+% ── Hyperliens ─────────────────────────────────────────────────────────────────
+\usepackage[colorlinks=true, linkcolor=primary, citecolor=primary,
+            urlcolor=primary, bookmarksnumbered=true]{hyperref}
+
+% ── Divers ─────────────────────────────────────────────────────────────────────
+\usepackage{pifont,acronym}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\usepackage[nottoc]{tocbibind}
+
+% ── Macro classe UML ──────────────────────────────────────────────────────────
+\newcommand{\umlclass}[7]{%
+  \node[draw=primary, fill=primary!8, font=\bfseries\small,
+        minimum width=#4, minimum height=0.65cm,
+        text centered] (#1_title) at (#2,#3) {#5};
+  \node[draw=primary, fill=white, font=\ttfamily\scriptsize,
+        minimum width=#4, anchor=north,
+        align=left, inner sep=4pt, text width=#4-0.2cm] (#1_attr)
+        at (#1_title.south) {#6};
+  \node[draw=primary, fill=white, font=\ttfamily\scriptsize,
+        minimum width=#4, anchor=north,
+        align=left, inner sep=4pt, text width=#4-0.2cm] (#1_meth)
+        at (#1_attr.south) {#7};
+  \node[inner sep=0pt, fit=(#1_title)(#1_attr)(#1_meth)] (#1) {};
+}
+
+% ── Macro capture temporaire ──────────────────────────────────────────────────
+\newcommand{\screenshot}[2][4cm]{%
+  \colorbox{gray!12}{\parbox[c][#1][c]{\linewidth}{%
+    \centering\color{gray!60}\small\itshape Capture : #2}}}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\pagestyle{empty}
+% ═════════════════════════════════════════════════════════════════════════════
+
+% ── Page de garde ─────────────────────────────────────────────────────────────
+\begin{titlepage}
+\centering
+
+\begin{minipage}[c]{0.18\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{insat.jpg}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[c]{0.58\linewidth}
+  \centering
+  {\large\bfseries RÉPUBLIQUE TUNISIENNE}\\[3pt]
+  {\small Ministère de l'Enseignement Supérieur et de la Recherche Scientifique}\\[3pt]
+  {\small Université de Carthage}\\[4pt]
+  {\normalsize\bfseries Institut National des Sciences Appliquées et de Technologie}\\[2pt]
+  {\small Département Informatique et Mathématiques Appliquées}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.15\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{carthage.png}
+  \end{minipage}
+
+\vspace{0.6cm}
+\noindent\rule{\textwidth}{0.8pt}
+\vspace{0.4cm}
+
+{\large\itshape Projet Personnel Professionnel}\\[0.7cm]
+
+{\fontsize{38}{46}\selectfont\bfseries\color{primary} Stagio}\\[0.5cm]
+
+{\Large\bfseries Plateforme Intelligente d'Accompagnement Professionnel des Étudiants}
+
+\vspace{0.6cm}
+\noindent\rule{\textwidth}{0.8pt}
+\vspace{0.7cm}
+
+\begin{tabular}{rl}
+\textbf{Réalisé par :} & Samira Ben Gara Ali \\[3pt]
+                       & Mohamed Mhamdi \\[3pt]
+                       & Wissem Mekki \\[3pt]
+                       & Firas Guizani \\[3pt]
+                       & Mohamed Aziz Kchaou \\[8pt]
+\textbf{Encadrante :}  & Mme Hajer Taktak \\[8pt]
+\textbf{Spécialité :}  & 3\textsuperscript{ème} année Génie Logiciel \\[8pt]
+\textbf{Année :}       & 2025 -- 2026 \\
+\end{tabular}
+
+\vfill
+{\normalsize Soutenu le 3 juin 2026}
+
+\end{titlepage}
+% ── Remerciements ─────────────────────────────────────────────────────────────
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+\pagestyle{plain}
+
+Nous tenons à exprimer notre profonde gratitude à toutes les personnes qui ont contribué à la réussite de ce projet.
+
+Nous adressons nos sincères remerciements à notre encadrante, \textbf{Mme Hajer Taktak}, pour son accompagnement, sa disponibilité et ses conseils tout au long de ce travail. Son expertise a orienté nos choix techniques et enrichi notre réflexion.
+
+Nous remercions également l'ensemble du corps enseignant du département Informatique et Mathématiques Appliquées de l'INSAT pour la qualité de la formation dispensée, qui nous a fourni les fondements nécessaires à la réalisation de ce projet.
+
+Enfin, nous exprimons notre reconnaissance à nos familles pour leur soutien indéfectible.
+
+\newpage
+
+
+% ── Tables ────────────────────────────────────────────────────────────────────
+\tableofcontents \newpage
+\listoffigures   \addcontentsline{toc}{chapter}{Liste des figures}   \newpage
+\listoftables    \addcontentsline{toc}{chapter}{Liste des tableaux}  \newpage
+
+% ── Acronymes ─────────────────────────────────────────────────────────────────
+\chapter*{Liste des acronymes}
+\addcontentsline{toc}{chapter}{Liste des acronymes}
+\begin{acronym}
+  \acro{IA}{Intelligence Artificielle}
+  \acro{LLM}{Large Language Model}
+  \acro{CQRS}{Command Query Responsibility Segregation}
+  \acro{API}{Application Programming Interface}
+  \acro{REST}{Representational State Transfer}
+  \acro{SSE}{Server-Sent Events}
+  \acro{JWT}{JSON Web Token}
+  \acro{ORM}{Object-Relational Mapping}
+  \acro{TTS}{Text-to-Speech}
+  \acro{STT}{Speech-to-Text}
+  \acro{SaaS}{Software as a Service}
+  \acro{UML}{Unified Modeling Language}
+\end{acronym}
+\newpage
+\pagestyle{fancy}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter*{Introduction Générale}
+\addcontentsline{toc}{chapter}{Introduction Générale}
+\markboth{Introduction Générale}{}
+% ═════════════════════════════════════════════════════════════════════════════
+
+La recherche de stage est une étape décisive dans le parcours de tout étudiant en ingénierie. En Tunisie, cette période est marquée par une concurrence croissante : des centaines de candidats postulent aux mêmes offres de stage PFE, d'alternance ou de stage d'été, avec des profils académiques souvent similaires. Ce qui fait la différence, c'est la capacité à se valoriser — un CV adapté à l'offre, une lettre de motivation convaincante, une bonne tenue en entretien et une présence professionnelle cohérente. Or, ces compétences ne s'enseignent pas en cours, et les outils disponibles ne répondent pas à ce besoin de manière intégrée.
+
+C'est dans ce contexte que s'inscrit \textbf{Stagio}, une plateforme \ac{SaaS} intelligente conçue pour accompagner les étudiants à chaque étape de leur recherche de stage et d'emploi : de la rédaction du CV jusqu'à la confirmation d'entretien. En combinant des modèles de langage de grande taille, la synthèse et la reconnaissance vocales en temps réel, et un moteur de recommandation sémantique, Stagio offre une expérience personnalisée que les outils traditionnels ne peuvent pas proposer.
+
+Ce rapport présente la conception, l'architecture et le développement de Stagio, réalisé dans le cadre du Projet Personnel et Professionnel de troisième année Génie Logiciel à l'INSAT. Il est structuré en six chapitres :
+\begin{itemize}
+  \item Le \textbf{Chapitre 1} présente le contexte, la problématique et les concepts clés du projet.
+  \item Le \textbf{Chapitre 2} détaille l'architecture globale et les choix techniques.
+  \item Les \textbf{Chapitres 3, 4 et 5} décrivent les trois phases de développement.
+  \item Le \textbf{Chapitre 6} est consacré à la sécurité et au déploiement.
+\end{itemize}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Présentation du Projet}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+Ce chapitre établit le cadre dans lequel s'inscrit Stagio en suivant le raisonnement académique standard : nous exposons d'abord la problématique de l'insertion professionnelle étudiante, nous analysons ensuite les solutions existantes et leurs limites, puis nous présentons Stagio comme réponse à ces limites. Nous définissons enfin les notions fonctionnelles clés du projet et l'organisation adoptée pour son développement.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Problématique}
+% ─────────────────────────────────────────────────────────────────────────────
+
+La préparation à l'insertion professionnelle est un défi transversal pour les étudiants ingénieurs. Elle ne se limite pas à la recherche de stage : elle englobe la valorisation des compétences, la préparation aux entretiens, la découverte d'opportunités pertinentes et la gestion de la relation avec les recruteurs. Plusieurs obstacles structurels rendent cette démarche difficile à mener efficacement :
+
+\begin{itemize}
+  \item \textbf{Valorisation des compétences} : rédiger un CV ou une lettre de motivation adaptés à une offre précise requiert une expertise que les étudiants ne développent pas en formation initiale. La plupart utilisent un document générique peu différenciateur.
+  \item \textbf{Préparation aux entretiens} : sans feedback objectif ni mise en situation réaliste, la préparation autonome reste insuffisante. L'étudiant ne sait pas sur quels points il doit progresser.
+  \item \textbf{Découverte d'opportunités non personnalisée} : les plateformes d'offres existantes ne tiennent pas compte du profil technique, des préférences de domaine ni du mode de travail souhaité. Les résultats sont génériques et peu pertinents.
+  \item \textbf{Absence de visibilité professionnelle} : peu d'étudiants disposent d'un portfolio en ligne structuré, faute d'outils accessibles sans compétences en développement web.
+  \item \textbf{Communication fragmentée avec les recruteurs} : les échanges se dispersent entre e-mails, LinkedIn et plateformes tierces, sans historique centralisé ni suivi clair de l'avancement des candidatures.
+\end{itemize}
+
+Ces obstacles révèlent un besoin non couvert : une plateforme unifiée qui accompagne l'étudiant sur l'ensemble de ce parcours, de la construction de son profil jusqu'à la confirmation d'un entretien.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Analyse des solutions existantes}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Pour mieux cerner ce besoin, nous avons passé en revue les principales solutions disponibles sur le marché, en les évaluant selon les fonctionnalités critiques identifiées dans la problématique.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Fonctionnalité} & \textbf{LinkedIn} & \textbf{JobTeaser} & \textbf{Indeed} & \textbf{Pramp} & \textbf{Stagio} \\
+\midrule
+Offres de stage / emploi          & \cmark & \cmark & \cmark & \xmark & \cmark \\
+Recommandation personnalisée (IA) & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Réécriture de CV par IA           & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Guide de carrière personnalisé    & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Simulateur d'entretien vocal      & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Génération de portfolio           & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Messagerie directe recruteur      & \cmark & \xmark & \xmark & \xmark & \cmark \\
+Suivi des candidatures            & \xmark & \cmark & \xmark & \xmark & \cmark \\
+Calendrier et planification       & \xmark & \xmark & \xmark & \xmark & \cmark \\
+\bottomrule
+\end{tabular}
+\caption{Comparaison fonctionnelle des solutions existantes}
+\end{table}
+
+Cette analyse met en évidence plusieurs constats :
+
+\begin{itemize}
+  \item Les plateformes d'offres (LinkedIn, Indeed, JobTeaser) couvrent la \textit{découverte} d'opportunités mais n'offrent aucun outil de \textit{préparation}.
+  \item Les outils de préparation (Pramp, InterviewBit) sont spécialisés sur les entretiens techniques et ne sont pas connectés au marché de l'emploi ni au profil du candidat.
+  \item Aucune solution n'adresse le parcours complet de manière intégrée : profil, documents, préparation, matching, communication et suivi dans un seul outil.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Solution proposée : Stagio}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Face aux limites identifiées, Stagio se distingue par l'intégration de l'ensemble de ces fonctionnalités au sein d'une plateforme unifiée, dédiée aux étudiants et à leur écosystème de recrutement (stages PFE, alternances, thèses, premiers emplois). La plateforme est organisée autour de trois rôles complémentaires :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Rôle} & \textbf{Périmètre fonctionnel} \\
+\midrule
+Étudiant & Profil professionnel, outils IA (CV, entretien, guide, portfolio), offres, candidatures, messagerie, calendrier \\
+Recruteur & Publication d'offres, pipeline de candidatures, consultation de profils, planification d'entretiens, messagerie \\
+Administrateur & Modération des utilisateurs et offres, supervision des candidatures, pilotage du moteur de recommandation \\
+\bottomrule
+\end{tabularx}
+\caption{Rôles utilisateurs de Stagio}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Notions fonctionnelles clés}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Cette section définit les concepts métier centraux de Stagio. Les concepts d'architecture (CQRS, Clean Architecture, SSE, embeddings denses) sont détaillés dans le Chapitre~\ref{chap:archi} consacré aux choix techniques.
+
+\subsection{Intelligence Artificielle Générative}
+
+L'\textbf{IA générative} désigne les modèles capables de produire du contenu original — texte, audio, image — à partir d'une instruction. Contrairement aux systèmes de classification ou de prédiction classiques, ces modèles comprennent le contexte et génèrent des réponses adaptées. Dans Stagio, l'IA générative alimente cinq modules : réécriture de CV, génération de lettres de motivation, guide de carrière, évaluation d'entretiens et construction de portfolio.
+
+\subsection{Recommandation Sémantique}
+
+La \textbf{recommandation sémantique} consiste à mesurer la proximité de sens entre deux textes — ici, un profil étudiant et une offre d'emploi — plutôt que de se limiter à une correspondance par mots-clés. Elle repose sur des représentations vectorielles (embeddings) qui capturent le sens dans un espace mathématique. Cette approche permet, par exemple, de recommander une offre de développement backend à un étudiant spécialisé en architectures distribuées, même si les termes exacts ne coïncident pas.
+
+\subsection{Entretien Virtuel}
+
+L'\textbf{entretien virtuel} de Stagio est une session interactive multimodale combinant voix et vision. L'étudiant s'exprime vocalement ; sa réponse est transcrite par Groq Whisper, analysée par un LLM qui génère la prochaine question, puis restituée via synthèse vocale ElevenLabs. Simultanément, le flux vidéo est traité en temps réel côté client par \textbf{MediaPipe Face Landmarker} : dix indicateurs d'expression faciale (taux de présence, attention, sourire, stabilité) sont accumulés toutes les 400 ms sans stockage vidéo. À la clôture de la session, ces métriques constituent un coaching non évaluatif sur les indices de communication non verbale, intégré au rapport PDF de l'entretien.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Organisation du développement}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Le développement du projet a été conduit selon une approche incrémentale organisée en trois phases successives. Chaque phase délivre un ensemble fonctionnel cohérent et testable qui sert de socle à la phase suivante.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Phase} & \textbf{Périmètre livré} \\
+\midrule
+Phase 1 & Authentification, profils étudiant et recruteur, offres, candidatures, notifications, panel admin \\
+Phase 2 & Outils IA (CV, entretien, guide, portfolio), messagerie, calendrier, abonnement Stripe \\
+Phase 3 & Moteur de recommandation sémantique (BGE-M3 + Qdrant), e-mails, tracking comportemental \\
+\bottomrule
+\end{tabularx}
+\caption{Organisation par phases de développement}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section*{Conclusion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Ce chapitre a établi la logique de justification du projet Stagio : une problématique réelle et bien définie, des solutions existantes insuffisantes démontrées par une comparaison fonctionnelle, et une proposition de valeur différenciée. Le chapitre suivant détaille les décisions d'architecture qui permettent de concrétiser cette vision.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Architecture et Choix Techniques}
+\label{chap:archi}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+Ce chapitre décrit les décisions d'architecture qui structurent l'ensemble du projet. Nous présentons d'abord la vue d'ensemble à trois tiers, puis nous détaillons les principes de la Clean Architecture et du patron CQRS qui gouvernent le backend. Nous explicitons ensuite les patrons de conception retenus et justifions chaque choix technologique. Ces décisions ne sont pas des conventions arbitraires : elles répondent à des contraintes précises de maintenabilité, de testabilité et de performance que nous exposons ici.
+
+\section{Vue d'ensemble}
+
+Stagio repose sur une architecture trois-tiers enrichie d'un service ML indépendant :
+
+\begin{figure}[H]
+\centering
+\resizebox{0.82\textwidth}{!}{%
+\begin{tikzpicture}[
+  box/.style={rectangle, rounded corners=4pt, draw=primary,
+              fill=primary!8, font=\small\bfseries, align=center,
+              minimum width=9cm, minimum height=1cm, text centered},
+  db/.style={rectangle, rounded corners=4pt, draw=orange!70!black,
+             fill=orange!10, font=\small\bfseries, align=center,
+             minimum width=4.2cm, minimum height=1cm},
+  ml/.style={rectangle, rounded corners=4pt, draw=green!50!black,
+             fill=green!8, font=\small\bfseries, align=center,
+             minimum width=4.2cm, minimum height=1cm},
+  arr/.style={-{Stealth[length=5pt]}, thick, color=primary},
+]
+  \node[box] (front) at (4.5, 0)
+    {Frontend --- Next.js + React};
+  \node[box] (back) at (4.5, -2.8)
+    {Backend NestJS --- Clean Architecture, CQRS, JWT};
+  \node[db]  (db)   at (1.5, -5.8)
+    {PostgreSQL (Neon)\\[2pt]MongoDB Atlas (chat)};
+  \node[ml]  (ml)   at (7.5, -5.8)
+    {ML Sidecar Python\\[2pt]FastAPI + BGE-M3 + Qdrant};
+
+  \draw[arr] (front) -- node[right=2pt, font=\scriptsize]
+    {REST \textbullet{} GraphQL \textbullet{} WebSocket \textbullet{} SSE} (back);
+  \draw[arr] (back.south) ++(- 1.5, 0) -- node[left=2pt, font=\scriptsize]
+    {Prisma / Mongoose} (db.north);
+  \draw[arr] (back.south) ++( 1.5, 0) -- node[right=2pt, font=\scriptsize]
+    {HTTP interne} (ml.north);
+\end{tikzpicture}}
+\caption{Architecture trois-tiers de la plateforme Stagio}
+\label{fig:archi_globale}
+\end{figure}
+
+La communication entre frontend et backend emprunte quatre canaux distincts selon la nature de l'opération :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Canal} & \textbf{Direction} & \textbf{Usage dans Stagio} \\
+\midrule
+REST HTTP & Bidirectionnel & CRUD, authentification, upload fichiers \\
+GraphQL & Bidirectionnel & Requêtes complexes avec jointures (candidatures, profils) \\
+WebSocket (Socket.IO) & Bidirectionnel & Chat temps réel, signalisation appels vidéo \\
+SSE & Serveur → Client & Notifications push (statut candidature, recommandations) \\
+\bottomrule
+\end{tabularx}
+\caption{Canaux de communication frontend–backend}
+\end{table}
+
+\section{Clean Architecture Backend}
+
+Le backend NestJS est structuré en quatre couches concentriques suivant la Clean Architecture :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Couche} & \textbf{Dossier} & \textbf{Responsabilités} \\
+\midrule
+Domain & \texttt{src/Domain/} & Entités métier, énumérations, événements de domaine. Aucune dépendance externe. \\
+Application & \texttt{src/Application/} & Interfaces des repositories (contrats), handlers CQRS, logique d'orchestration. Dépend uniquement du Domain. \\
+Infrastructure & \texttt{src/Infrastructure/} & Implémentations Prisma/Mongoose, adaptateurs Cloudinary, Groq, ElevenLabs. \\
+API & \texttt{src/API/} & Contrôleurs REST, resolvers GraphQL, gateways WebSocket, webhooks. \\
+\bottomrule
+\end{tabularx}
+\caption{Les quatre couches de la Clean Architecture}
+\end{table}
+
+\begin{infobox}
+\noindent\textbf{Règle de dépendance} : les dépendances ne pointent que vers l'intérieur. Le Domain ne connaît aucun framework. Cette règle, garantie par l'injection de dépendances NestJS, rend le cœur métier testable de façon isolée.
+\end{infobox}
+
+\section{Patron CQRS}
+
+Le patron \ac{CQRS} sépare les opérations d'écriture (Commands) des opérations de lecture (Queries). Chaque cas d'usage est encapsulé dans un gestionnaire dédié, ce qui garantit l'isolement, la testabilité et la modifiabilité indépendante de chaque flux.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  block/.style={rectangle, rounded corners=3pt, draw=primary,
+                fill=primary!8, font=\small\bfseries, align=center,
+                minimum width=3.4cm, minimum height=0.7cm},
+  evtblock/.style={rectangle, rounded corners=3pt, draw=orange!70!black,
+                   fill=orange!8, font=\small\bfseries, align=center,
+                   minimum width=3.4cm, minimum height=0.7cm},
+  arr/.style={-{Stealth[length=5pt]}, thick, color=primary},
+  arrevt/.style={-{Stealth[length=5pt]}, thick, color=orange!70!black},
+]
+  % ── Côté écriture (gauche) ──────────────────────────────────────────────
+  \node[above, font=\small\bfseries\color{primary}]
+    at (0, 0.55) {Écriture};
+  \node[block]   (ctrl1) at (0,  0)   {Contrôleur};
+  \node[block]   (cmd)   at (0, -1.4) {Command};
+  \node[block]   (cmdh)  at (0, -2.8) {CommandHandler};
+  \node[block]   (repo1) at (0, -4.2) {Repository};
+  \node[evtblock](evt)   at (0, -5.6) {Domain Event};
+  \node[evtblock](evth)  at (0, -7.0) {EventHandler};
+
+  \draw[arr]    (ctrl1) -- (cmd);
+  \draw[arr]    (cmd)   -- (cmdh);
+  \draw[arr]    (cmdh)  -- (repo1);
+  \draw[arrevt] (repo1) -- node[right, font=\scriptsize]{émet} (evt);
+  \draw[arrevt] (evt)   -- (evth);
+
+  % ── Côté lecture (droite) ───────────────────────────────────────────────
+  \node[above, font=\small\bfseries\color{primary}]
+    at (5.5, 0.55) {Lecture};
+  \node[block] (ctrl2) at (5.5,  0)   {Contrôleur};
+  \node[block] (qry)   at (5.5, -1.4) {Query};
+  \node[block] (qryh)  at (5.5, -2.8) {QueryHandler};
+  \node[block] (repo2) at (5.5, -4.2) {Repository};
+
+  \draw[arr] (ctrl2) -- (qry);
+  \draw[arr] (qry)   -- (qryh);
+  \draw[arr] (qryh)  -- (repo2);
+\end{tikzpicture}
+\caption{Patron CQRS — séparation des flux écriture et lecture}
+\label{fig:cqrs}
+\end{figure}
+
+Les événements de domaine jouent un rôle clé dans le flux d'écriture : un \texttt{CommandHandler} peut émettre un événement après avoir modifié l'état, et un \texttt{EventHandler} dédié prend en charge les effets de bord (notification SSE, envoi d'e-mail) sans que la commande ne les connaisse.
+
+\begin{lstlisting}[style=ts, caption={EventHandler — notification après changement de statut de candidature}]
+@EventsHandler(ApplicationStatusChangedEvent)
+export class ApplicationStatusChangedHandler
+    implements IEventHandler<ApplicationStatusChangedEvent> {
+
+  async handle(event: ApplicationStatusChangedEvent): Promise<void> {
+    // 1. Persister la notification en base
+    const saved = await this.notifRepo.save(
+      new Notification(event.studentId, 'application-status-changed',
+        'Candidature ' + event.status + ' pour ' + event.offerTitle)
+    );
+    // 2. Pousser en temps reel via SSE
+    this.notificationEmitter.sendToUser(event.studentId, saved);
+  }
+}
+\end{lstlisting}
+
+\section{Stack technologique}
+
+Le tableau suivant regroupe les technologies retenues par domaine fonctionnel. Les justifications des choix les plus structurants — notamment BGE-M3 et Qdrant — sont détaillées dans le chapitre consacré à la Phase~3.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Domaine} & \textbf{Technologies} \\
+\midrule
+Frontend & Next.js, React, Tailwind CSS, Radix UI, Zustand, TanStack Query \\
+Backend & NestJS, Prisma, Apollo GraphQL, Socket.IO \\
+Bases de données & PostgreSQL via Neon (données principales), MongoDB Atlas (chat) \\
+Intelligence Artificielle & Groq (LLM + Whisper STT), ElevenLabs (TTS) \\
+Recommandation sémantique & BGE-M3 (FlagEmbedding), Qdrant, FastAPI \\
+Services externes & Stripe (paiement), Cloudinary (fichiers), Brevo (e-mails), Supabase (auth) \\
+\bottomrule
+\end{tabularx}
+\caption{Stack technologique de Stagio par domaine}
+\end{table}
+
+\section{Patrons de conception}
+
+L'architecture de Stagio s'appuie sur plusieurs patrons de conception reconnus, choisis pour leur adéquation aux contraintes spécifiques du projet.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Patron} & \textbf{Couche} & \textbf{Rôle et justification} \\
+\midrule
+\textbf{CQRS} & Application & Sépare les commandes (écriture) des requêtes (lecture). Chaque handler est isolé, testable, et modifiable sans affecter les autres. Adapté à un système avec de nombreux cas d'usage distincts. \\
+\textbf{Repository} & Application & Abstrait l'accès aux données derrière des interfaces définies dans la couche Application (ex. \texttt{IApplicationRepository}). Les handlers CQRS ne connaissent ni Prisma ni MongoDB — ils dépendent uniquement de ces contrats. L'Infrastructure fournit les implémentations concrètes. \\
+\textbf{Observer / EventHandler} & Application & Les événements de domaine (\texttt{ApplicationStatusChangedEvent}) découplent les effets de bord (notifications SSE, e-mails) de la commande qui les déclenche. La commande ne sait pas qu'une notification sera envoyée. \\
+\textbf{Strategy} & Application & Les trois personas d'entretien (Empathique, Technique, Direct) sont des stratégies interchangeables. Le simulateur appelle \texttt{interviewStrategy.buildPrompt()} sans connaître le persona concret. \\
+\textbf{Factory} & Application & La génération de documents (CV, lettre, portfolio) utilise un factory qui sélectionne le service IA approprié selon le type de document demandé. \\
+\bottomrule
+\end{tabularx}
+\caption{Patrons de conception et leur justification dans Stagio}
+\end{table}
+
+Ces patrons ne sont pas appliqués par convention mais par nécessité : le volume de cas d'usage (CQRS), la testabilité (Repository), le découplage des effets de bord (Observer), et la variabilité comportementale (Strategy) sont des contraintes réelles de ce projet.
+
+\section{Bases de données}
+
+\subsection{PostgreSQL via Neon (Prisma)}
+Neon est une base PostgreSQL \textit{serverless} hébergée dans le cloud. Prisma assure la génération automatique du client TypeScript typé et la gestion des migrations versionnées. Le schéma couvre l'ensemble des entités métier, réparties en six domaines fonctionnels :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Domaine} & \textbf{Modèles} \\
+\midrule
+Identité et profils & User, StudentProfile, RecruiterProfile, Subscription, School \\
+Documents & CV, CoverLetter \\
+Compétences et parcours & Skill, SkillAssignment, Experience, Education, Certification, Project \\
+Marché de l'emploi & Offer, SkillRequirement, Application, Interview, InterviewSlot \\
+Recommandation et engagement & RecommendationScore, OfferView, OfferBookmark, OfferImpression, ProfileView, SearchQuery \\
+Sessions publiques (sans authentification) & PublicSessionProfile, PublicCvQuestionSession, PublicCv, PublicCoverLetter, PublicCareerGuide, PublicPortfolioGeneration, PublicInterview \\
+\bottomrule
+\end{tabularx}
+\caption{Inventaire des modèles Prisma par domaine}
+\end{table}
+
+Les diagrammes de classes présentés dans les chapitres suivants sont volontairement ciblés sur les entités introduites par chaque phase, afin de rester lisibles et pertinents au contexte de chaque chapitre.
+
+\subsection{MongoDB Atlas pour le chat}
+MongoDB est utilisé exclusivement pour la messagerie. Ce choix est justifié par la haute fréquence d'écriture, le schéma flexible des messages et l'absence de jointures complexes dans ce contexte.
+
+\begin{lstlisting}[style=ts, caption={Schémas Mongoose — Conversation et Message}]
+@Schema({ timestamps: true })
+export class ConversationDocument {
+  @Prop({ type: [String], required: true })
+  participantIds: string[];
+  @Prop({ type: String, default: null })
+  lastMessage: string | null;
+}
+
+@Schema({ timestamps: true })
+export class MessageDocument {
+  @Prop({ required: true }) conversationId: string;
+  @Prop({ required: true }) senderId: string;
+  @Prop({ required: true }) content: string;
+  @Prop({ type: [String], default: [] }) readBy: string[];
+}
+\end{lstlisting}
+
+\section*{Conclusion}
+L'architecture de Stagio allie la robustesse de la Clean Architecture à la flexibilité du développement incrémental. Les choix technologiques sont motivés par la performance, la maintenabilité et l'adéquation aux besoins spécifiques de chaque composant. Le chapitre suivant présente la première phase de développement.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Phase 1 — Socle de la Plateforme}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+La première phase établit les fondations fonctionnelles de Stagio : gestion des identités, profils complets, offres, candidatures, notifications et administration. Elle constitue la base indispensable sur laquelle les phases suivantes s'appuient.
+
+\section{Analyse des besoins}
+
+\subsection{Diagramme de cas d'utilisation}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.97\textwidth}{!}{\input{figures/diag_usecase}}
+\caption{Diagramme de cas d'utilisation global de Stagio}
+\label{fig:usecase}
+\end{figure}
+
+\subsection{Besoins fonctionnels}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Module} & \textbf{Description} \\
+\midrule
+Authentification & Inscription, connexion, réinitialisation mot de passe, OAuth Supabase \\
+Profil étudiant & Wizard 6 étapes : informations, compétences, expériences, formations, certifications, projets \\
+Profil recruteur & Informations entreprise, logo, description \\
+Gestion des offres & CRUD complet par les recruteurs (type, mode, rémunération, compétences requises) \\
+Candidatures & Postuler avec CV + lettre, cycle de vie SUBMITTED→ACCEPTED/REJECTED/WITHDRAWN \\
+Notifications SSE & Push temps réel sur tout changement de statut \\
+Panel admin & Gestion paginée des utilisateurs et offres avec filtres \\
+\bottomrule
+\end{tabularx}
+\caption{Besoins fonctionnels — Phase 1}
+\end{table}
+
+\subsection{Besoins non fonctionnels}
+\begin{itemize}
+  \item \textbf{Sécurité} : JWT signé, bcrypt pour les mots de passe, guards NestJS par rôle.
+  \item \textbf{Performance} : temps de réponse REST inférieur à 300~ms sur les opérations courantes.
+  \item \textbf{Maintenabilité} : un gestionnaire CQRS par cas d'usage, TypeScript strict.
+\end{itemize}
+
+\section{Conception}
+
+\subsection{Diagramme de classes}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/diag_class_r1}}
+\caption{Diagramme de classes — Phase 1}
+\label{fig:class_r1}
+\end{figure}
+
+Les entités \texttt{StudentProfile} et \texttt{RecruiterProfile} sont en relation 1-1 avec \texttt{User} via une clé étrangère. Une \texttt{Application} lie un \texttt{StudentProfile} à une \texttt{Offer} et possède son propre cycle de vie. Les \texttt{Notification} sont persistées puis diffusées via SSE.
+
+\subsection{Flux fonctionnel central}
+
+Le schéma suivant illustre le flux métier principal de la Phase 1 : de la candidature d'un étudiant jusqu'à la réception de la notification de décision.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  actor/.style={rectangle, rounded corners=5pt, draw=primary, fill=primary!10,
+                font=\small\bfseries, minimum width=2.8cm, minimum height=0.7cm,
+                align=center},
+  stepnode/.style={rectangle, rounded corners=3pt, draw=primary, fill=primary!5,
+               font=\small, minimum width=3.4cm, minimum height=0.65cm,
+               align=center},
+  evt/.style={rectangle, rounded corners=3pt, draw=orange!70!black,
+              fill=orange!8, font=\small\bfseries, minimum width=3.4cm,
+              minimum height=0.65cm, align=center},
+  arr/.style={-{Stealth[length=5pt]}, thick, color=primary},
+  arrevt/.style={-{Stealth[length=5pt]}, thick, color=orange!70!black},
+]
+  % Colonne Étudiant (x=0)
+  \node[actor] (etu)  at (0,   0)    {Étudiant};
+  \node[stepnode]  (post) at (0,  -1.5)  {Postuler à une offre};
+  \node[stepnode]  (app)  at (0,  -3.0)  {Application\\(SUBMITTED)};
+
+  % Colonne Recruteur (x=7.5 — plus espacé)
+  \node[actor] (rec)  at (7.5,  0)    {Recruteur};
+  \node[stepnode]  (rev)  at (7.5, -1.5)  {Consulter candidatures};
+  \node[stepnode]  (dec)  at (7.5, -3.0)  {Décision\\de statut};
+
+  % Colonne événement (x=3.8 — décalée pour éviter chevauchement avec app)
+  \node[evt]   (evnt) at (3.8, -5.0)  {ApplicationStatus\\ChangedEvent};
+  \node[evt]   (hdl)  at (3.8, -6.5)  {EventHandler\\(persiste + SSE push)};
+  \node[stepnode]  (notif)at (3.8, -8.0)  {Notification reçue\\par l'étudiant};
+
+  % Flèches colonnes
+  \draw[arr]    (etu)  -- (post);
+  \draw[arr]    (post) -- (app);
+  \draw[arr]    (rec)  -- (rev);
+  \draw[arr]    (rev)  -- (dec);
+  % Flèches vers événement (routage L-shape sans chevauchement)
+  \draw[arrevt] (app.south) -- ++(0,-0.6) -| (evnt.west);
+  \draw[arrevt] (dec.south) -- ++(0,-0.6) -| (evnt.east);
+  \draw[arrevt] (evnt) -- (hdl);
+  \draw[arr]    (hdl)  -- (notif);
+\end{tikzpicture}
+\caption{Flux fonctionnel central — candidature et notification de décision}
+\label{fig:flux_phase1}
+\end{figure}
+
+\section{Réalisation}
+
+\subsection{Authentification}
+\begin{itemize}
+  \item Hachage bcrypt (facteur 12) + \ac{JWT} signés par Supabase.
+  \item Middleware \texttt{SupabaseSyncMiddleware} : synchronise l'utilisateur Supabase avec NeonDB à chaque requête.
+  \item Guards NestJS \texttt{@Roles('STUDENT')} / \texttt{@Roles('RECRUITER')} protégeant toutes les routes privées.
+  \item Flux \textit{forgot/reset password} avec token à usage unique.
+\end{itemize}
+
+\subsection{Notifications SSE}
+Le service SSE maintient un \texttt{Map<userId, Set<Subject>>} (plusieurs onglets simultanés supportés). Chaque EventHandler CQRS appelle \texttt{notificationEmitter.sendToUser()} après avoir persisté la notification.
+
+\begin{lstlisting}[style=ts, caption={SseService — diffusion multi-onglets}]
+@Injectable()
+export class SseService implements INotificationEmitter {
+  private readonly clients = new Map<string, Set<Subject<SSEPayload>>>();
+
+  addClient(userId: string): Observable<SSEPayload> {
+    const subject = new Subject<SSEPayload>();
+    if (!this.clients.has(userId)) this.clients.set(userId, new Set());
+    this.clients.get(userId)!.add(subject);
+    return subject.asObservable().pipe(
+      finalize(() => this.clients.get(userId)?.delete(subject))
+    );
+  }
+
+  sendToUser(userId: string, payload: NotificationPayload): void {
+    this.clients.get(userId)?.forEach(s => s.next({ data: payload }));
+  }
+}
+\end{lstlisting}
+
+\subsection{Portail Recruteur}
+
+Le portail recruteur est une application distincte (\texttt{/recruiter/*}), protégée par le rôle \texttt{RECRUITER}, offrant un espace de travail complet :
+
+\begin{itemize}
+  \item \textbf{Gestion des offres} : création d'offres avec type (\texttt{INTERNSHIP}, \texttt{PFE}, \texttt{RESEARCH}, \texttt{PHD}, \texttt{ALTERNANCE}), mode de travail, fourchette de rémunération et compétences requises.
+  \item \textbf{Pipeline de candidatures} : vue Kanban des statuts, accès direct au CV et à la lettre de motivation de chaque candidat, actions d'acceptation/refus déclenchant une notification SSE instantanée.
+  \item \textbf{Navigation des offres} : vue de l'ensemble des offres publiées sur la plateforme, permettant au recruteur de benchmarker ses propres annonces.
+  \item \textbf{Tableau de bord analytique} : métriques d'offres (vues, candidatures reçues, taux de conversion), évolution temporelle des indicateurs.
+\end{itemize}
+
+\subsection{Gestion des fichiers — Cloudinary}
+
+Tous les fichiers binaires (CVs, lettres de motivation, avatars, portfolios HTML) sont stockés sur Cloudinary. Le flux d'upload suit le schéma suivant :
+
+\begin{enumerate}
+  \item Le client envoie le fichier en \texttt{multipart/form-data} vers NestJS.
+  \item NestJS valide le type MIME, la taille et l'identité de l'utilisateur.
+  \item Le fichier est transmis en streaming à Cloudinary sans être stocké localement.
+  \item Cloudinary retourne une URL CDN sécurisée persistée en base (\texttt{CV.fileUrl}, \texttt{StudentProfile.avatarUrl}).
+\end{enumerate}
+
+Ce design garantit que le serveur NestJS ne conserve aucun fichier en mémoire, et que toutes les ressources sont accessibles via des URLs CDN versionnées.
+
+\subsection{Frontend — Phase 1}
+
+Le frontend de la Phase 1 est une application Next.js utilisant l'App Router. L'organisation de l'état suit une séparation claire entre état global et état serveur :
+
+\begin{itemize}
+  \item \textbf{Zustand} gère l'état global de session (identité de l'utilisateur connecté, rôle, token) partagé entre toutes les pages.
+  \item \textbf{TanStack Query} prend en charge l'état serveur (offres, candidatures, profil) : mise en cache automatique, invalidation après mutation, et gestion des états de chargement.
+  \item \textbf{React Hook Form + Zod} pilotent le wizard de profil en 6 étapes avec validation typée à chaque étape.
+  \item La connexion SSE est établie dès l'authentification via un hook \texttt{useNotifications} qui écoute le flux \texttt{/notifications/stream} et met à jour le compteur de notifications en temps réel.
+\end{itemize}
+
+\subsection{Interfaces utilisateur — Phase 1}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \includegraphics[width=\linewidth, height=5.5cm, keepaspectratio]{figures/scr-landing}
+  \caption{Landing page --- présentation de la plateforme}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \includegraphics[width=\linewidth, height=5.5cm, keepaspectratio]{figures/scr-login}
+  \caption{Authentification --- login étudiant (JWT + Supabase)}
+\end{subfigure}
+\caption{Accès à la plateforme}
+\label{fig:screens_landing}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Wizard de complétion de profil --- étape compétences}
+  \caption{Wizard de profil --- saisie des compétences avec niveau}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Dashboard étudiant --- vue d'ensemble des services}
+  \caption{Dashboard étudiant --- accès rapide aux 8 services IA}
+\end{subfigure}
+\caption{Profil étudiant et tableau de bord}
+\label{fig:screens_phase1_student}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Portail recruteur --- pipeline de candidatures}
+  \caption{Portail recruteur --- gestion Kanban des candidatures}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Panel admin --- gestion des utilisateurs avec filtres}
+  \caption{Panel admin --- liste paginée des utilisateurs par rôle}
+\end{subfigure}
+\caption{Portail recruteur et panel d'administration}
+\label{fig:screens_phase1_recruiter}
+\end{figure}
+
+\subsection{Cycle de vie d'une candidature}
+
+Le cycle de vie d'une candidature constitue l'un des flux les plus critiques de la plateforme. Chaque transition d'état déclenche un événement de domaine (\texttt{ApplicationStatusChangedEvent}) qui notifie l'étudiant via SSE.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.82\textwidth}{!}{\input{figures/diag_state_application}}
+\caption{Diagramme d'états — cycle de vie d'une candidature}
+\label{fig:state_application}
+\end{figure}
+
+\section*{Conclusion}
+La Phase 1 établit les fondations fonctionnelles et architecturales de Stagio. L'organisation en handlers CQRS a permis de structurer les cas d'usage de manière isolée et de séparer clairement les responsabilités au sein du backend. La décision de déclencher les notifications SSE depuis les EventHandlers plutôt que depuis les contrôleurs garantit que la notification est toujours cohérente avec l'état persisté en base. La Phase 2 s'appuie sur ce socle pour introduire les fonctionnalités à haute valeur ajoutée.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Phase 2 — Outils IA et Communication}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+La deuxième phase constitue le cœur différenciateur de Stagio. Là où la Phase 1 a posé les fondations, la Phase 2 délivre la proposition de valeur centrale : un simulateur d'entretien en voix naturelle, des outils de génération de documents personnalisés par IA, et une infrastructure de communication temps réel entre étudiants et recruteurs. Ces fonctionnalités posent des défis techniques distincts — orchestration de services IA asynchrones, gestion d'états multiples dans une session d'entretien, protocole d'événements WebSocket précis — que ce chapitre détaille du modèle à l'implémentation.
+
+\section{Conception — Entités de la Phase 2}
+
+Les entités introduites dans cette phase couvrent les documents générés (CV, lettres de motivation), les sessions d'entretien et la messagerie persistée en MongoDB.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/diag_class_r2}}
+\caption{Diagramme de classes — Phase 2 (Documents IA, Entretien, Communication)}
+\label{fig:class_r2}
+\end{figure}
+
+\section{Simulateur d'Entretien Virtuel}
+
+\subsection{Modèle d'états du simulateur}
+
+La session d'entretien est une machine d'états déterministe. Comprendre ce modèle est essentiel pour appréhender les choix d'implémentation qui suivent.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.72\textwidth}{!}{\input{figures/diag_state_interview}}
+\caption{Diagramme d'états — session du simulateur d'entretien virtuel}
+\label{fig:state_interview}
+\end{figure}
+
+La boucle \texttt{QUESTION POSÉE → ENREGISTREMENT → TRAITEMENT IA → RÉPONSE AUDIO} s'exécute autant de fois que nécessaire. L'état \texttt{TRAITEMENT IA} est le plus critique en termes de latence : il enchaîne Groq Whisper (STT) et le LLM en moins de 3 secondes. En parallèle de cette boucle vocale, \textbf{MediaPipe Face Landmarker} échantillonne le flux caméra toutes les 400 ms et accumule dix métriques d'expression faciale côté client pendant toute la durée de la session (zone grisée du diagramme). La session ne passe à \texttt{GÉNÉRATION SCORE} qu'à la clôture explicite, moment auquel les métriques accumulées sont soumises au backend avec la dernière réponse.
+
+\subsection{Architecture}
+
+Le simulateur repose sur une chaîne de quatre services coordonnés par NestJS :
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/diag_seq_interview}}
+\caption{Diagramme de séquence — Simulateur d'entretien virtuel}
+\label{fig:seq_interview}
+\end{figure}
+
+\subsection{Personas d'intervieweur}
+
+Trois personas distincts couvrent les styles d'entretien les plus fréquents :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Persona} & \textbf{Style de questionnement} \\
+\midrule
+Empathique & Questions ouvertes, focus sur le potentiel humain et les motivations profondes \\
+Technique & Questions précises, cas pratiques, profondeur technique sur les technologies du profil \\
+Direct & Questions concises, pression temporelle, peu de tolérance à l'ambiguïté \\
+\bottomrule
+\end{tabularx}
+\caption{Personas du simulateur d'entretien}
+\end{table}
+
+\subsection{Analyse d'expression faciale}
+
+Le simulateur intègre une couche d'analyse non verbale entièrement exécutée côté client. \textbf{MediaPipe Face Landmarker} (modèle float16 quantifié, chargé depuis CDN) détecte 52 \textit{blendshapes} faciaux à partir du flux webcam et les agrège en dix métriques de coaching :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Métrique} & \textbf{Définition} \\
+\midrule
+\texttt{facePresentRate} & Pourcentage d'images où un visage est détecté \\
+\texttt{attentionRate} & Ouverture des yeux supérieure à un seuil (proxy de l'attention) \\
+\texttt{smileRate} & Proportion d'images avec sourire (blendshapes \texttt{mouthSmileLeft/Right}) \\
+\texttt{positiveExpressionRate} & Sourire sans tension sourcilière (détection Duchenne) \\
+\texttt{expressionStability} & $100 - \Delta_{frames} \times 180$ — fluidité inter-images \\
+\texttt{averageSmile} & Intensité moyenne du sourire (0--100) \\
+\texttt{averageEyeOpenness} & Ouverture moyenne des yeux (0--100) \\
+\texttt{averageBrowTension} & Tension sourcilière moyenne (0--100) \\
+\texttt{averageMouthMovement} & Activité labiale moyenne (0--100) \\
+\texttt{sampleCount} & Nombre total d'images analysées \\
+\bottomrule
+\end{tabularx}
+\caption{Métriques d'expression faciale calculées par MediaPipe Face Landmarker}
+\end{table}
+
+Ces métriques sont combinées en un \textbf{score de coaching facial} (0--100) selon la formule pondérée :
+
+\begin{equation}
+\label{eq:facial}
+s_{\text{facial}} = 0{,}25 \times r_{\text{présence}} + 0{,}25 \times r_{\text{attention}} + 0{,}20 \times r_{\text{positif}} + 0{,}20 \times r_{\text{stabilité}} + 0{,}10 \times \bar{e}_{\text{yeux}}
+\end{equation}
+
+Le score est calculé uniquement si \texttt{sampleCount} $\geq 3$ et \texttt{facePresentRate} $\geq 15\,\%$ ; sinon il est nul. Le calcul est effectué à la fois côté client (pour l'affichage en direct) et côté backend (pour la persistance et l'audit). Aucune image vidéo n'est transmise au serveur : seules les métriques agrégées sont soumises à la clôture de la session.
+
+\subsection{Implémentation}
+
+\begin{lstlisting}[style=ts, caption={Orchestration STT → LLM → TTS dans le handler d'entretien}]
+async answerInterview(dto: AnswerInterviewDto): Promise<AnswerResult> {
+  // 1. Transcription STT -- Groq Whisper large-v3
+  const transcript = await this.groq.transcribe(dto.audioBuffer);
+
+  // 2. Evaluation + prochaine question -- llama-3.3-70b
+  const llm = await this.groq.chat({
+    model: 'llama-3.3-70b-versatile',
+    messages: buildInterviewPrompt(dto.persona, dto.history, transcript),
+  });
+
+  // 3. Synthese vocale -- ElevenLabs
+  const audio = await this.elevenlabs.tts({
+    text: llm.nextQuestion,
+    voiceId: VOICE_MAP[dto.persona],
+  });
+
+  return { transcript, feedback: llm.feedback,
+           nextQuestion: llm.nextQuestion, audio };
+}
+\end{lstlisting}
+
+À la clôture de la session, le \ac{LLM} génère un rapport de scoring structuré (score par critère, points forts, axes d'amélioration) exportable en PDF. Ce rapport inclut systématiquement une section \textit{Facial Expression Coaching} : si les métriques sont disponibles, elle affiche le score de coaching (eq.~\ref{eq:facial}) et un résumé textuel généré par le backend (ex. : \textit{« steady camera presence, positive facial engagement. Cue score : 82/100 »}) ; sinon elle indique l'indisponibilité de la caméra. Cette section est explicitement présentée comme un retour d'entraînement et non comme une évaluation clinique des émotions.
+
+\section{Outils de Génération de Documents IA}
+
+\subsection{Injection de contexte et pipeline commun}
+
+Tous les modules de génération partagent une architecture commune : le profil complet de l'étudiant (compétences, expériences, formations, projets) et les données de l'offre ciblée sont injectés dynamiquement dans le contexte du prompt LLM avant chaque génération. Cette technique d'\textbf{injection de contexte} garantit que chaque document produit est substantiellement différent d'un étudiant à l'autre et d'une offre à l'autre — à l'opposé des templates génériques.
+
+\subsection{CV Rewriter}
+
+Le CV Rewriter génère un nouveau CV adapté à une offre cible en s'appuyant sur un dialogue en deux temps avec l'étudiant.
+
+\begin{enumerate}
+  \item L'étudiant uploade son CV (PDF) et fournit une ou plusieurs descriptions de poste.
+  \item Le LLM analyse le CV et les offres, puis génère un ensemble de \textbf{questions ciblées} sur le parcours et les objectifs de l'étudiant (\texttt{/generate\_queries}).
+  \item L'étudiant répond aux questions dans un formulaire interactif.
+  \item Le LLM génère un \textbf{nouveau CV complet} en tenant compte du CV original, des offres cibles et des réponses aux questions (\texttt{/rewrite\_cv}).
+  \item Le CV refondu est rendu en PDF et mis à disposition en téléchargement, accompagné d'un résumé des améliorations apportées.
+\end{enumerate}
+
+\subsection{Guide de Carrière}
+
+Le guide de carrière est une feuille de route entièrement personnalisée, générée en trois temps :
+\begin{itemize}
+  \item \textbf{Analyse du profil} : compétences actuelles, expériences, niveau d'étude, domaines préférés.
+  \item \textbf{Identification des lacunes} : comparaison avec les exigences typiques du domaine cible via le LLM.
+  \item \textbf{Génération du plan} : jalons temporels (3, 6, 12 mois), compétences à acquérir avec ressources, projets personnels recommandés, compétences transversales.
+\end{itemize}
+
+\subsection{Portfolio Builder}
+
+Le Portfolio Builder génère une page web HTML/CSS auto-contenue à partir des données du profil de l'étudiant. L'étudiant choisit un \textit{wireframe} (structure de mise en page) et un thème visuel parmi les options proposées par l'API ; un thème personnalisé en texte libre est également accepté. Le LLM génère l'intégralité du code HTML/CSS de la page en tenant compte du profil, du CV uploadé et des préférences de style. Le résultat est stocké en base de données et affiché en prévisualisation directement dans l'interface via une \texttt{iframe}. L'étudiant peut ouvrir la page générée dans un nouvel onglet navigateur.
+
+\subsection{Pipeline commun de génération PDF}
+
+Le \texttt{DocumentGeneratorService} (Phase 3) génère simultanément un CV et une lettre de motivation :
+
+\begin{lstlisting}[style=ts, caption={Pipeline de génération PDF avec pdf-lib et Cloudinary}]
+async generateDocuments(profile: Profile, offer: Offer) {
+  // 1. Appel LLM : genere le contenu IA (resume, bullets, lettre)
+  const aiContent = await this.groq.chat(buildDocumentPrompt(profile, offer));
+
+  // 2. Construit le PDF avec pdf-lib
+  const cvPdf   = await this.pdfBuilder.buildCv(profile, aiContent);
+  const clPdf   = await this.pdfBuilder.buildCoverLetter(profile, offer, aiContent);
+
+  // 3. Upload parallele sur Cloudinary
+  const [cvResult, clResult] = await Promise.all([
+    this.cloudinary.upload(cvPdf,  { folder: 'cvs',           resource_type: 'raw' }),
+    this.cloudinary.upload(clPdf,  { folder: 'cover-letters', resource_type: 'raw' }),
+  ]);
+
+  // 4. Persiste les URLs en base et retourne les IDs
+  return this.prisma.$transaction([
+    this.prisma.cV.create({ data: { userId, fileUrl: cvResult.secure_url }}),
+    this.prisma.coverLetter.create({ data: { userId, fileUrl: clResult.secure_url }}),
+  ]);
+}
+\end{lstlisting}
+
+\section{Messagerie et Communication Temps Réel}
+
+\subsection{Architecture événementielle WebSocket}
+
+La plateforme définit un protocole d'événements précis entre le client et le serveur. Chaque événement est nommé selon la convention \texttt{domaine:action} et transporté via Socket.IO.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Événement} & \textbf{Description} \\
+\midrule
+\texttt{register-user} & Enregistre l'identité de l'utilisateur sur la socket à la connexion \\
+\texttt{join-conversation} & Rejoint la room \texttt{conv:\{id\}} pour recevoir les messages en temps réel \\
+\texttt{send-message} & Envoie un message texte dans une conversation \\
+\texttt{typing} & Signal de frappe en cours vers l'autre participant \\
+\texttt{mark-read} & Marque les messages d'une conversation comme lus \\
+\bottomrule
+\end{tabular}
+\caption{Événements WebSocket — Chat (client → serveur)}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Événement} & \textbf{Description} \\
+\midrule
+\texttt{new-message} & Nouveau message diffusé à la room \texttt{conv:\{id\}} et à \texttt{user:\{id\}} \\
+\texttt{user-typing} & Indicateur de frappe retransmis à l'autre participant \\
+\texttt{messages-read} & Confirmation de lecture propagée à l'expéditeur \\
+\bottomrule
+\end{tabular}
+\caption{Événements WebSocket — Chat (serveur → client)}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Type} & \textbf{Déclencheur} \\
+\midrule
+\texttt{application-status-changed} & Candidature acceptée, refusée ou mise en review \\
+\texttt{interview-slot-proposed} & Recruteur propose un créneau \\
+\texttt{interview-slot-confirmed} & Créneau confirmé par le candidat \\
+\texttt{new-message} & Nouveau message chat reçu \\
+\texttt{recommendation-recomputed} & Recalcul des recommandations terminé \\
+\bottomrule
+\end{tabular}
+\caption{Événements SSE — Notifications (serveur → client)}
+\end{table}
+
+\subsection{Chat WebSocket}
+
+La gateway \texttt{/chat} utilise Socket.IO avec un système de rooms :
+\begin{itemize}
+  \item \texttt{conv:\{id\}} : room de conversation active, reçoit les messages en temps réel.
+  \item \texttt{user:\{id\}} : room personnelle, reçoit les notifications pour toutes les conversations.
+\end{itemize}
+
+\subsection{Appels vidéo — Relay média via Socket.IO}
+
+Les appels vidéo reposent sur un modèle de \textbf{relay serveur} : NestJS reçoit les chunks audio et vidéo de chaque participant et les redistribue aux autres membres de la room. Aucune connexion pair-à-pair n'est établie ; le serveur reste impliqué dans tout le transport média.
+
+\begin{enumerate}
+  \item Les deux participants rejoignent la même room via \texttt{join-room} ; le serveur tient à jour la liste des pairs présents (\texttt{existing-peers}, \texttt{peer-joined}).
+  \item Côté émetteur, un \texttt{AudioWorklet} capture des chunks PCM bruts depuis le microphone et les envoie via \texttt{socket.emit('audio', chunk)} ; la caméra est traitée de manière similaire via \texttt{socket.emit('video', chunk)}.
+  \item NestJS relaie chaque chunk à tous les autres membres de la room : \texttt{client.to(room).emit('audio', data)} et \texttt{client.to(room).emit('video', peerId, data)}.
+  \item Côté récepteur, les chunks sont reconstruits en flux lisible via la Web Audio API (audio) et la MediaSource API (vidéo).
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Événement} & \textbf{Direction} & \textbf{Rôle} \\
+\midrule
+\texttt{join-room} & Client → Serveur & Rejoindre la room d'appel de l'entretien \\
+\texttt{existing-peers} & Serveur → Client & Liste des participants déjà présents \\
+\texttt{peer-joined} & Serveur → Tous & Notification d'arrivée d'un nouveau pair \\
+\texttt{audio} & Client → Serveur → Pairs & Relay de chunks PCM audio \\
+\texttt{video} & Client → Serveur → Pairs & Relay de chunks vidéo encodés \\
+\texttt{peer-left} & Serveur → Tous & Notification de départ d'un pair \\
+\bottomrule
+\end{tabularx}
+\caption{Événements WebSocket — Appels vidéo}
+\end{table}
+
+\subsection{Comparaison SSE vs WebSocket}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Critère} & \textbf{SSE} & \textbf{WebSocket} \\
+\midrule
+Direction & Serveur → Client & Bidirectionnel \\
+Protocole & HTTP standard & Upgrade protocole \\
+Cas d'usage & Notifications push & Chat, signalisation vidéo \\
+Usage dans Stagio & \cmark Notifications & \cmark Chat + appels \\
+\bottomrule
+\end{tabular}
+\caption{SSE vs WebSocket — usage dans Stagio}
+\end{table}
+
+\section{Planification d'Entretiens et Calendrier}
+
+Les recruteurs proposent des créneaux horaires (\texttt{InterviewSlot}) que les étudiants acceptent ou déclinent. Une fois un créneau confirmé, les deux parties peuvent rejoindre l'appel vidéo directement depuis la plateforme. Les confirmations et rappels sont envoyés automatiquement par e-mail via Brevo.
+
+\section{Monétisation et Contrôle d'Accès}
+
+Stagio adopte un modèle freemium : les fonctionnalités de base (consultation des offres, candidatures, messagerie, Job Matcher) sont accessibles sans abonnement, tandis que les outils de génération IA sont réservés au plan Premium. Ce modèle est implémenté via Stripe et appliqué côté backend par un \texttt{SubscriptionGuard} NestJS qui vérifie le statut d'abonnement avant chaque appel aux routes de génération protégées.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Fonctionnalité} & \textbf{Gratuit} & \textbf{Premium} \\
+\midrule
+Consulter les offres & \cmark & \cmark \\
+Postuler à des offres & \cmark & \cmark \\
+Messagerie & \cmark & \cmark \\
+Job Matcher (recommandations) & \cmark & \cmark \\
+CV Rewriter (IA) & \xmark & \cmark \\
+Guide de carrière (IA) & \xmark & \cmark \\
+Simulateur d'entretien (IA) & \xmark & \cmark \\
+Portfolio Builder (IA) & \xmark & \cmark \\
+\bottomrule
+\end{tabular}
+\caption{Fonctionnalités par niveau d'abonnement}
+\end{table}
+
+Le paiement est déclenché via une session Stripe Checkout. Le webhook de confirmation est protégé par vérification HMAC-SHA256 sur le \textit{raw body} : sans cette vérification, n'importe quelle requête POST pourrait simuler un paiement réussi.
+
+\section{Frontend — Phase 2}
+
+La Phase 2 introduit des composants React plus complexes que la Phase 1, pilotés par des états locaux et des connexions temps réel :
+
+\begin{itemize}
+  \item \textbf{Simulateur d'entretien} : un composant React gère la machine d'états côté client (IDLE → ENREGISTREMENT → TRAITEMENT → LECTURE), l'enregistrement audio via un \texttt{AudioWorklet} du navigateur, et la lecture du fichier audio TTS retourné par le serveur.
+  \item \textbf{CV Rewriter} : un formulaire multi-étapes guide l'étudiant à travers les questions générées par le LLM. Les réponses sont collectées dans l'état local React, puis soumises en une seule requête pour déclencher la génération du nouveau CV complet.
+  \item \textbf{Chat temps réel} : la connexion Socket.IO est encapsulée dans un hook dédié. TanStack Query invalide automatiquement le cache des conversations à chaque réception de \texttt{new-message}, maintenant la cohérence entre l'état local et la base de données.
+  \item \textbf{Contrôle d'accès Premium} : un composant \texttt{SubscriptionGate} enveloppe chaque page d'outil IA. Pour les utilisateurs non-Premium, il affiche un écran paywall avec un bouton de mise à niveau vers la page d'abonnement.
+\end{itemize}
+
+\section{Interfaces utilisateur — Phase 2}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Choix du persona d'entretien (Empathique / Technique / Direct)}
+  \caption{Configuration de la session --- choix du persona et du niveau}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Session d'entretien en cours --- transcription temps réel}
+  \caption{Session active --- transcription Whisper affichée en direct}
+\end{subfigure}
+\caption{Simulateur d'entretien virtuel}
+\label{fig:screens_interview}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Rapport de scoring fin de session avec scores par critère}
+  \caption{Rapport de scoring --- score global, forces et axes d'amélioration}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Historique des entretiens avec scores}
+  \caption{Bibliothèque d'entretiens --- suivi de la progression}
+\end{subfigure}
+\caption{Scoring et historique du simulateur}
+\label{fig:screens_scoring}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{CV Rewriter --- suggestions LLM inline par section}
+  \caption{CV Rewriter --- suggestions acceptables/rejetables par section}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Career Guide --- feuille de route personnalisée avec jalons}
+  \caption{Career Guide --- roadmap avec compétences manquantes et projets}
+\end{subfigure}
+\caption{Outils de génération IA}
+\label{fig:screens_ai}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Portfolio Builder --- prévisualisation du portfolio généré}
+  \caption{Portfolio Builder --- rendu HTML/CSS, choix de thème}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Générateur de documents --- interface de paramétrage}
+  \caption{Document Generator --- génération CV + lettre en un clic}
+\end{subfigure}
+\caption{Portfolio et génération de documents}
+\label{fig:screens_portfolio}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Interface de chat --- conversation avec le recruteur}
+  \caption{Messagerie temps réel --- indicateur de frappe, lecture confirmée}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Calendrier des entretiens --- créneaux proposés et confirmés}
+  \caption{Calendrier --- vue mensuelle avec statuts des créneaux}
+\end{subfigure}
+\caption{Communication et planification}
+\label{fig:screens_comm}
+\end{figure}
+
+\section*{Conclusion}
+La Phase 2 constitue le cœur de la valeur ajoutée de Stagio. Cinq modules IA distincts, un système de communication temps réel bi-modal (chat WebSocket + appels WebRTC), et un mécanisme d'abonnement Stripe — tout cela repose sur la même architecture CQRS et le même pipeline d'events SSE établis en Phase 1. La cohérence architecturale entre les phases illustre la robustesse des décisions de conception initiales. La Phase 3 pousse cette architecture jusqu'à son niveau le plus sophistiqué avec le moteur de recommandation sémantique.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Phase 3 — Moteur de Recommandation Sémantique}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+La troisième phase introduit le composant techniquement le plus avancé de la plateforme. La question centrale est : \textit{comment proposer à chaque étudiant les offres les plus pertinentes parmi des centaines, sans se limiter à une correspondance par mots-clés ?} La réponse repose sur des embeddings denses — des représentations vectorielles du profil et des offres dans un espace sémantique partagé — combinés à un scoring de contenu déterministe. Ce chapitre justifie les choix technologiques, décrit l'architecture du service ML Python et explique en détail le pipeline de synchronisation incrémentale.
+
+\section{Conception — Entités de la Phase 3}
+
+Les entités propres à cette phase modélisent les scores de recommandation, les signaux comportementaux (vues, favoris, recherches) et l'état de synchronisation du service ML.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{\input{figures/diag_class_r3}}
+\caption{Diagramme de classes — Phase 3 (Recommandation sémantique)}
+\label{fig:class_r3}
+\end{figure}
+
+\section{Justification des choix technologiques ML}
+
+La conception du moteur de recommandation a nécessité une évaluation comparative des technologies disponibles. Le tableau suivant présente les alternatives considérées et les raisons des choix retenus.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{p{3cm}p{3cm}p{4cm}X}
+\toprule
+\textbf{Composant} & \textbf{Retenu} & \textbf{Alternatives évaluées} & \textbf{Raison du choix} \\
+\midrule
+Modèle d'embedding & \textbf{BGE-M3} & OpenAI \texttt{text-embedding-3}, Sentence-BERT & Multilingue (FR/AR/EN natif), open-source, 1024 dims, excellentes performances sur les benchmarks MTEB multilingues \\
+Base vectorielle & \textbf{Qdrant} & Pinecone, Weaviate, pgvector & Open-source, déployable en Docker, API Python claire, recherche HNSW performante \\
+Sync strategy & \textbf{Watermark incrémental} & Réindexation complète, CDC Debezium & Faible charge CPU, pas de dépendance externe, auto-réparation au redémarrage \\
+Score de contenu & \textbf{Implémenté en NestJS} & Python scoring service & Latence réduite — évite un aller-retour réseau supplémentaire pour une logique déterministe \\
+\bottomrule
+\end{tabularx}
+\caption{Comparaison des technologies de recommandation sémantique}
+\end{table}
+
+Le choix de BGE-M3 est particulièrement structurant : contrairement aux modèles OpenAI (propriétaires, coûteux à l'usage), BGE-M3 est open-source et hébergeable localement. Son support natif du français et de l'arabe est essentiel pour un projet destiné à des étudiants tunisiens dont les CVs et offres d'emploi mélangent les deux langues.
+
+\section{Architecture du Moteur}
+
+\subsection{Signaux de scoring}
+
+Le score final de pertinence entre un profil étudiant et une offre est calculé par une combinaison linéaire de deux signaux :
+
+\begin{equation}
+\text{score\_final} = 0{,}6 \times \text{score\_contenu} + 0{,}4 \times \text{score\_sémantique}
+\label{eq:score}
+\end{equation}
+
+La pondération 60/40 a été déterminée empiriquement : après plusieurs tests sur un jeu de profils et d'offres représentatifs, cette répartition a produit les classements les plus cohérents avec le jugement humain. Une pondération plus élevée du signal sémantique dégradait les résultats pour les offres avec une correspondance directe de compétences ; une pondération plus faible réduisait la capacité à détecter les correspondances implicites de domaine.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Signal} & \textbf{Poids} & \textbf{Méthode} \\
+\midrule
+Score de contenu & 60\% & Correspondance compétences, domaine, mode de travail, localisation, type d'offre \\
+Score sémantique & 40\% & Cosinus entre vecteur étudiant et vecteur offre (BGE-M3, 1024 dims, Qdrant) \\
+Score collaboratif & — & Signaux d'engagement (vues, durée, clics) — réservé à une évolution future \\
+\bottomrule
+\end{tabularx}
+\caption{Signaux du moteur de recommandation}
+\end{table}
+
+La similarité cosinus utilisée pour le score sémantique est définie par :
+
+\begin{equation}
+\text{sim}(\vec{u},\vec{v}) = \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\| \cdot \|\vec{v}\|}
+\label{eq:cosine}
+\end{equation}
+
+où $\vec{u}$ est le vecteur du profil étudiant et $\vec{v}$ celui de l'offre, tous deux de dimension 1024.
+
+Le tableau suivant illustre le calcul sur un exemple concret : un étudiant spécialisé en développement backend (React, NestJS, PostgreSQL) consulte quatre offres de natures différentes.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Offre} & \textbf{Score contenu} & \textbf{Score sémantique} & \textbf{Score final} \\
+\midrule
+Développeur Backend Node.js  & 0,88 & 0,85 & 0,87 \\
+Développeur Full-Stack React & 0,72 & 0,80 & 0,75 \\
+Data Engineer (Python/SQL)   & 0,45 & 0,71 & 0,55 \\
+Designer UX/UI               & 0,10 & 0,22 & 0,15 \\
+\bottomrule
+\end{tabular}
+\caption{Exemple de scoring — profil Backend vs quatre offres}
+\end{table}
+
+On observe que le score sémantique valorise l'offre Data Engineer (proximité conceptuelle SQL/bases de données) davantage que le score de contenu (peu de compétences explicites en commun), illustrant la complémentarité des deux signaux.
+
+\subsection{Service ML Python}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=primary, fill=primary!8, rounded corners=3pt,
+              font=\small\bfseries, align=center, inner sep=7pt,
+              minimum width=4.5cm},
+  pybox/.style={draw=green!50!black, fill=green!8, rounded corners=3pt,
+                font=\small\bfseries, align=center, inner sep=7pt,
+                minimum width=4.5cm},
+  arr/.style={-{Stealth[length=5pt]}, thick},
+]
+  \node[box] (scoring) at (0,0) {ScoringService\\NestJS};
+  \node[pybox] (fastapi) at (6,0) {FastAPI\\ML Sidecar};
+  \node[pybox] (qdrant) at (6,-2.5) {Qdrant\\students + offers};
+  \node[pybox] (worker) at (0,-2.5) {APScheduler Worker\\(sync toutes les 5 min)};
+  \node[box] (neon) at (0,-5) {NeonDB\\PostgreSQL};
+
+  \draw[arr, primary] (scoring) -- node[above,font=\scriptsize]{HTTP interne} (fastapi);
+  \draw[arr, primary, <-] (scoring) -- node[below,font=\scriptsize]{semanticScores} (fastapi);
+  \draw[arr, green!50!black] (fastapi) -- node[right,font=\scriptsize]{retrieve} (qdrant);
+  \draw[arr, green!50!black] (worker) -- node[right,font=\scriptsize]{upsert vectors} (qdrant);
+  \draw[arr, green!50!black] (neon) -- node[left,font=\scriptsize]{read deltas} (worker);
+\end{tikzpicture}
+\caption{Architecture du service ML — flux de données}
+\label{fig:ml_archi}
+\end{figure}
+
+\subsection{Worker de synchronisation incrémentale}
+
+Le worker \texttt{APScheduler} exécute toutes les cinq minutes le cycle suivant :
+
+\begin{enumerate}
+  \item Lecture du \textit{watermark} dans \texttt{EmbeddingSyncState} pour identifier les entités modifiées.
+  \item Construction du texte d'embedding canonique pour chaque profil/offre modifié.
+  \item Génération des vecteurs via BGE-M3 et upsert dans Qdrant.
+  \item Mise à jour du watermark.
+\end{enumerate}
+
+Ce mécanisme incrémental garantit que seuls les profils et offres modifiés sont ré-embarqués, minimisant la charge.
+
+\begin{lstlisting}[style=bash, caption={Format canonique du texte d'embedding étudiant}]
+skills:React,TypeScript | domains:FinTech,Cloud |
+cities:Tunis | year:3 | program:Software Engineering |
+projects:E-commerce REST API; ML Pipeline |
+experience:Stagiaire Dev Web; Junior Backend |
+education:INSAT Genie Logiciel |
+certifications:AWS Cloud Practitioner |
+bio:Etudiant passionne par les architectures distribuees
+\end{lstlisting}
+
+\subsection{Feed phasé}
+
+Le Job Matcher assemble les résultats en trois phases successives pour équilibrer pertinence et diversité :
+
+\begin{description}
+  \item[Phase 1 — ML scoré :] offres dont le score final (équation \ref{eq:score}) dépasse un seuil de pertinence, triées par score décroissant.
+  \item[Phase 2 — Contenu only :] offres sans signal ML disponible (étudiant nouvellement inscrit, offre récente). Scoring contenu uniquement.
+  \item[Phase 3 — Exploration :] queue de diversification exposant des offres hors des domaines habituels de l'étudiant.
+\end{description}
+
+\section{Recomputation planifiée — Cron Job}
+
+Les scores de recommandation sont recalculés de deux manières complémentaires :
+
+\begin{itemize}
+  \item \textbf{Déclenchement manuel} depuis le panel admin : une commande CQRS déclenche la recomputation pour l'ensemble des paires étudiant × offre. À la fin, un événement de domaine envoie une notification SSE (\texttt{recommendation-recomputed}) à chaque étudiant concerné pour l'informer que ses recommandations ont été actualisées.
+  \item \textbf{Tâche cron quotidienne} via \texttt{@nestjs/schedule}, configurée pour s'exécuter chaque nuit à 3h du matin.
+\end{itemize}
+
+\begin{lstlisting}[style=ts, caption={Cron job de recomputation quotidienne des recommandations}]
+@Injectable()
+export class RecommendationCronService {
+  constructor(private readonly commandBus: CommandBus) {}
+
+  // Full rebuild every day at 03:00 server time
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async runDailyRecompute(): Promise<void> {
+    await this.commandBus.execute(
+      new ComputeRecommendationsCommand(undefined, 'cron')
+    );
+  }
+}
+\end{lstlisting}
+
+Ce design garantit que les scores sont toujours à jour en début de journée, incorporant les nouveaux profils, les nouvelles offres et les modifications de compétences effectuées la veille.
+
+\section{Tracking comportemental}
+
+Les signaux d'engagement sont capturés en arrière-plan sans interrompre l'expérience utilisateur :
+
+\begin{itemize}
+  \item \textbf{OfferView} : chaque fois qu'un étudiant ouvre une offre, la position de clic (rang dans la liste) et la durée d'exposition (en millisecondes) sont enregistrées.
+  \item \textbf{OfferBookmark} : sauvegarde d'une offre en favori.
+  \item \textbf{OfferImpression} : offre affichée dans le feed (même sans clic).
+  \item \textbf{SearchQuery} : termes de recherche saisis dans la barre de filtres.
+\end{itemize}
+
+Ces données alimentent le score collaboratif (Phase future) et permettent à l'administrateur de mesurer l'engagement sur les offres et d'ajuster les poids du moteur de recommandation.
+
+\section{Limites actuelles du moteur}
+
+Le moteur de recommandation, tel qu'implémenté, présente plusieurs limites identifiées :
+
+\begin{itemize}
+  \item \textbf{Pondérations fixes} : les poids 60/40 sont statiques et ne s'adaptent pas au comportement individuel de l'utilisateur. Un système plus avancé apprendrait ces poids par utilisateur via du \textit{learning to rank}.
+  \item \textbf{Absence de filtrage collaboratif} : les signaux comportementaux (vues, bookmarks, dwell time) sont collectés mais non encore intégrés au score. Leur exploitation via une factorisation matricielle constitue la principale perspective d'amélioration.
+  \item \textbf{Fréquence de synchronisation} : le worker BGE-M3 s'exécute toutes les cinq minutes. Un profil modifié n'est donc pas immédiatement reflété dans les recommandations — l'indexation n'est pas temps réel.
+  \item \textbf{Taille du corpus} : les performances du moteur n'ont été évaluées que sur un corpus réduit de profils et d'offres. La robustesse à grande échelle reste à valider.
+\end{itemize}
+
+\section{Interfaces utilisateur — Phase 3}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Job Matcher --- feed de recommandations avec scores}
+  \caption{Job Matcher --- offres triées par score de pertinence BGE-M3}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Détail d'une offre --- score de correspondance et breakdown}
+  \caption{Détail offre --- décomposition du score (contenu + sémantique)}
+\end{subfigure}
+\caption{Moteur de recommandation --- Job Matcher}
+\label{fig:screens_reco}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Panel admin --- déclenchement recomputation avec progression SSE}
+  \caption{Admin --- recomputation manuelle avec barre de progression SSE}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \screenshot{Dashboard recruteur --- analytics et statistiques d'offres}
+  \caption{Portail recruteur --- analytics : vues, candidatures, conversions}
+\end{subfigure}
+\caption{Administration et analytiques}
+\label{fig:screens_admin}
+\end{figure}
+
+\section*{Conclusion}
+Le moteur de recommandation sémantique constitue le composant le plus avancé de Stagio. L'utilisation d'embeddings denses BGE-M3, d'une base vectorielle Qdrant et d'un worker de synchronisation incrémentale illustre les principaux mécanismes nécessaires à l'exploitation d'un système de recommandation sémantique en production. Les limites identifiées — pondérations fixes, absence de filtrage collaboratif, indexation non temps réel — définissent naturellement les axes d'évolution prioritaires décrits dans la conclusion générale.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter{Sécurité et Déploiement}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Introduction}
+Ce chapitre présente les mécanismes de sécurité implémentés sur l'ensemble de la plateforme, ainsi que l'infrastructure de déploiement. La démarche adoptée est orientée menace : pour chaque vecteur d'attaque identifié, un mécanisme de défense précis est mis en place. Le tableau suivant synthétise cette correspondance avant d'en détailler chaque élément.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Risque} & \textbf{Contre-mesure} \\
+\midrule
+Usurpation d'identité & JWT signé ES256 (Supabase) stocké en cookie HttpOnly \\
+Accès non autorisé & RBAC — guards NestJS par rôle (\texttt{STUDENT}, \texttt{RECRUITER}, \texttt{ADMIN}) \\
+Données invalides ou malveillantes & \texttt{ValidationPipe} global (class-validator) côté backend, Zod côté frontend \\
+Paiement frauduleux & Vérification HMAC-SHA256 sur le raw body du webhook Stripe \\
+Clickjacking & \texttt{X-Frame-Options: DENY} \\
+Interception réseau & HTTPS obligatoire via \texttt{Strict-Transport-Security} (2 ans) \\
+MIME sniffing & \texttt{X-Content-Type-Options: nosniff} \\
+Fuite d'origine de requête & \texttt{Referrer-Policy: strict-origin-when-cross-origin} \\
+Accès cross-origin non autorisé & CORS strict — liste blanche d'origines avec \texttt{credentials: true} \\
+Upload malveillant & Validation type MIME et taille avant transmission à Cloudinary \\
+\bottomrule
+\end{tabularx}
+\caption{Analyse des risques et contre-mesures}
+\end{table}
+
+\section{Authentification et Autorisation}
+
+\subsection{Authentification par JWT}
+
+\begin{enumerate}
+  \item L'utilisateur s'authentifie via \textbf{Supabase Auth} (e-mail/mot de passe ou OAuth).
+  \item Supabase retourne un \ac{JWT} signé (algorithme ES256).
+  \item Le frontend stocke le token dans un cookie \textbf{HttpOnly}, inaccessible au JavaScript — ce qui élimine le risque de vol par XSS.
+  \item Chaque requête backend est vérifiée par \texttt{JwtAuthGuard}, qui valide la signature cryptographique du token sans consulter de session serveur.
+  \item Un middleware \texttt{SupabaseSyncMiddleware} synchronise l'identité Supabase avec NeonDB à chaque requête, garantissant la cohérence entre les deux systèmes.
+\end{enumerate}
+
+Cette approche est \textbf{stateless} : le serveur n'a pas besoin de stocker les sessions, ce qui simplifie le passage à l'échelle horizontale.
+
+\subsection{Contrôle d'accès par rôle (RBAC)}
+
+La plateforme définit trois rôles distincts stockés dans le champ \texttt{User.role} :
+
+\begin{itemize}
+  \item \texttt{STUDENT} : accès aux services de préparation et aux candidatures.
+  \item \texttt{RECRUITER} : accès au portail de gestion des offres et du pipeline.
+  \item \texttt{ADMIN} : accès à la modération et au pilotage du moteur de recommandation.
+\end{itemize}
+
+Chaque route protégée est annotée avec le décorateur \texttt{@Roles()} et gardée par \texttt{RolesGuard}, qui lit le rôle depuis le JWT vérifié et lève une \texttt{ForbiddenException} si le rôle ne correspond pas. Ce mécanisme est appliqué au niveau du contrôleur NestJS, indépendamment de la logique métier.
+
+\subsection{Validation des entrées}
+
+Un \texttt{ValidationPipe} est activé globalement dans \texttt{main.ts}. Il applique les contraintes définies avec \texttt{class-validator} sur tous les DTOs : types, longueurs, formats d'e-mail, valeurs d'énumération. Toute requête dont le corps ne satisfait pas ces contraintes est rejetée avec un statut \texttt{400 Bad Request} avant d'atteindre les handlers CQRS. Côté frontend, Zod assure la même validation sur les formulaires avant envoi.
+
+\section{Sécurité des Webhooks Stripe}
+
+Le endpoint webhook Stripe est public mais protégé par vérification HMAC-SHA256 sur le \textit{raw body} :
+
+\begin{lstlisting}[style=ts, caption={Vérification HMAC-SHA256 du webhook Stripe}]
+@Post('stripe')
+async handleWebhook(
+  @Req() req: RawBodyRequest<Request>,
+  @Headers('stripe-signature') sig: string,
+) {
+  // Le raw body est obligatoire : le JSON parse invalide la signature
+  const event = this.stripe.constructEvent(req.rawBody!, sig);
+
+  switch (event.type) {
+    case 'checkout.session.completed':
+      await this.commandBus.execute(new UpgradeSubscriptionCommand(...));
+      break;
+    case 'customer.subscription.deleted':
+      await this.commandBus.execute(new CancelSubscriptionCommand(...));
+      break;
+  }
+  return { received: true };
+}
+\end{lstlisting}
+
+\section{Headers de Sécurité HTTP}
+
+La configuration \texttt{next.config.ts} ajoute automatiquement des headers de protection :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Header} & \textbf{Protection} \\
+\midrule
+\texttt{X-Frame-Options: DENY} & Prévention du clickjacking \\
+\texttt{X-Content-Type-Options: nosniff} & Empêche le MIME sniffing \\
+\texttt{Strict-Transport-Security} & Force HTTPS (max-age 63\,072\,000 s = 2 ans) \\
+\texttt{Referrer-Policy: strict-origin-when-cross-origin} & Limite les informations d'origine transmises dans les requêtes cross-site \\
+\texttt{Permissions-Policy} & Restreint l'accès caméra et micro aux pages de la plateforme uniquement \\
+\bottomrule
+\end{tabularx}
+\caption{Headers de sécurité HTTP}
+\end{table}
+
+\section{Containerisation Docker}
+
+Les deux composants sont containerisés via Docker \textbf{multi-étapes} pour minimiser la taille des images de production. Le backend exécute les migrations Prisma au démarrage :
+
+\begin{lstlisting}[style=bash, caption={CMD du backend en production}]
+CMD ["sh", "-c",
+  "prisma migrate deploy && node dist/src/main.js"]
+\end{lstlisting}
+
+\begin{infobox}
+\noindent\textbf{Variables NEXT\_PUBLIC\_* au build time} : ces variables sont compilées dans le bundle JavaScript lors du \texttt{npm run build}. Elles doivent être déclarées comme \texttt{ARG} dans le stage \textit{builder} du Dockerfile, non dans le stage \textit{runner}.
+\end{infobox}
+
+\section{Infrastructure de Déploiement}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/diag_deploy}}
+\caption{Infrastructure de déploiement complète de Stagio}
+\label{fig:infra}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Composant} & \textbf{Hébergement} & \textbf{Justification} \\
+\midrule
+Frontend (Next.js)  & Railway (Docker)            & Image multi-étapes ; \texttt{NEXT\_PUBLIC\_*} boulonnées au build via ARG \\
+Backend (NestJS)    & Railway (Docker)            & Migrations Prisma automatiques au démarrage (\texttt{prisma migrate deploy}) \\
+BDD principale      & Neon (PostgreSQL serverless) & Connexion poolée pour le runtime + connexion directe pour les migrations (advisory locks) \\
+BDD chat            & MongoDB Atlas               & Schéma flexible, timestamps automatiques, réplication gérée \\
+Authentification    & Supabase Auth               & OAuth Google/GitHub, JWT ES256, synchronisation middleware vers NeonDB \\
+ML Sidecar          & VPS — Docker Compose        & BGE-M3 + Qdrant en local ; isolation complète du service Python \\
+IA générative       & Groq API                    & Whisper large-v3 (STT) + llama-3.3-70b-versatile (LLM), faible latence \\
+Synthèse vocale     & ElevenLabs API              & Trois voix personas ; modèle \texttt{eleven\_multilingual\_v2} \\
+Stockage médias     & Cloudinary                  & Upload CVs, avatars, portfolios ; URL sécurisées \\
+Paiements           & Stripe                      & Webhook HMAC-SHA256 ; abonnement Pro via \texttt{checkout.session} \\
+E-mail transactionnel & Brevo API                 & Confirmations d'entretien, rappels, templates HTML \\
+\bottomrule
+\end{tabularx}
+\caption{Composants de l'infrastructure de déploiement}
+\label{tab:infra}
+\end{table}
+
+\section*{Conclusion}
+Les mécanismes mis en œuvre répondent aux principales menaces d'une application SaaS moderne : JWT signé et RBAC contre l'usurpation d'identité, HMAC-SHA256 contre la falsification des événements financiers, headers HTTP défensifs et validation globale des entrées contre les attaques navigateur et les données malveillantes. L'infrastructure, entièrement containerisée sur Railway via des images Docker multi-étapes, couvre onze composants distincts — bases de données, authentification, IA générative, stockage, paiements et e-mail — chacun isolé et remplaçable sans impact sur les autres. Les migrations Prisma automatiques au démarrage garantissent la cohérence du schéma à chaque déploiement.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\chapter*{Conclusion et Perspectives}
+\addcontentsline{toc}{chapter}{Conclusion et Perspectives}
+\markboth{Conclusion et Perspectives}{}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\section*{Conclusion}
+
+Stagio est une plateforme SaaS déployée qui accompagne les étudiants de la construction de leur profil jusqu'à la confirmation d'un entretien. Développé en équipe de cinq sur six mois, le projet articule cinq modules IA (simulateur d'entretien vocal, réécriture de CV, guide de carrière, portfolio builder, génération de documents), un moteur de recommandation sémantique hybride, une infrastructure de communication temps réel (WebSocket, WebRTC, SSE) et un modèle freemium opéré via Stripe.
+
+Sur le plan architectural, le projet met en œuvre la \textbf{Clean Architecture} et le \textbf{CQRS} de manière cohérente sur l'ensemble du backend, du socle d'authentification jusqu'au service ML Python. Le moteur de recommandation mobilise des techniques modernes de recherche sémantique vectorielle — embeddings BGE-M3, base Qdrant, synchronisation incrémentale — que l'on rencontre habituellement dans les systèmes de recommandation avancés. La sécurité est traitée selon une approche orientée menace : RBAC, validation globale des entrées, HMAC sur les webhooks financiers et headers HTTP défensifs.
+
+Au-delà du produit, ce projet nous a permis de consolider des compétences complémentaires rarement réunies dans un seul projet académique : architecture logicielle à grande échelle, développement full-stack TypeScript, intégration de services IA hétérogènes et conception d'un pipeline ML en production. La gestion progressive de la complexité — trois phases successives, chacune s'appuyant sur la précédente — et le travail collaboratif sur une base de code partagée ont constitué des apprentissages aussi importants que les choix techniques eux-mêmes.
+
+\section*{Perspectives}
+
+\begin{enumerate}
+  \item \textbf{Score collaboratif actif} : intégrer les données comportementales collectées (dwell time, position de clic, bookmarks) dans le score via un modèle de matrix-factorization.
+  \item \textbf{Tests automatisés} : suite Jest unitaire sur les handlers CQRS, Supertest sur les endpoints REST, Playwright sur les flux frontend critiques.
+  \item \textbf{Cache Redis} : mise en cache des scores de recommandation (TTL 24h) et des profils fréquemment consultés, réduisant la charge sur NeonDB.
+  \item \textbf{Matching bidirectionnel} : permettre aux recruteurs de recevoir des suggestions d'étudiants correspondant à leurs offres, symétrique du Job Matcher actuel.
+  \item \textbf{Parcours de formation recommandés} : sur la base des lacunes identifiées dans le guide de carrière, suggérer automatiquement des ressources pédagogiques (MOOCs, certifications) adaptées au profil.
+  \item \textbf{Application mobile} : React Native partageant les types TypeScript et la couche API avec le frontend web.
+  \item \textbf{Observabilité} : Sentry pour les erreurs, métriques de latence sur les appels IA, alertes sur les dégradations de service.
+\end{enumerate}
+
+% ─── Bibliographie ─────────────────────────────────────────────────────────────
+\begin{thebibliography}{99}
+\bibitem{clean} Martin, R.~C. (2017). \textit{Clean Architecture}. Prentice Hall.
+\bibitem{cqrs} Young, G. (2010). \textit{CQRS Documents}. cqrs.files.wordpress.com.
+\bibitem{bge} Chen, J. et al. (2024). BGE M3-Embedding. \textit{arXiv:2309.07597}.
+\bibitem{nestjs} Documentation NestJS. \url{https://docs.nestjs.com}
+\bibitem{nextjs} Documentation Next.js. \url{https://nextjs.org/docs}
+\bibitem{groq} Documentation Groq API. \url{https://console.groq.com/docs}
+\bibitem{stripe} Documentation Stripe Webhooks. \url{https://stripe.com/docs/webhooks}
+\bibitem{qdrant} Documentation Qdrant. \url{https://qdrant.tech/documentation}
+\end{thebibliography}
+
+\end{document}
+
+
+

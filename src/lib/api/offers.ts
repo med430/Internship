@@ -25,7 +25,7 @@ export type Offer = {
 
 const OFFER_FIELDS = `
 	id title description company location domain
-	type workMode isPaid stipendMin stipendMax startDate endDate
+	type workMode isPaid startDate endDate
 	skillRequirements { id skill { id name } level }
 `;
 
