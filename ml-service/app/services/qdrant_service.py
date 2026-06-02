@@ -80,5 +80,51 @@ class QdrantService:
                 await asyncio.sleep(0.1 * (attempt + 1))
         return {}  # unreachable; the loop either returns or re-raises
 
+    async def search(
+        self, collection: str, vector: list[float], limit: int, exclude_inactive: bool = True
+    ) -> list[tuple[str, float]]:
+        """Semantic ANN (Stage-1 retrieval): top-`limit` points by cosine to `vector`.
+
+        Returns (id, score). Eligibility pushed into the query: the payload `deleted` flag is set
+        by the worker when an offer is soft-deleted OR its deadline has passed, so a single
+        `deleted == false` filter excludes both. Same transient-retry guard as retrieve_vectors.
+        """
+        query_filter = (
+            models.Filter(must=[models.FieldCondition(
+                key="deleted", match=models.MatchValue(value=False))])
+            if exclude_inactive else None
+        )
+        for attempt in range(_RETRIEVE_RETRIES):
+            try:
+                res = await self._client.query_points(
+                    collection_name=collection, query=vector, limit=limit,
+                    query_filter=query_filter, with_payload=False, with_vectors=False,
+                )
+                return [(str(p.id), p.score) for p in res.points]
+            except ResponseHandlingException as e:
+                if attempt == _RETRIEVE_RETRIES - 1:
+                    raise
+                log.warning("qdrant search transient error (attempt %d): %s", attempt + 1, e)
+                await asyncio.sleep(0.1 * (attempt + 1))
+        return []  # unreachable
+
+    async def retrieve_full(self, collection: str, ids: list[str]) -> dict[str, dict]:
+        """Vectors + payloads in one round-trip (advanced pipeline needs both: vectors for
+        semantic score + MMR similarity, payloads for slate metadata)."""
+        if not ids:
+            return {}
+        for attempt in range(_RETRIEVE_RETRIES):
+            try:
+                records = await self._client.retrieve(
+                    collection_name=collection, ids=ids, with_vectors=True, with_payload=True
+                )
+                return {str(r.id): {"vector": r.vector, "payload": r.payload or {}} for r in records}
+            except ResponseHandlingException as e:
+                if attempt == _RETRIEVE_RETRIES - 1:
+                    raise
+                log.warning("qdrant retrieve_full transient error (attempt %d): %s", attempt + 1, e)
+                await asyncio.sleep(0.1 * (attempt + 1))
+        return {}  # unreachable
+
     async def close(self) -> None:
         await self._client.close()
