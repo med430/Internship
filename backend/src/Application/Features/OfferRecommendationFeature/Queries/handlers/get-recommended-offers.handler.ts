@@ -7,6 +7,7 @@ import { IRecommendationScoreRepository } from '../../../../repositories/recomme
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IOfferViewRepository } from '../../../../repositories/offer-view.repository'
 import { IOfferBookmarkRepository } from '../../../../repositories/offer-bookmark.repository'
+import { IApplicationRepository } from '../../../../repositories/application.repository'
 import { decodeCursor, encodeCursor, FeedCursor } from '../../cursor'
 import { Offer } from '../../../../../Domain/entities/offer.entity'
 import { RecommendationScore } from '../../../../../Domain/entities/recommendation-score.entity'
@@ -36,6 +37,7 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         @Inject(IOfferRepository)               private readonly offers:    IOfferRepository,
         @Inject(IOfferViewRepository)           private readonly views:     IOfferViewRepository,
         @Inject(IOfferBookmarkRepository)       private readonly bookmarks: IOfferBookmarkRepository,
+        @Inject(IApplicationRepository)         private readonly applications: IApplicationRepository,
     ) {}
 
     // Entry point: decide between "we have scores → ranked feed" and "no scores → newest fallback".
@@ -76,12 +78,13 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const offers = await this.loadOffersByIds(offerIds)
         const bookmarkedIds = await this.getBookmarkedOfferIds(studentUserId, offerIds)
         const viewCounts = await this.views.countByStudent(studentUserId)
+        const appliedIds = await this.getAppliedOfferIds(studentUserId)
 
-        // Pair scores with their offer, drop missing/deleted/expired offers
+        // Pair scores with their offer, drop missing/deleted/expired offers and ones already applied to (slate rule)
         const pairs = scoreRows
             .map(s => ({ score: s, offer: offers.get(s.offerId) }))
             .filter((p): p is { score: RecommendationScore; offer: Offer } =>
-                !!p.offer && !p.offer.deletedAt && this.notPastDeadline(p.offer),
+                !!p.offer && !p.offer.deletedAt && this.notPastDeadline(p.offer) && !appliedIds.has(p.offer.id),
             )
 
         // Apply real-time modifiers to the score the frontend receives, so the visible match order stays descending.
@@ -359,6 +362,12 @@ export class GetRecommendedOffersHandler implements IQueryHandler<GetRecommended
         const active = await this.bookmarks.findActiveByStudent(studentUserId)
         const candidateSet = new Set(candidateIds)
         return new Set(active.filter(b => candidateSet.has(b.offerId)).map(b => b.offerId))
+    }
+
+    // Offers the student already applied to — dropped from the matcher feed (don't recommend what's done).
+    private async getAppliedOfferIds(studentUserId: string): Promise<Set<string>> {
+        const applications = await this.applications.findByStudentUserId(studentUserId)
+        return new Set(applications.map(a => a.offerId))
     }
 }
 
