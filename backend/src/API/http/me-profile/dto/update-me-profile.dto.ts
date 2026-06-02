@@ -18,6 +18,7 @@ import { OfferType } from '../../../../Domain/enums/offer-type.enum'
 
 export class UpdateMeProfileDto {
     @IsOptional() @IsString() @MaxLength(80)            name?: string
+    @IsOptional() @IsString() @MaxLength(120)           email?: string
     @IsOptional() @IsString() @MaxLength(80)            lastname?: string
     @IsOptional() @IsString() @MaxLength(40)            username?: string
     @IsOptional() @IsString() @MaxLength(40)            phone?: string

@@ -17,6 +17,7 @@ export interface MyProfile {
   lastname: string | null;
   username: string | null;
   phone: string | null;
+  email: string | null;
   avatarUrl: string | null;
 
   // StudentProfile entity fields
@@ -46,6 +47,38 @@ export type MyProfilePatch = Partial<
   Omit<MyProfile, "id" | "userId" | "skills">
 >;
 
+export interface CvUploadAnalysis {
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  summary?: string | null;
+  targetRole?: string | null;
+  mainDomain?: string | null;
+  experienceLevel?: "junior" | "mid" | "senior" | null;
+  dominantStack?: string[];
+  skills?: string[];
+  languages?: string[];
+  certifications?: string[];
+  preferredDomains?: string[];
+  preferredOfferTypes?: Array<"INTERNSHIP" | "PFE" | "RESEARCH" | "PHD" | "ALTERNANCE">;
+  preferredCities?: string[];
+  preferredWorkMode?: "ONSITE" | "REMOTE" | "HYBRID" | null;
+  currentProgram?: string | null;
+  organization?: string | null;
+}
+
+export interface CvUploadResult {
+  profile: MyProfile;
+  analysis: CvUploadAnalysis;
+  cv: {
+    id: string;
+    fileUrl: string;
+  };
+}
+
 export async function getMyProfile(): Promise<MyProfile | null> {
   const response = await fetchWithAuth(`${API_BASE_URL}/me/profile`, {
     method: "GET",
@@ -65,4 +98,21 @@ export async function patchMyProfile(updates: MyProfilePatch): Promise<MyProfile
     throw new Error(text || "Failed to save profile");
   }
   return (await response.json()) as MyProfile;
+}
+
+export async function uploadMyProfileCv(file: File): Promise<CvUploadResult> {
+  const formData = new FormData();
+  formData.append("cv", file);
+
+  const response = await fetchWithAuth(`${API_BASE_URL}/me/profile/cv/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(text || "Failed to upload CV");
+  }
+
+  return (await response.json()) as CvUploadResult;
 }

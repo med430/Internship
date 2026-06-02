@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "re
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { answerInterview } from "@/lib/api/interviews";
+import type { InterviewMilestone, VoiceMetrics } from "@/lib/api/interviews/types";
 import type { ChatMessage, InterviewState } from "../types";
 import { useFacialExpressionAnalysis } from "./use-facial-expression-analysis";
 import { useInterviewCamera } from "./use-interview-camera";
@@ -119,6 +120,12 @@ export function useInterviewRoomController() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [latestQuestionAudio, setLatestQuestionAudio] =
     useState<InterviewAudioPayload | null>(null);
+  const [currentMilestone, setCurrentMilestone] =
+    useState<InterviewMilestone | null>(null);
+  const [isPersonalized, setIsPersonalized] = useState(false);
+  const [latestVoiceMetrics, setLatestVoiceMetrics] =
+    useState<VoiceMetrics | null>(null);
+  const [isFollowUp, setIsFollowUp] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -146,6 +153,23 @@ export function useInterviewRoomController() {
     void (async () => {
       const storageKey = `interview-audio:${interviewId}`;
       const storedAudio = sessionStorage.getItem(storageKey);
+      const storedMeta = sessionStorage.getItem(`interview-meta:${interviewId}`);
+
+      if (storedMeta) {
+        sessionStorage.removeItem(`interview-meta:${interviewId}`);
+
+        try {
+          const meta = JSON.parse(storedMeta) as {
+            personalized?: boolean;
+            milestone?: InterviewMilestone | null;
+          };
+
+          setIsPersonalized(Boolean(meta.personalized));
+          setCurrentMilestone(meta.milestone ?? null);
+        } catch {
+          // Ignore invalid cached metadata and keep the standard room flow.
+        }
+      }
 
       if (!storedAudio) {
         setState("ready");
@@ -217,6 +241,10 @@ export function useInterviewRoomController() {
           audioFilename: input.audioFilename,
           facialMetrics,
         });
+        setCurrentMilestone(response.milestone ?? null);
+        setIsPersonalized((previous) => previous || Boolean(response.milestone));
+        setLatestVoiceMetrics(response.voiceMetrics ?? null);
+        setIsFollowUp(Boolean(response.followUp));
 
         setMessages((previous) => {
           const next = [...previous];
@@ -428,6 +456,10 @@ export function useInterviewRoomController() {
     facialScore: facialAnalysis.facialScore,
     facialAnalysisReady: facialAnalysis.modelReady,
     facialAnalysisError: facialAnalysis.analysisError,
+    currentMilestone,
+    isPersonalized,
+    latestVoiceMetrics,
+    isFollowUp,
     startCamera,
     stopCamera,
     startRecording,

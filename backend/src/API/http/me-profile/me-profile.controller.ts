@@ -1,15 +1,21 @@
 // Student-facing profile + skill endpoints behind Supabase auth. The frontend uses these to drive the recommendation engine.
 
 import {
+    BadRequestException,
     Body,
     Controller,
     Get,
     Inject,
+    Post,
     NotFoundException,
     Patch,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common'
 import { CommandBus } from '@nestjs/cqrs'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { memoryStorage } from 'multer'
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
 import { RolesGuard } from '../guards/roles.guard'
 import { Roles } from '../decorators/roles.decorator'
@@ -21,6 +27,7 @@ import { IUserRepository } from '../../../Application/repositories/user.reposito
 import { UpdateStudentProfileCommand } from '../../../Application/Features/ProfileFeature/Commands/update-student-profile.command'
 import { Gender } from '../../../Domain/enums/gender'
 import { UpdateMeProfileDto } from './dto/update-me-profile.dto'
+import { CvProfileImportService } from './cv-profile-import.service'
 
 @Controller('me/profile')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -31,6 +38,7 @@ export class MeProfileController {
         private readonly commandBus: CommandBus,
         @Inject(IStudentProfileRepository) private readonly studentRepo: IStudentProfileRepository,
         @Inject(IUserRepository) private readonly userRepo: IUserRepository,
+        private readonly cvProfileImportService: CvProfileImportService,
     ) {}
 
     // Returns the current student's full profile: User fields + StudentProfile fields + skills.
@@ -48,6 +56,7 @@ export class MeProfileController {
             lastname: dbUser?.lastname ?? null,
             username: dbUser?.username ?? null,
             phone: dbUser?.phone ?? null,
+            email: dbUser?.email ?? null,
             avatarUrl: dbUser?.avatarUrl ?? null,
 
             // StudentProfile fields
@@ -86,6 +95,7 @@ export class MeProfileController {
             user.id,
             dto.name,
             dto.lastname,
+            dto.email,
             dto.username,
             dto.phone,
             dto.avatarUrl,
@@ -108,6 +118,22 @@ export class MeProfileController {
             this.parseNullableDate(dto.availableTo),
         ))
         return this.getProfile(user)
+    }
+
+    @Post('cv/upload')
+    @UseInterceptors(FileInterceptor('cv', {
+        storage: memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 },
+    }))
+    async uploadCv(
+        @SupabaseUser() user: ResolvedUser,
+        @UploadedFile() cv: Express.Multer.File | undefined,
+    ) {
+        if (!cv) {
+            throw new BadRequestException('cv is required')
+        }
+
+        return this.cvProfileImportService.importCv(user.id, cv)
     }
 
     // Maps ISO string -> Date, passes null through (clear), undefined through (leave alone).

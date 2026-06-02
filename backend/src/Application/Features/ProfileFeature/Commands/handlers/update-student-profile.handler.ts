@@ -35,6 +35,7 @@ ProfileResponseDTO
         // Update User fields
         user.name        = command.name        ?? user.name
         user.lastname    = command.lastname    ?? user.lastname
+        user.email       = command.email       ?? user.email
         user.username    = command.username    ?? user.username
         user.phone       = command.phone       ?? user.phone
         user.avatarUrl   = command.avatarUrl   ?? user.avatarUrl

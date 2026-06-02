@@ -10,6 +10,7 @@ export class UpdateStudentProfileCommand {
         // User fields
         public readonly name?: string,
         public readonly lastname?: string,
+        public readonly email?: string,
         public readonly username?: string,
         public readonly phone?: string,
         public readonly avatarUrl?: string,

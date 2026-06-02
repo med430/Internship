@@ -55,6 +55,22 @@ export function ProfileBasicSection({ form }: ProfileBasicSectionProps) {
         />
         <FormField
           control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-base font-semibold">Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="john@company.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
           name="lastname"
           render={({ field }) => (
             <FormItem>

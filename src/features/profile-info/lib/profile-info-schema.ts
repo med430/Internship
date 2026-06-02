@@ -10,6 +10,7 @@ export const GENDER_OPTIONS = [
 export const profileInfoSchema = z.object({
   // User entity fields
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   lastname: z.string().min(1, "Last name is required"),
   username: z.string().min(2, "Username must be at least 2 characters").optional().or(z.literal("")),
   phone: z.string().max(40).optional().or(z.literal("")),
@@ -27,6 +28,7 @@ export type ProfileInfoFormValues = z.infer<typeof profileInfoSchema>;
 export function buildDefaultValues(profile: MyProfile): ProfileInfoFormValues {
   return {
     name: profile.name ?? "",
+    email: profile.email ?? "",
     lastname: profile.lastname ?? "",
     username: profile.username ?? "",
     phone: profile.phone ?? "",
@@ -41,6 +43,7 @@ export function buildDefaultValues(profile: MyProfile): ProfileInfoFormValues {
 export function mapFormToProfilePayload(data: ProfileInfoFormValues) {
   return {
     name: data.name,
+    email: data.email,
     lastname: data.lastname || undefined,
     username: data.username || undefined,
     phone: data.phone || undefined,

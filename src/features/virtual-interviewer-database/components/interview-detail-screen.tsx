@@ -9,6 +9,7 @@ import { InterviewFacialExpressionCard } from "./interview-facial-expression-car
 import { InterviewListCard } from "./interview-list-card";
 import { InterviewMetadataCard } from "./interview-metadata-card";
 import { InterviewPerformanceCard } from "./interview-performance-card";
+import { InterviewPersonalizedMilestonesCard } from "./interview-personalized-milestones-card";
 
 interface InterviewDetailScreenProps {
   interviewId: string;
@@ -57,6 +58,7 @@ export function InterviewDetailScreen({
 
         <InterviewMetadataCard interview={interview} />
         <InterviewPerformanceCard interview={interview} />
+        <InterviewPersonalizedMilestonesCard interview={interview} />
         <InterviewFacialExpressionCard interview={interview} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -19,6 +19,11 @@ export interface Interview {
   facial_expression_score?: number | null;
   facial_summary?: string | null;
   facial_metrics?: FacialExpressionMetrics | null;
+  personalized_mode?: boolean;
+  offer_context?: Record<string, unknown> | null;
+  cv_context?: Record<string, unknown> | null;
+  milestones?: InterviewMilestone[] | null;
+  voice_metrics?: VoiceMetrics[];
   pdf_url: string;
   created_at: string;
   updated_at: string;
@@ -53,6 +58,32 @@ export interface StartInterviewInput {
   company?: string;
   jobTitle?: string;
   jobDescription?: string;
+  mode?: "standard" | "personalized";
+  offerId?: string;
+  cvId?: string;
+  cvText?: string;
+}
+
+export interface InterviewMilestone {
+  id: number;
+  type: string;
+  question: string;
+  objective: string;
+  difficulty: "easy" | "medium" | "hard" | string;
+  status?: "PENDING" | "IN_PROGRESS" | "VALIDATED" | string;
+  confidence?: "LOW" | "MEDIUM" | "HIGH" | string;
+  followUpCount?: number;
+  lastScore?: number;
+  feedback?: string;
+}
+
+export interface VoiceMetrics {
+  wordCount: number;
+  fillerWords: Record<string, number>;
+  fillerWordCount: number;
+  paceLabel: string;
+  fluencyScore: number;
+  fluencySummary: string;
 }
 
 export interface InterviewStartResponse {
@@ -63,6 +94,8 @@ export interface InterviewStartResponse {
   personaKey: string;
   audioBase64?: string;
   audioMime?: string;
+  milestone?: InterviewMilestone | null;
+  personalized?: boolean;
 }
 
 export interface AnswerInterviewInput {
@@ -83,4 +116,7 @@ export interface InterviewAnswerResponse {
   reportId?: string;
   audioBase64?: string;
   audioMime?: string;
+  milestone?: InterviewMilestone;
+  followUp?: boolean;
+  voiceMetrics?: VoiceMetrics;
 }

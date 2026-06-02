@@ -11,6 +11,10 @@ export class UpdateStudentProfileDto {
 
     @IsOptional()
     @IsString()
+    email?: string
+
+    @IsOptional()
+    @IsString()
     lastname?: string
 
     @IsOptional()

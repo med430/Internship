@@ -25,6 +25,7 @@ import { ChatController } from "./chat/chat.controller";
 import { MeController } from "./auth-me/me.controller";
 import { MeProfileController } from "./me-profile/me-profile.controller";
 import { MeSkillsController } from "./me-profile/me-skills.controller";
+import { CvProfileImportService } from "./me-profile/cv-profile-import.service";
 import { ReferenceController } from "./reference/reference.controller";
 import { NotificationController } from "./notifications/notification.controller";
 import { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
@@ -96,6 +97,7 @@ const chatEnabled = !!process.env.CHAT_DB_URL;
         RecommendationsRecomputedHandler,
         InterviewSlotProposedHandler,
         InterviewSlotRespondedHandler,
+        CvProfileImportService,
     ],
     exports: [SupabaseSyncMiddleware],
 })

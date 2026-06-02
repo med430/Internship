@@ -51,6 +51,29 @@ export async function fetchCVById(cvId: string): Promise<CV> {
   return (await response.json()) as CV;
 }
 
+export async function uploadInterviewCV(file: File): Promise<CV> {
+  const apiUrl = getClientApiBaseUrl();
+  const formData = new FormData();
+  formData.append("cv", file);
+
+  const response = await fetchWithAuth(`${apiUrl}/onboard/cvs/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (response.status === 404) {
+    throw new Error("INTERVIEW_CV_UPLOAD_ROUTE_NOT_FOUND");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      await getApiErrorMessage(response, ERROR_MESSAGES.FILE_UPLOAD_FAILED),
+    );
+  }
+
+  return (await response.json()) as CV;
+}
+
 export async function deleteCVById(cvId: string): Promise<void> {
   const apiUrl = getClientApiBaseUrl();
   const response = await fetchWithAuth(`${apiUrl}/onboard/cvs/${cvId}`, { method: "DELETE" });

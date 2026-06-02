@@ -38,6 +38,9 @@ type FaceLandmarkerFactory = {
   ) => Promise<FaceLandmarkerLike>;
 };
 
+const MEDIAPIPE_XNNPACK_INFO_PREFIX =
+  "INFO: Created TensorFlow Lite XNNPACK delegate for CPU.";
+
 interface UseFacialExpressionAnalysisOptions {
   enabled: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -142,6 +145,14 @@ function createTotals(): RunningTotals {
   };
 }
 
+function safeCloseLandmarker(landmarker: FaceLandmarkerLike | null) {
+  try {
+    landmarker?.close?.();
+  } catch {
+    // MediaPipe can throw if cleanup races with an in-flight video detection.
+  }
+}
+
 export function summarizeFacialMetrics(
   metrics?: FacialExpressionMetrics | null,
 ) {
@@ -195,6 +206,7 @@ export function useFacialExpressionAnalysis({
 }: UseFacialExpressionAnalysisOptions) {
   const landmarkerRef = useRef<FaceLandmarkerLike | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const disposedRef = useRef(false);
   const totalsRef = useRef<RunningTotals>(createTotals());
   const [modelReady, setModelReady] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -220,6 +232,21 @@ export function useFacialExpressionAnalysis({
 
   useEffect(() => {
     let disposed = false;
+    disposedRef.current = false;
+
+    const originalConsoleError = console.error;
+    const filteredConsoleError: typeof console.error = (...args) => {
+      const first = args[0];
+      if (
+        typeof first === "string" &&
+        first.startsWith(MEDIAPIPE_XNNPACK_INFO_PREFIX)
+      ) {
+        return;
+      }
+      originalConsoleError(...args);
+    };
+
+    console.error = filteredConsoleError;
 
     async function loadModel() {
       try {
@@ -244,7 +271,7 @@ export function useFacialExpressionAnalysis({
         );
 
         if (disposed) {
-          landmarker.close?.();
+          safeCloseLandmarker(landmarker);
           return;
         }
 
@@ -261,7 +288,11 @@ export function useFacialExpressionAnalysis({
 
     return () => {
       disposed = true;
-      landmarkerRef.current?.close?.();
+      disposedRef.current = true;
+      if (console.error === filteredConsoleError) {
+        console.error = originalConsoleError;
+      }
+      safeCloseLandmarker(landmarkerRef.current);
       landmarkerRef.current = null;
     };
   }, []);
@@ -282,12 +313,17 @@ export function useFacialExpressionAnalysis({
     intervalRef.current = window.setInterval(() => {
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
-      if (!video || !landmarker || video.readyState < 2) return;
+      if (!video || !landmarker || disposedRef.current || video.readyState < 2) {
+        return;
+      }
 
       const totals = totalsRef.current;
       totals.samples += 1;
 
       try {
+        if (disposedRef.current || landmarkerRef.current !== landmarker) {
+          return;
+        }
         const result = landmarker.detectForVideo(video, performance.now());
         const categories = result.faceBlendshapes?.[0]?.categories ?? [];
 

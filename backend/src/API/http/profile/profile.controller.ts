@@ -33,6 +33,7 @@ export class ProfileController {
                     userId,
                     studentDto.name,
                     studentDto.lastname,
+                    studentDto.email,
                     studentDto.username,
                     studentDto.phone,
                     studentDto.avatarUrl,

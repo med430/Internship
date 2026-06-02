@@ -324,6 +324,26 @@ export class OnboardController {
         )
     }
 
+    @Post('onboard/cvs/upload')
+    @UseInterceptors(FileInterceptor('cv', {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024 },
+    }))
+    async uploadCvForInterview(
+        @Req() req: Request,
+        @UploadedFile() cv: Express.Multer.File | undefined,
+    ) {
+        if (!cv) {
+            throw new BadRequestException('cv is required')
+        }
+
+        return this.onboardService.uploadCvForInterview(
+            this.getSessionKey(req),
+            cv,
+            this.getBaseUrl(req),
+        )
+    }
+
     @Get('onboard/cvs/:id')
     async getCv(@Req() req: Request, @Param('id') id: string) {
         return this.onboardService.getCv(this.getSessionKey(req), id, this.getBaseUrl(req))
@@ -454,6 +474,10 @@ async downloadCv(
             company: body.company,
             jobTitle: body.jobTitle,
             jobDescription: body.jobDescription,
+            mode: body.mode,
+            offerId: body.offerId,
+            cvId: body.cvId,
+            cvText: body.cvText,
         })
     }
 

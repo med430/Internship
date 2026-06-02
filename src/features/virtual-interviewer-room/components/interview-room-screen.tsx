@@ -3,6 +3,7 @@
 import { useInterviewRoomController } from "../hooks/use-interview-room-controller";
 import { InterviewChat } from "./interview-chat";
 import { InterviewControls } from "./interview-controls";
+import { InterviewMilestoneStatus } from "./interview-milestone-status";
 import { InterviewVideoStage } from "./interview-video-stage";
 
 export function InterviewRoomScreen() {
@@ -23,6 +24,10 @@ export function InterviewRoomScreen() {
     facialScore,
     facialAnalysisReady,
     facialAnalysisError,
+    currentMilestone,
+    isPersonalized,
+    latestVoiceMetrics,
+    isFollowUp,
     startCamera,
     stopCamera,
     startRecording,
@@ -48,6 +53,13 @@ export function InterviewRoomScreen() {
             facialAnalysisError={facialAnalysisError}
             onStartCamera={startCamera}
             onStopCamera={stopCamera}
+          />
+
+          <InterviewMilestoneStatus
+            milestone={currentMilestone}
+            isPersonalized={isPersonalized}
+            voiceMetrics={latestVoiceMetrics}
+            isFollowUp={isFollowUp}
           />
 
           <InterviewChat

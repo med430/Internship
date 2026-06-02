@@ -26,6 +26,32 @@ type InterviewTurn = {
     answer: string
     score: number
     feedback: string
+    milestoneId?: number
+    milestoneType?: string
+    followUp?: boolean
+    voiceMetrics?: VoiceMetrics
+}
+
+type InterviewMilestone = {
+    id: number
+    type: 'presentation' | 'motivation' | 'culture_fit' | 'technical' | 'project_experience' | 'problem_solving' | 'soft_skills' | 'gap_check' | 'behavioral' | 'role_readiness' | 'candidate_questions'
+    question: string
+    objective: string
+    difficulty: 'easy' | 'medium' | 'hard'
+    status?: 'PENDING' | 'IN_PROGRESS' | 'VALIDATED'
+    confidence?: 'LOW' | 'MEDIUM' | 'HIGH'
+    followUpCount?: number
+    lastScore?: number
+    feedback?: string
+}
+
+type VoiceMetrics = {
+    wordCount: number
+    fillerWords: Record<string, number>
+    fillerWordCount: number
+    paceLabel: 'too_short' | 'concise' | 'natural' | 'long'
+    fluencyScore: number
+    fluencySummary: string
 }
 
 type FacialExpressionMetrics = {
@@ -48,6 +74,28 @@ type InterviewState = {
     questions: string[]
     answers: string[]
     turns: InterviewTurn[]
+    mode?: 'standard' | 'personalized'
+    offerId?: string
+    cvId?: string
+    offerContext?: {
+        title: string
+        company: string
+        location?: string
+        domain?: string
+        workMode?: string
+        type?: string
+        description: string
+        requiredSkills?: string[]
+    }
+    cvContext?: {
+        id?: string
+        jobTitle?: string
+        summary?: string
+        anonymizedText?: string | null
+        improvements?: string[]
+    }
+    milestones?: InterviewMilestone[]
+    currentMilestoneIndex?: number
     facialMetrics?: FacialExpressionMetrics
     facialExpressionScore?: number | null
     facialSummary?: string
@@ -358,6 +406,39 @@ export class OnboardService {
         if (!file) throw new Error('A file is required.')
         const text = await this.extractTextFromFile(file)
         return { text }
+    }
+
+    async uploadCvForInterview(sessionKey: string, file: Express.Multer.File | undefined, baseUrl: string) {
+        if (!file) throw new Error('A CV file is required.')
+
+        const cvText = await this.extractTextFromFile(file)
+        const role = this.detectRole(cvText || file.originalname || 'candidate')
+        const skills = this.extractSkillKeywords(cvText)
+        const originalScore = this.computeBaselineScore(cvText)
+        const pdfDataUri = `data:${file.mimetype || 'application/pdf'};base64,${file.buffer.toString('base64')}`
+        const summary = this.summarizeText(cvText)
+        const improvements = [
+            `Prepare concrete examples around ${skills[0] || role}.`,
+            `Connect project outcomes from the CV to the selected job offer.`,
+            'Quantify impact, ownership, and collaboration when answering follow-up questions.',
+        ]
+
+        const created = await this.prisma.publicCv.create({
+            data: {
+                sessionKey,
+                pdfUrl: pdfDataUri,
+                originalScore,
+                finalScore: originalScore,
+                jobTitle: role,
+                jobsSummary: summary,
+                reviewImprovements: improvements,
+                anonymizedCvText: cvText,
+            },
+        })
+
+        await this.refreshProfileFromCv(sessionKey, cvText, role).catch(() => undefined)
+
+        return this.mapCv(created, baseUrl)
     }
 
     async getDashboard(sessionKey: string) {
@@ -762,18 +843,78 @@ export class OnboardService {
         return { id: generation.id, user_id: generation.sessionKey, job_id: generation.id, wireframe: generation.wireframe, theme: generation.theme, html: generation.html, created_at: generation.createdAt.toISOString() }
     }
 
-    async startInterview(sessionKey: string, input: { personaKey?: string; questionCount?: number; company?: string; jobTitle?: string; jobDescription?: string }) {
+    async startInterview(sessionKey: string, input: { personaKey?: string; questionCount?: number; company?: string; jobTitle?: string; jobDescription?: string; mode?: string; offerId?: string; cvId?: string; cvText?: string }) {
         const personaKey = input.personaKey && PERSONAS[input.personaKey] ? input.personaKey : 'alex_chen'
         const persona = PERSONAS[personaKey]
-        const maxQuestions = Math.max(2, Math.min(5, input.questionCount ?? 3))
+        const personalized = input.mode === 'personalized' || Boolean(input.offerId)
+        const maxQuestions = personalized ? Math.max(2, Math.min(12, input.questionCount ?? 12)) : Math.max(2, Math.min(5, input.questionCount ?? 3))
         const recruiterMode = this.mapPersonaToRecruiterMode(persona)
+        const offer = input.offerId
+            ? await this.prisma.offer.findFirst({
+                where: { id: input.offerId, deletedAt: null },
+                include: { skillRequirements: { include: { skill: true } } },
+            })
+            : null
+        const cv = input.cvId
+            ? await this.prisma.publicCv.findFirst({ where: { id: input.cvId, sessionKey } })
+            : personalized
+                ? await this.prisma.publicCv.findFirst({ where: { sessionKey }, orderBy: { createdAt: 'desc' } })
+                : null
+        const extractedCvText = input.cvText?.trim()
         const context: InterviewContext = {
-            company: input.company ?? persona.company,
-            jobTitle: input.jobTitle ?? persona.position,
-            jobDescription: input.jobDescription ?? `Interview practice for a ${input.jobTitle ?? persona.position} role.`,
+            company: offer?.company ?? input.company ?? persona.company,
+            jobTitle: offer?.title ?? input.jobTitle ?? persona.position,
+            jobDescription: offer?.description ?? input.jobDescription ?? `Interview practice for a ${input.jobTitle ?? persona.position} role.`,
         }
-        const question = await this.generateOpeningQuestion(context, recruiterMode, persona, maxQuestions)
+        const offerContext = offer
+            ? {
+                title: offer.title,
+                company: offer.company,
+                location: offer.location,
+                domain: offer.domain,
+                workMode: String(offer.workMode),
+                type: String(offer.type),
+                description: offer.description,
+                requiredSkills: offer.skillRequirements.map((item) => item.skill.name),
+            }
+            : undefined
+        const cvContext = cv
+            ? {
+                id: cv.id,
+                jobTitle: cv.jobTitle,
+                summary: cv.jobsSummary,
+                anonymizedText: cv.anonymizedCvText,
+                improvements: cv.reviewImprovements,
+            }
+            : extractedCvText
+                ? {
+                    jobTitle: this.detectRole(extractedCvText),
+                    summary: this.summarizeText(extractedCvText),
+                    anonymizedText: extractedCvText,
+                    improvements: [
+                        'Prepare examples that prove the strongest CV skills for this offer.',
+                        'Connect CV projects to the selected job responsibilities.',
+                    ],
+                }
+            : undefined
+        const milestones = personalized
+            ? this.buildPersonalizedMilestones(context, offerContext, cvContext, maxQuestions)
+            : undefined
+        const question = milestones?.[0]?.question ?? await this.generateOpeningQuestion(context, recruiterMode, persona, maxQuestions)
         const openingAudio = await this.maybeGenerateInterviewAudio(question, recruiterMode, persona.voiceProfile)
+        const interviewData: InterviewState = {
+            maxQuestions,
+            questions: [question],
+            answers: [],
+            turns: [],
+            mode: personalized ? 'personalized' : 'standard',
+            offerId: offer?.id ?? input.offerId,
+            cvId: cv?.id ?? input.cvId,
+            offerContext,
+            cvContext,
+            milestones,
+            currentMilestoneIndex: milestones ? 0 : undefined,
+        }
 
         const created = await this.prisma.publicInterview.create({
             data: {
@@ -782,11 +923,11 @@ export class OnboardService {
                 interviewStyle: persona.style, difficultyLevel: persona.difficulty,
                 company: context.company, jobTitle: context.jobTitle,
                 jobDescription: context.jobDescription, recruiterMode,
-                data: { maxQuestions, questions: [question], answers: [], turns: [] },
+                data: interviewData,
             },
         })
 
-        return { interviewId: created.id, questionText: question, questionIndex: 1, interviewerName: persona.name, personaKey, audioBase64: openingAudio?.audioBase64, audioMime: openingAudio?.audioMime }
+        return { interviewId: created.id, questionText: question, questionIndex: 1, interviewerName: persona.name, personaKey, milestone: milestones?.[0] ?? null, personalized, audioBase64: openingAudio?.audioBase64, audioMime: openingAudio?.audioMime }
     }
 
     async answerInterview(
@@ -809,11 +950,13 @@ export class OnboardService {
 
         const persona = PERSONAS[interview.personaKey] ?? PERSONAS.alex_chen
         const data = (interview.data ?? { maxQuestions: 3, questions: [], answers: [], turns: [] }) as InterviewState
-        const currentQuestion = data.questions[data.questions.length - 1]
+        const milestone = this.getCurrentMilestone(data)
+        const currentQuestion = milestone?.question ?? data.questions[data.questions.length - 1]
         const questionAsked = currentQuestion || this.buildInterviewQuestion(persona, data.answers.length + 1, data.maxQuestions, interview.jobTitle ?? persona.position)
         const recruiterMode = this.parseRecruiterMode(interview.recruiterMode, persona)
         const context = this.buildInterviewContext(interview, persona)
         const transcript = await this.resolveInterviewTranscript(input)
+        const voiceMetrics = this.analyzeVoiceMetrics(transcript)
         const facialMetrics = this.sanitizeFacialMetrics(input.facialMetrics)
         if (facialMetrics) {
             data.facialMetrics = facialMetrics
@@ -835,10 +978,69 @@ export class OnboardService {
             answer: transcript,
             score,
             feedback,
+            milestoneId: milestone?.id,
+            milestoneType: milestone?.type,
+            followUp: Boolean(milestone && milestone.followUpCount && milestone.followUpCount > 0),
+            voiceMetrics,
         }
 
         data.answers.push(transcript)
         data.turns.push(turn)
+
+        if (milestone) {
+            const milestoneResult = this.updateMilestoneAfterAnswer(milestone, evaluation, transcript)
+            milestone.status = milestoneResult.validated ? 'VALIDATED' : 'IN_PROGRESS'
+            milestone.confidence = milestoneResult.confidence
+            milestone.lastScore = score
+            milestone.feedback = feedback
+
+            if (!milestoneResult.validated) {
+                milestone.followUpCount = (milestone.followUpCount ?? 0) + 1
+                const followUp = this.buildMilestoneFollowUp(milestone, transcript)
+                data.questions.push(followUp)
+                const followUpAudio = await this.maybeGenerateInterviewAudio(followUp, recruiterMode, persona.voiceProfile)
+                await this.prisma.publicInterview.update({
+                    where: { id: interview.id },
+                    data: { totalExchanges: data.turns.length, data, transcript: data.turns },
+                })
+                return {
+                    done: false,
+                    transcript,
+                    feedback,
+                    questionText: followUp,
+                    questionIndex: milestone.id,
+                    milestone,
+                    followUp: true,
+                    voiceMetrics,
+                    audioBase64: followUpAudio?.audioBase64,
+                    audioMime: followUpAudio?.audioMime,
+                }
+            }
+
+            const nextMilestone = this.advanceMilestone(data)
+            if (nextMilestone) {
+                data.questions.push(nextMilestone.question)
+                const nextQuestionAudio = await this.maybeGenerateInterviewAudio(nextMilestone.question, recruiterMode, persona.voiceProfile)
+                await this.prisma.publicInterview.update({
+                    where: { id: interview.id },
+                    data: { totalExchanges: data.turns.length, data, transcript: data.turns },
+                })
+                return {
+                    done: false,
+                    transcript,
+                    feedback,
+                    questionText: nextMilestone.question,
+                    questionIndex: nextMilestone.id,
+                    milestone: nextMilestone,
+                    voiceMetrics,
+                    audioBase64: nextQuestionAudio?.audioBase64,
+                    audioMime: nextQuestionAudio?.audioMime,
+                }
+            }
+
+            const report = await this.finalizeInterview(interview.id, data, persona, baseUrl)
+            return { done: true, transcript, feedback: report.summary, summary: report.summary, score: report.overall_score, reportId: report.id, voiceMetrics }
+        }
 
         const done = data.turns.length >= data.maxQuestions || !evaluation.nextQuestion
         if (!done) {
@@ -1114,6 +1316,10 @@ export class OnboardService {
                 : this.computeFacialExpressionScore(facialMetrics)
         const facialSummary =
             data?.facialSummary ?? this.summarizeFacialMetrics(facialMetrics)
+        const milestones = data?.milestones ?? null
+        const voiceMetrics = data?.turns?.length
+            ? data.turns.map((turn) => turn.voiceMetrics).filter(Boolean)
+            : []
 
         return {
             id: interview.id,
@@ -1137,6 +1343,11 @@ export class OnboardService {
             facial_expression_score: facialExpressionScore,
             facial_summary: facialSummary,
             facial_metrics: facialMetrics ?? null,
+            personalized_mode: data?.mode === 'personalized',
+            offer_context: data?.offerContext ?? null,
+            cv_context: data?.cvContext ?? null,
+            milestones,
+            voice_metrics: voiceMetrics,
             pdf_url: `${baseUrl}/onboard/interviews/${interview.id}/pdf`,
             created_at: interview.createdAt.toISOString(),
             updated_at: interview.updatedAt.toISOString(),
@@ -1659,6 +1870,189 @@ export class OnboardService {
         return Math.min(78, 58 + lengthScore)
     }
 
+    private buildPersonalizedMilestones(
+        context: InterviewContext,
+        offerContext: InterviewState['offerContext'],
+        cvContext: InterviewState['cvContext'],
+        maxQuestions: number,
+    ): InterviewMilestone[] {
+        const role = context.jobTitle || offerContext?.title || 'the role'
+        const company = context.company || offerContext?.company || 'the company'
+        const skills = offerContext?.requiredSkills?.filter(Boolean).slice(0, 4) ?? []
+        const cvSummary = cvContext?.summary || cvContext?.anonymizedText || 'your CV background'
+        const firstSkill = skills[0] || 'the main required technical skill'
+        const secondSkill = skills[1] || 'a second important technical skill'
+        const gap = cvContext?.improvements?.[0] || skills[2] || 'one skill gap visible from your profile'
+
+        const milestones: InterviewMilestone[] = [
+            {
+                id: 1,
+                type: 'presentation',
+                question: `Start by introducing yourself and connect your background to the ${role} opportunity at ${company}.`,
+                objective: 'Evaluate clarity, relevance, and first impression.',
+                difficulty: 'easy',
+            },
+            {
+                id: 2,
+                type: 'motivation',
+                question: `Why are you interested in this ${role} offer, and what specifically attracts you to ${company}?`,
+                objective: 'Evaluate motivation and offer awareness.',
+                difficulty: 'easy',
+            },
+            {
+                id: 3,
+                type: 'culture_fit',
+                question: `Based on the offer, what kind of team or work environment helps you perform at your best?`,
+                objective: 'Evaluate fit with the company environment and self-awareness.',
+                difficulty: 'medium',
+            },
+            {
+                id: 4,
+                type: 'technical',
+                question: `Tell me about your experience with ${firstSkill}. What have you built or solved with it?`,
+                objective: `Validate practical experience with ${firstSkill}.`,
+                difficulty: 'medium',
+            },
+            {
+                id: 5,
+                type: 'technical',
+                question: `How would you approach a task in this role that requires ${secondSkill}?`,
+                objective: `Evaluate reasoning and readiness around ${secondSkill}.`,
+                difficulty: 'medium',
+            },
+            {
+                id: 6,
+                type: 'project_experience',
+                question: `Choose one project from your CV and explain how it proves you can succeed in this offer. Context: ${this.truncateText(cvSummary, 220)}`,
+                objective: 'Connect CV evidence to the selected job offer.',
+                difficulty: 'medium',
+            },
+            {
+                id: 7,
+                type: 'problem_solving',
+                question: `Imagine you join ${company} and face an ambiguous technical problem in the first week. How would you structure your investigation?`,
+                objective: 'Evaluate problem-solving process and autonomy.',
+                difficulty: 'hard',
+            },
+            {
+                id: 8,
+                type: 'technical',
+                question: `Which technical requirement in this offer would be the easiest for you, and which would need the most preparation?`,
+                objective: 'Evaluate technical self-assessment against the offer.',
+                difficulty: 'medium',
+            },
+            {
+                id: 9,
+                type: 'gap_check',
+                question: `One area to strengthen may be ${gap}. How are you currently closing that gap?`,
+                objective: 'Evaluate honesty, learning plan, and risk mitigation.',
+                difficulty: 'hard',
+            },
+            {
+                id: 10,
+                type: 'behavioral',
+                question: 'Describe a moment where you had to work with others under pressure. What did you do and what changed because of your action?',
+                objective: 'Evaluate teamwork and behavioral structure.',
+                difficulty: 'medium',
+            },
+            {
+                id: 11,
+                type: 'role_readiness',
+                question: `If selected for this ${role} position, what would your first 30 days look like?`,
+                objective: 'Evaluate role readiness and practical onboarding thinking.',
+                difficulty: 'medium',
+            },
+            {
+                id: 12,
+                type: 'candidate_questions',
+                question: `What thoughtful question would you ask ${company} at the end of this interview?`,
+                objective: 'Evaluate curiosity, preparation, and closing communication.',
+                difficulty: 'easy',
+            },
+        ]
+
+        return milestones.slice(0, maxQuestions).map((milestone, index) => ({
+            ...milestone,
+            id: index + 1,
+            status: index === 0 ? 'IN_PROGRESS' : 'PENDING',
+            confidence: 'LOW',
+            followUpCount: 0,
+        }))
+    }
+
+    private getCurrentMilestone(data: InterviewState) {
+        if (!data.milestones?.length) return null
+        const index = Math.max(0, Math.min(data.currentMilestoneIndex ?? 0, data.milestones.length - 1))
+        return data.milestones[index] ?? null
+    }
+
+    private advanceMilestone(data: InterviewState) {
+        if (!data.milestones?.length) return null
+        const nextIndex = (data.currentMilestoneIndex ?? 0) + 1
+        if (nextIndex >= data.milestones.length) return null
+        data.currentMilestoneIndex = nextIndex
+        const next = data.milestones[nextIndex]
+        next.status = 'IN_PROGRESS'
+        return next
+    }
+
+    private updateMilestoneAfterAnswer(milestone: InterviewMilestone, evaluation: { score: number; feedback: string }, transcript: string) {
+        const words = transcript.trim().split(/\s+/).filter(Boolean).length
+        const vague = this.isVagueInterviewAnswer(transcript)
+        const tooShort = words < 12
+        const maxFollowUpsReached = (milestone.followUpCount ?? 0) >= 2
+        const validated = maxFollowUpsReached || (evaluation.score >= 60 && !tooShort && !vague)
+        const confidence: InterviewMilestone['confidence'] = evaluation.score >= 80 && !tooShort && !vague ? 'HIGH' : evaluation.score >= 60 ? 'MEDIUM' : 'LOW'
+        return { validated, confidence }
+    }
+
+    private buildMilestoneFollowUp(milestone: InterviewMilestone, transcript: string) {
+        const words = transcript.trim().split(/\s+/).filter(Boolean).length
+        if (words < 12) {
+            return `Can you expand that answer with one concrete example related to: ${milestone.objective}?`
+        }
+        if (this.isVagueInterviewAnswer(transcript)) {
+            return `Can you make that more specific and describe what you personally did?`
+        }
+        return `What result or measurable impact came from that example?`
+    }
+
+    private isVagueInterviewAnswer(answer: string) {
+        const normalized = answer.trim().toLowerCase()
+        return ['yes', 'no', 'ok', 'maybe', 'i do not know', "i don't know", 'je sais pas', 'jsp', "d'accord", 'rien'].includes(normalized)
+    }
+
+    private analyzeVoiceMetrics(transcript: string): VoiceMetrics {
+        const words = transcript.trim().split(/\s+/).filter(Boolean)
+        const normalized = ` ${transcript.toLowerCase()} `
+        const fillerList = ['euh', 'euhm', 'hm', 'hmm', 'bah', 'ben', 'voila', 'voilà', 'donc', 'en fait', 'genre', 'quoi', 'hein', 'like', 'um', 'uh']
+        const fillerWords: Record<string, number> = {}
+        for (const filler of fillerList) {
+            const escaped = filler.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const matches = normalized.match(new RegExp(`\\b${escaped}\\b`, 'g'))
+            if (matches?.length) fillerWords[filler] = matches.length
+        }
+        const fillerWordCount = Object.values(fillerWords).reduce((sum, count) => sum + count, 0)
+        const paceLabel: VoiceMetrics['paceLabel'] = words.length < 12 ? 'too_short' : words.length < 35 ? 'concise' : words.length <= 140 ? 'natural' : 'long'
+        let fluencyScore = 10
+        if (paceLabel === 'too_short') fluencyScore -= 3
+        if (paceLabel === 'long') fluencyScore -= 1
+        if (fillerWordCount >= 5) fluencyScore -= 3
+        else if (fillerWordCount >= 2) fluencyScore -= 1
+        fluencyScore = Math.max(0, Math.min(10, fluencyScore))
+        const fluencySummary = fillerWordCount >= 2
+            ? `${fillerWordCount} filler words detected. Aim for cleaner, more deliberate phrasing.`
+            : paceLabel === 'too_short'
+                ? 'Answer was very short; add context, action, and result.'
+                : 'Good transcript-level fluency. Audio pause timing can be added later.'
+        return { wordCount: words.length, fillerWords, fillerWordCount, paceLabel, fluencyScore, fluencySummary }
+    }
+
+    private truncateText(value: string, maxLength: number) {
+        const normalized = value.replace(/\s+/g, ' ').trim()
+        return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 3)}...`
+    }
+
     private buildInterviewQuestion(persona: PersonaRecord, index: number, maxQuestions: number, role: string) {
         const prompts = [
             `Walk me through a project that makes you credible for a ${role} role.`,
@@ -1777,11 +2171,19 @@ export class OnboardService {
         const facialSummary = this.summarizeFacialMetrics(facialMetrics)
         data.facialExpressionScore = facialExpressionScore
         data.facialSummary = facialSummary
+        const milestoneLines = data.milestones?.length
+            ? data.milestones.map((milestone) => `Milestone ${milestone.id} (${milestone.type}): ${milestone.status ?? 'PENDING'}${typeof milestone.lastScore === 'number' ? `, score ${milestone.lastScore}/100` : ''}. ${milestone.feedback ?? milestone.objective}`)
+            : ['No milestone plan was used for this interview.']
+        const voiceLines = data.turns
+            .map((turn, index) => turn.voiceMetrics ? `Answer ${index + 1}: fluency ${turn.voiceMetrics.fluencyScore}/10, ${turn.voiceMetrics.wordCount} words, ${turn.voiceMetrics.fillerWordCount} filler words. ${turn.voiceMetrics.fluencySummary}` : null)
+            .filter((line): line is string => Boolean(line))
 
         await this.createPdfDocument(`${persona.name} Interview Report`, [
             { heading: 'Summary', lines: [summary] },
             { heading: 'Key Strengths', lines: keyStrengths },
             { heading: 'Areas For Improvement', lines: areasForImprovement },
+            { heading: 'Personalized Milestones', lines: milestoneLines },
+            { heading: 'Voice Fluency Coaching', lines: voiceLines.length ? voiceLines : ['Voice fluency metrics were unavailable for this interview.'] },
             {
                 heading: 'Facial Expression Coaching',
                 lines: [
