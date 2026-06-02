@@ -3,19 +3,13 @@
 import { useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from "lucide-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Configure PDF.js worker - only in browser
+// Fix: protocol-relative URL (//) can break in some environments — always use https://
 if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 }
 
 interface PDFViewerProps {
@@ -23,15 +17,10 @@ interface PDFViewerProps {
   filename?: string;
 }
 
-export function PDFViewer({
-  pdfUrl,
-  filename = "enhanced_cv.pdf",
-}: PDFViewerProps) {
-  // All hooks must be called before any conditional returns
+export function PDFViewer({ pdfUrl, filename = "enhanced_cv.pdf" }: PDFViewerProps) {
   const [isClient, setIsClient] = useState(false);
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
-  // Slightly more zoomed in by default so text is easier to read
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState<boolean>(true);
   const [downloading, setDownloading] = useState(false);
@@ -40,11 +29,10 @@ export function PDFViewer({
     setIsClient(true);
   }, []);
 
-  // Don't render on server - now safe after all hooks are called
   if (!isClient) {
     return (
       <div className="flex items-center justify-center min-h-[600px] rounded-xl bg-white/60 dark:bg-neutral-900/60 backdrop-blur-lg border border-neutral-200/50 dark:border-neutral-800/50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100" />
       </div>
     );
   }
@@ -61,28 +49,20 @@ export function PDFViewer({
   }
 
   const changePage = (offset: number) => {
-    setPageNumber((prevPageNumber) => {
-      const newPage = prevPageNumber + offset;
-      return Math.min(Math.max(1, newPage), numPages);
-    });
+    setPageNumber((prev) => Math.min(Math.max(1, prev + offset), numPages));
   };
 
   const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 2.5));
   const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
 
-  // legacy fallback (not used) - prefer fetch->blob for cross-origin downloads
-
   async function handleDownloadFetch() {
     if (!pdfUrl) return;
     setDownloading(true);
-
     try {
-      // Fetch the file as a blob first so we can trigger a real download
       const res = await fetch(pdfUrl, { mode: "cors" });
       if (!res.ok) throw new Error(`Failed to download: ${res.status}`);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = filename;
@@ -91,7 +71,6 @@ export function PDFViewer({
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      // Fallback - direct navigation / open in new tab if fetch fails (CORS or server issue)
       try {
         const link = document.createElement("a");
         link.href = pdfUrl;
@@ -108,15 +87,12 @@ export function PDFViewer({
     }
   }
 
-  if (!pdfUrl) {
-    return null;
-  }
+  if (!pdfUrl) return null;
 
   return (
     <div className="w-full max-w-full space-y-3 overflow-visible">
-      {/* Control bar */}
+      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 sm:gap-3 sm:p-3 rounded-xl bg-white/60 dark:bg-neutral-900/60 backdrop-blur-lg border border-neutral-200/50 dark:border-neutral-800/50">
-        {/* Page Navigation */}
         <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
@@ -141,7 +117,6 @@ export function PDFViewer({
           </Button>
         </div>
 
-        {/* Zoom Controls */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-1">
           <Button
             variant="ghost"
@@ -166,7 +141,6 @@ export function PDFViewer({
           </Button>
         </div>
 
-        {/* Download Button — full width on mobile, auto on sm+ */}
         <Button
           onClick={handleDownloadFetch}
           disabled={loading || downloading}
@@ -177,11 +151,11 @@ export function PDFViewer({
         </Button>
       </div>
 
-      {/* PDF Display - Fixed viewport, PDF scales inside independently */}
+      {/* PDF canvas */}
       <div className="relative w-full h-[calc(100vh-350px)] min-h-[700px] rounded-xl bg-white/60 dark:bg-neutral-900/60 backdrop-blur-lg border border-neutral-200/50 dark:border-neutral-800/50 overflow-auto">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-neutral-900/60 backdrop-blur-lg z-10">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100" />
           </div>
         )}
         <div className="p-4 md:p-6 w-full md:w-fit mx-auto">
@@ -191,7 +165,7 @@ export function PDFViewer({
             onLoadError={onDocumentLoadError}
             loading={
               <div className="flex items-center justify-center w-full h-[600px]">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-neutral-900 dark:border-neutral-100" />
               </div>
             }
             error={

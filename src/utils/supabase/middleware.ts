@@ -61,8 +61,11 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.redirect(url);
     }
     // Recruiter landed on student area → send to recruiter dashboard
-    if (isRecruiter) return redirect("/recruiter/offers");
-    // Admin gating for /services/admin is handled in the layout (needs NeonDB call)
+    if (isRecruiter) return redirect("/recruiter/dashboard");
+    // Admin must stay within /services/admin — redirect anything else to admin dashboard
+    if (isAdmin && !path.startsWith("/services/admin")) {
+      return redirect("/services/admin");
+    }
   }
 
   // ── 2. Recruiter-only area (exclude auth pages handled in rule 4) ────────
@@ -81,14 +84,14 @@ export const updateSession = async (request: NextRequest) => {
       const isEmailVerified = !!user?.email_confirmed_at;
       if (hasEmailProvider && !isEmailVerified) return supabaseResponse;
 
-      return redirect(isRecruiter ? "/recruiter/offers" : "/services/dashboard");
+      return redirect(isRecruiter ? "/recruiter/dashboard" : "/services/dashboard");
     }
   }
 
   // ── 4. Recruiter auth pages (/recruiter/login, /recruiter/signup) ────────
   if (RECRUITER_AUTH_ROUTES.some((r) => path.startsWith(r))) {
     if (isAuthenticated) {
-      return redirect(isRecruiter ? "/recruiter/offers" : "/services/dashboard");
+      return redirect(isRecruiter ? "/recruiter/dashboard" : "/services/dashboard");
     }
   }
 

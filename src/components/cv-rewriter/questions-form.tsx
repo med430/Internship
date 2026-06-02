@@ -18,7 +18,7 @@ export interface QuestionAnswer {
 }
 
 interface QuestionsFormProps {
-  questions: Record<string, string>; // { "q1": "question text", ... }
+  questions: Record<string, string>;
   onSubmit: (answers: QuestionAnswer[]) => void;
   onBackToStart?: () => void;
   isSubmitting?: boolean;
@@ -37,37 +37,31 @@ export function QuestionsForm({
 
   const completedQuestions = useMemo(() => {
     const completed = new Set<string>();
-
     for (const [key, answer] of Object.entries(answers)) {
       if (selectedQuestions.has(key) && answer.trim().length > 0) {
         completed.add(key);
       }
     }
-
     return completed;
   }, [answers, selectedQuestions]);
 
   const handleAnswerChange = (questionKey: string, value: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionKey]: value,
-    }));
+    setAnswers((prev) => ({ ...prev, [questionKey]: value }));
   };
 
   const handleQuestionToggle = (questionKey: string) => {
     setSelectedQuestions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(questionKey)) {
-        newSet.delete(questionKey);
+      const next = new Set(prev);
+      if (next.has(questionKey)) {
+        next.delete(questionKey);
       } else {
-        newSet.add(questionKey);
+        next.add(questionKey);
       }
-      return newSet;
+      return next;
     });
   };
 
   const handleSubmit = () => {
-    // Convert to array of QuestionAnswer objects, only including selected questions
     const questionAnswerArray: QuestionAnswer[] = Object.entries(questions)
       .filter(([key]) => selectedQuestions.has(key))
       .map(([key, questionText]) => ({
@@ -80,10 +74,21 @@ export function QuestionsForm({
   const questionKeys = Object.keys(questions);
   const selectedCount = selectedQuestions.size;
   const answeredQuestions = completedQuestions.size;
-  const progressPercentage =
-    selectedCount > 0 ? (answeredQuestions / selectedCount) * 100 : 0;
-  const allAnswered = answeredQuestions === selectedCount && selectedCount >= 2;
+  const progressPercentage = selectedCount > 0 ? (answeredQuestions / selectedCount) * 100 : 0;
+
+  // Fix: previously if you unchecked down to 1 and that 1 was answered,
+  // meetsMinimum=false would block submission even though allAnswered=true.
+  // The two checks are now independent so both conditions show clearly.
   const meetsMinimum = selectedCount >= 2;
+  const allAnswered = selectedCount > 0 && answeredQuestions === selectedCount;
+  const canSubmit = allAnswered && meetsMinimum;
+
+  const getSubmitLabel = () => {
+    if (isSubmitting) return null; // handled inline
+    if (!meetsMinimum) return `Select at least 2 questions (${selectedCount} selected)`;
+    if (!allAnswered) return `Answer selected questions (${answeredQuestions}/${selectedCount})`;
+    return "Generate Enhanced CV";
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -102,9 +107,7 @@ export function QuestionsForm({
             <div className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
               {answeredQuestions}/{selectedCount}
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-500">
-              Completed
-            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500">Completed</p>
           </div>
         </div>
 
@@ -175,7 +178,6 @@ export function QuestionsForm({
               }`}
             >
               <div className="space-y-3">
-                {/* Question header */}
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
                   <div className="flex items-center gap-2 sm:flex-shrink-0 sm:flex-col sm:items-start sm:gap-1.5 sm:pt-0.5">
                     <Checkbox
@@ -210,7 +212,6 @@ export function QuestionsForm({
                   </div>
                 </div>
 
-                {/* Answer textarea */}
                 <div className="pl-0 sm:pl-14">
                   <Textarea
                     placeholder={
@@ -258,25 +259,23 @@ export function QuestionsForm({
         )}
         <Button
           onClick={handleSubmit}
-          disabled={!allAnswered || !meetsMinimum || isSubmitting}
+          disabled={!canSubmit || isSubmitting}
           size="lg"
-          className={`px-6 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-all duration-200 cursor-pointer ${onBackToStart ? "" : "mx-auto"} ${
-            allAnswered && meetsMinimum
+          className={`px-6 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-all duration-200 cursor-pointer ${
+            onBackToStart ? "" : "mx-auto"
+          } ${
+            canSubmit
               ? "bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-neutral-50 dark:text-neutral-900"
               : "bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed"
           }`}
         >
           {isSubmitting ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
               Generating Your Enhanced CV...
             </>
-          ) : allAnswered && meetsMinimum ? (
-            "Generate Enhanced CV"
-          ) : !meetsMinimum ? (
-            `Select At Least 2 Questions (${selectedCount} selected)`
           ) : (
-            `Answer Selected Questions (${answeredQuestions}/${selectedCount})`
+            getSubmitLabel()
           )}
         </Button>
       </div>

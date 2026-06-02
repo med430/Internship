@@ -17,5 +17,6 @@ export class InterviewSlot {
         public readonly studentName?: string,
         public readonly studentEmail?: string,
         public readonly recruiterName?: string,
+        public readonly recruiterEmail?: string,
     ) {}
 }

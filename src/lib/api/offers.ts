@@ -16,6 +16,8 @@ export type Offer = {
 	type: string;
 	workMode: string;
 	isPaid: boolean;
+	stipendMin?: number | null;
+	stipendMax?: number | null;
 	startDate?: string;
 	endDate?: string;
 	skillRequirements?: SkillRequirement[];
@@ -23,7 +25,7 @@ export type Offer = {
 
 const OFFER_FIELDS = `
 	id title description company location domain
-	type workMode isPaid startDate endDate
+	type workMode isPaid stipendMin stipendMax startDate endDate
 	skillRequirements { id skill { id name } level }
 `;
 

@@ -338,16 +338,15 @@ export class OnboardController {
         return this.onboardService.deleteCv(this.getSessionKey(req), id)
     }
 
-    @Get('download_cv/:id')
-    async downloadCv(
-        @Req() req: Request,
-        @Res() res: Response,
-        @Param('id') id: string,
-    ) {
-        const file = await this.onboardService.downloadCv(this.getSessionKey(req), id)
-        res.redirect(file.url)
-    }
-
+  @Get('download_cv/:id')
+async downloadCv(
+  @Req() req: Request,
+  @Res() res: Response,
+  @Param('id') id: string,
+) {
+  const file = await this.onboardService.downloadCv(this.getSessionKey(req), id)
+  return res.json(file)
+}
     @Get('onboard/user-name')
     async userName(@Req() req: Request) {
         return this.onboardService.getUserName(this.getSessionKey(req))
@@ -374,6 +373,7 @@ export class OnboardController {
             currentJob,
             domain,
             body.target_job,
+            body.profile_data,
         )
     }
 

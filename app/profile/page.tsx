@@ -6,6 +6,7 @@ import { ProfileTabs } from "@/components/profile/profile-tabs";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getServerMyProfile, getServerProfile } from "@/lib/profile/backend";
+import { getServerMe } from "@/lib/auth/me";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -19,9 +20,10 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const [profile, myProfile] = await Promise.all([
+  const [profile, myProfile, me] = await Promise.all([
     getServerProfile(),
     getServerMyProfile(),
+    getServerMe(),
   ]);
 
   if (!profile) {
@@ -37,6 +39,9 @@ export default async function ProfilePage() {
     (identity) => identity.provider !== "email",
   );
 
+  // Use NeonDB role (same source as backend RolesGuard) to avoid stale JWT metadata
+  const role = (me?.role ?? (user.app_metadata?.role as string | undefined) ?? "").toUpperCase();
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-6 sm:py-8 lg:py-12">
@@ -44,7 +49,7 @@ export default async function ProfilePage() {
 
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild className="gap-2">
-              <Link href="/services/dashboard">
+              <Link href={role === "ADMIN" ? "/services/admin" : "/services/dashboard"}>
                 <ChevronLeft className="w-4 h-4" />
                 <span className="hidden xs:inline">Back to Dashboard</span>
                 <span className="xs:hidden">Back</span>
@@ -68,6 +73,7 @@ export default async function ProfilePage() {
               profile={profileWithCanonicalAvatar}
               userEmail={user.email || ""}
               isOAuthUser={isOAuthUser || false}
+              role={role}
             />
           </div>
         </div>

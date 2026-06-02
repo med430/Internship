@@ -99,6 +99,8 @@ import { NotificationPersistenceModule } from '../Infrastructure/notifications/n
 import { OfferFeedService } from './Features/OfferRecommendationFeature/offer-feed.service';
 import { SupabaseAuthBridge } from './Services/AuthBridge/supabase-auth-bridge.service';
 import { GetNotificationsHandler } from './Features/NotificationFeature/Queries/handlers/get-notifications.handler'
+import { EmailService } from './Services/EmailService/email.service'
+import { InterviewReminderCronService } from './Services/InterviewReminderService/interview-reminder-cron.service'
 import { ProposeInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/propose-interview-slot.handler'
 import { RespondToInterviewSlotHandler } from './Features/InterviewSlotFeature/Commands/handlers/respond-to-interview-slot.handler'
 import { GetMyInterviewSlotsHandler } from './Features/InterviewSlotFeature/Queries/handlers/get-my-interview-slots.handler';
@@ -245,6 +247,8 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    EmailService,
+    InterviewReminderCronService,
     RecommendationCronService,
     EventCleanupCronService,
     OfferFeedService,
@@ -264,6 +268,7 @@ const QueryHandlers = [
     InterviewAiService,
     ContentScoringService,
     ScoringService,
+    EmailService,
     RecommendationCronService,
     EventCleanupCronService,
     OfferFeedService,
