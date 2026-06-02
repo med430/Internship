@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Video, Database } from "lucide-react";
+import { BriefcaseBusiness, Database, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -11,6 +11,12 @@ const navItems = [
     // Link to the feature root page so users can access setup and controls
     href: "/services/virtual-interviewer",
     icon: Video,
+    exact: true,
+  },
+  {
+    title: "Personalized Interview",
+    href: "/services/virtual-interviewer/personalized-interview",
+    icon: BriefcaseBusiness,
   },
   {
     title: "History",
@@ -27,7 +33,9 @@ export function InterviewNav() {
       <nav className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card/40 p-1 backdrop-blur-sm w-fit mx-auto shadow-sm">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link

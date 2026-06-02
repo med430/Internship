@@ -1,4 +1,13 @@
-import { Brain, Clock, Play, Trophy, Users, Zap } from "lucide-react";
+import Link from "next/link";
+import {
+  Brain,
+  BriefcaseBusiness,
+  Clock,
+  Play,
+  Trophy,
+  Users,
+  Zap,
+} from "lucide-react";
 import { PersonaSelector } from "@/components/virtual-interviewer/persona-selector";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -96,24 +105,37 @@ export function SetupCard({ isStarting, onStartInterview }: SetupCardProps) {
         </div>
 
         <div className="pt-6">
-          <Button
-            onClick={onStartInterview}
-            disabled={isStarting}
-            size="lg"
-            className="h-12 px-8 text-base font-semibold rounded-xl shadow-2xl shadow-purple-500/30 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            {isStarting ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2" />
-                Preparing Interview...
-              </>
-            ) : (
-              <>
-                <Play className="h-5 w-5 mr-2" />
-                Start Interview Now
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              onClick={onStartInterview}
+              disabled={isStarting}
+              size="lg"
+              className="h-12 px-8 text-base font-semibold rounded-xl shadow-2xl shadow-purple-500/30 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isStarting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2" />
+                  Preparing Interview...
+                </>
+              ) : (
+                <>
+                  <Play className="h-5 w-5 mr-2" />
+                  Start Interview Now
+                </>
+              )}
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-xl px-8 text-base font-semibold"
+            >
+              <Link href="/services/virtual-interviewer/personalized-interview">
+                <BriefcaseBusiness className="mr-2 h-5 w-5" />
+                Personalized Interview
+              </Link>
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground mt-4">
             No preparation needed • Guided live interview flow • Auto-saved
             feedback
