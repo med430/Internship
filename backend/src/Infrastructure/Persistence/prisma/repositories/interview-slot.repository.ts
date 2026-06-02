@@ -67,12 +67,39 @@ export class InterviewSlotRepositoryImpl implements IInterviewSlotRepository {
             include: {
                 application: {
                     include: {
-                        offer: { select: { title: true, company: true } },
+                        offer: {
+                            select: {
+                                title: true,
+                                company: true,
+                                recruiterProfile: { select: { user: { select: { name: true, email: true } } } },
+                            },
+                        },
                         student: { include: { user: { select: { name: true, email: true } } } },
                     },
                 },
             },
             orderBy: { startAt: 'asc' },
+        })
+        return results.map(r => this.mapper.toDomain(r))
+    }
+
+    async findConfirmedInWindow(from: Date, to: Date): Promise<InterviewSlot[]> {
+        const results = await this.prisma.interviewSlot.findMany({
+            where: { status: 'CONFIRMED', startAt: { gte: from, lt: to } },
+            include: {
+                application: {
+                    include: {
+                        offer: {
+                            select: {
+                                title: true,
+                                company: true,
+                                recruiterProfile: { select: { user: { select: { name: true, email: true } } } },
+                            },
+                        },
+                        student: { include: { user: { select: { name: true, email: true } } } },
+                    },
+                },
+            },
         })
         return results.map(r => this.mapper.toDomain(r))
     }

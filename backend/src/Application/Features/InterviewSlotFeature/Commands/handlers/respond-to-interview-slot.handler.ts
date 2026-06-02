@@ -8,6 +8,7 @@ import { IApplicationRepository } from '../../../../repositories/application.rep
 import { IStudentProfileRepository } from '../../../../repositories/student-profile.repository'
 import { IOfferRepository } from '../../../../repositories/offer.repository'
 import { IRecruiterProfileRepository } from '../../../../repositories/recruiter-profile.repository'
+import { IUserRepository } from '../../../../repositories/user.repository'
 
 import { InterviewSlot } from '../../../../../Domain/entities/interview-slot.entity'
 import { InterviewSlotStatus } from '../../../../../Domain/enums/interview-slot-status.enum'
@@ -33,6 +34,9 @@ export class RespondToInterviewSlotHandler implements ICommandHandler<RespondToI
 
         @Inject(IRecruiterProfileRepository)
         private readonly recruiterRepo: IRecruiterProfileRepository,
+
+        @Inject(IUserRepository)
+        private readonly userRepo: IUserRepository,
     ) {}
 
     async execute(command: RespondToInterviewSlotCommand): Promise<InterviewSlot> {
@@ -99,11 +103,33 @@ export class RespondToInterviewSlotHandler implements ICommandHandler<RespondToI
         const updated = await this.slotRepo.update(slot)
 
         if (recruiterProfile) {
+            let studentEmail: string | undefined
+            let studentName: string | undefined
+            let recruiterEmail: string | undefined
+            let recruiterName: string | undefined
+
+            if (slot.status === InterviewSlotStatus.CONFIRMED) {
+                const [studentUser, recruiterUser] = await Promise.all([
+                    this.userRepo.findById(studentUserId),
+                    this.userRepo.findById(recruiterProfile.userId),
+                ])
+                studentEmail = studentUser?.email
+                studentName = studentUser?.name
+                recruiterEmail = recruiterUser?.email
+                recruiterName = [recruiterUser?.name, recruiterUser?.lastname].filter(Boolean).join(' ')
+            }
+
             this.eventBus.publish(new InterviewSlotRespondedEvent(
                 recruiterProfile.userId,
                 slotId,
                 slot.status,
                 offerTitle,
+                slot.startAt,
+                slot.endAt,
+                studentEmail,
+                studentName,
+                recruiterEmail,
+                recruiterName,
             ))
         }
 
