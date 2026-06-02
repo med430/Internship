@@ -8,6 +8,7 @@ import { io, Socket } from "socket.io-client";
 import { createClient } from "@/utils/supabase/client";
 import { useNotificationStore } from "@/lib/stores/notification-store";
 import type { Message } from "@/lib/api/chat/types";
+import { API_WS_BASE_URL } from "@/lib/constants";
 
 /**
  * Mounts once in the services layout.
@@ -27,8 +28,7 @@ export function ChatNotificationProvider() {
   }, [pathname]);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000";
-    const socket: Socket = io(`${wsUrl}/chat`, { transports: ["websocket"] });
+    const socket: Socket = io(`${API_WS_BASE_URL}/chat`, { transports: ["websocket"] });
 
     // Resolve the current user and register with the gateway so it can
     // route messages to this socket via the user:<id> room.

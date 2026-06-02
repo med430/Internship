@@ -2,9 +2,27 @@ import { fetchWithAuth } from "@/lib/api/auth";
 import { ERROR_MESSAGES } from "@/lib/errors/messages";
 import { getApiErrorMessage } from "@/lib/api/error-utils";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
-import type { CV, CVWithPagination } from "@/lib/api/cvs/types";
 
-export type { CV, CVWithPagination } from "@/lib/api/cvs/types";
+export interface CV {
+  id: string;
+  user_id: string;
+  pdf_url: string;
+  original_score: number;
+  final_score: number;
+  job_title: string;
+  jobs_summary: string;
+  review_improvements: string[];
+  anonymized_cv_text: string | null;
+  created_at: string;
+}
+
+export interface CVWithPagination {
+  cvs: CV[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 export async function fetchUserCVs(
   page: number = 1,

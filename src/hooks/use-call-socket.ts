@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_WS_BASE_URL } from '@/lib/constants';
 
 export interface ChatMessage {
     text: string;
@@ -30,7 +31,7 @@ export function useCallSocket(
     optionsRef.current = options;
 
     useEffect(() => {
-        const socket = io(process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:3000');
+        const socket = io(API_WS_BASE_URL);
         socketRef.current = socket;
 
         socket.on('connect', () => {

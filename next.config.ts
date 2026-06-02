@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Pin the workspace root so Turbopack loads .env from this folder,
+  // not the parent (which has a stray package-lock.json).
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   async headers() {
     return [
       {

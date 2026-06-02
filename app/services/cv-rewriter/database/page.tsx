@@ -14,7 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { CVRewriterNav } from "@/components/cv-rewriter/cv-rewriter-nav";
 import { CVCard } from "@/components/cv-rewriter/cv-card";
-import { fetchUserCVs, CVWithPagination } from "@/lib/api/cvs";
+import { fetchUserCVs, CVWithPagination, type CV } from "@/lib/api/cvs";
 import { FileX } from "lucide-react";
 
 function CVCardSkeleton() {
@@ -148,7 +148,7 @@ export default function CVDatabasePage() {
         ) : (
           <>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {data?.cvs.map((cv) => (
+              {data?.cvs.map((cv: CV) => (
                 <CVCard key={cv.id} cv={cv} />
               ))}
             </div>

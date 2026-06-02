@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import type { Message } from "@/lib/api/chat/types";
+import { API_WS_BASE_URL } from "@/lib/constants";
 
 interface UseChatSocketOptions {
   onNewMessage?: (message: Message) => void;
@@ -16,8 +17,7 @@ export function useChatSocket(options: UseChatSocketOptions = {}) {
   optionsRef.current = options;
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000";
-    const socket = io(`${wsUrl}/chat`, { transports: ["websocket"] });
+    const socket = io(`${API_WS_BASE_URL}/chat`, { transports: ["websocket"] });
     socketRef.current = socket;
 
     socket.on("new-message", (message: Message) => {

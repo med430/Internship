@@ -106,10 +106,23 @@ export default function CallPage() {
 
         if (media.liveEdgeInterval) clearInterval(media.liveEdgeInterval);
         media.liveEdgeInterval = setInterval(() => {
+            const sb = media.sb;
             if (!el || el.buffered.length === 0) return;
             const liveEdge = el.buffered.end(el.buffered.length - 1);
-            if (liveEdge - el.currentTime > 0.5) el.currentTime = liveEdge - 0.1;
-        }, 500);
+            // Pin playback to the live edge so latency can't accumulate.
+            if (liveEdge - el.currentTime > 0.4) el.currentTime = liveEdge - 0.15;
+            // Drop already-played video so the SourceBuffer stays small and
+            // appends stay fast — an ever-growing buffer is what lets pending
+            // chunks pile up into multi-second lag. Only removes data >2s behind
+            // the playhead, so it never touches what's being played.
+            if (sb && !sb.updating) {
+                const start = el.buffered.start(0);
+                const trimTo = el.currentTime - 2;
+                if (trimTo > start + 0.5) {
+                    try { sb.remove(start, trimTo); } catch { /* ignore */ }
+                }
+            }
+        }, 300);
     }, []);
 
     const setupPeerVideo = useCallback((peerId: string, el: HTMLVideoElement) => {

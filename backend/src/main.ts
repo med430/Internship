@@ -19,9 +19,18 @@ dotenv.config({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-    : [/^http:\/\/localhost:\d+$/];
+  // CORS origins:
+  //  - localhost (any port) for local dev
+  //  - any *.vercel.app deployment (production alias AND per-deploy preview URLs,
+  //    which have a unique hash like project-xxxx-<hash>-<team>.vercel.app)
+  //  - any extra exact origins listed in CORS_ORIGIN (comma-separated)
+  const allowedOrigins: (string | RegExp)[] = [
+    /^http:\/\/localhost:\d+$/,
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
+  ];
+  if (process.env.CORS_ORIGIN) {
+    allowedOrigins.push(...process.env.CORS_ORIGIN.split(',').map((o) => o.trim()));
+  }
 
   app.enableCors({
     origin: allowedOrigins,
