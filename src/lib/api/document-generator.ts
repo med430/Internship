@@ -42,6 +42,7 @@ export type GeneratedJobOffer = {
   description?: string;
   requirements?: string[];
   benefits?: string[];
+  compensation?: string[];
   recruiterName?: string;
 };
 
