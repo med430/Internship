@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { answerInterview } from "@/lib/api/interviews";
 import type { ChatMessage, InterviewState } from "../types";
+import { useFacialExpressionAnalysis } from "./use-facial-expression-analysis";
+import { useInterviewCamera } from "./use-interview-camera";
 
 type LegacyGetUserMedia = (
   constraints: MediaStreamConstraints,
@@ -49,6 +51,24 @@ async function getUserMediaCompat(
   );
 }
 
+function hasMicrophoneSupport() {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  try {
+    const nav = navigator as NavigatorWithLegacyGetUserMedia;
+    return Boolean(
+      nav.mediaDevices?.getUserMedia ||
+        nav.getUserMedia ||
+        nav.webkitGetUserMedia ||
+        nav.mozGetUserMedia,
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function playInterviewAudio(
   audioBase64?: string,
   audioMime?: string,
@@ -83,10 +103,19 @@ export function useInterviewRoomController() {
   const initialQuestion = searchParams.get("question");
 
   const [state, setState] = useState<InterviewState>("connecting");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    initialQuestion
+      ? [
+          {
+            role: "interviewer",
+            content: initialQuestion,
+          },
+        ]
+      : [],
+  );
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [micSupported, setMicSupported] = useState(false);
+  const [micSupported] = useState(hasMicrophoneSupport);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [latestQuestionAudio, setLatestQuestionAudio] =
     useState<InterviewAudioPayload | null>(null);
@@ -94,28 +123,25 @@ export function useInterviewRoomController() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const camera = useInterviewCamera({ localVideoRef });
+  const facialAnalysis = useFacialExpressionAnalysis({
+    enabled: camera.cameraOn,
+    videoRef: localVideoRef,
+  });
 
   useEffect(() => {
     if (!interviewId) {
       toast.error("Interview session not found. Please start a new one.");
-      setState("ended");
       router.replace("/services/virtual-interviewer");
       return;
     }
 
     if (!initialQuestion) {
       toast.error("Interview session could not be restored. Please start again.");
-      setState("ended");
       router.replace("/services/virtual-interviewer");
       return;
     }
-
-    setMessages([
-      {
-        role: "interviewer",
-        content: initialQuestion,
-      },
-    ]);
 
     void (async () => {
       const storageKey = `interview-audio:${interviewId}`;
@@ -155,21 +181,6 @@ export function useInterviewRoomController() {
   }, [messages]);
 
   useEffect(() => {
-    try {
-      const nav = navigator as NavigatorWithLegacyGetUserMedia;
-      const supported = Boolean(
-        (nav.mediaDevices && nav.mediaDevices.getUserMedia) ||
-          nav.getUserMedia ||
-          nav.webkitGetUserMedia ||
-          nav.mozGetUserMedia,
-      );
-      setMicSupported(supported);
-    } catch {
-      setMicSupported(false);
-    }
-  }, []);
-
-  useEffect(() => {
     return () => {
       if (
         mediaRecorderRef.current &&
@@ -199,10 +210,12 @@ export function useInterviewRoomController() {
       setIsSubmitting(true);
 
       try {
+        const facialMetrics = facialAnalysis.getMetrics();
         const response = await answerInterview(interviewId, {
           text: input.text,
           audio: input.audio,
           audioFilename: input.audioFilename,
+          facialMetrics,
         });
 
         setMessages((previous) => {
@@ -275,7 +288,7 @@ export function useInterviewRoomController() {
         setIsSubmitting(false);
       }
     },
-    [interviewId, isSubmitting, router, state],
+    [facialAnalysis, interviewId, isSubmitting, router, state],
   );
 
   const sendMessage = useCallback(() => {
@@ -380,6 +393,23 @@ export function useInterviewRoomController() {
     setState(nextState === "ended" ? "ended" : "ready");
   }, [latestQuestionAudio, state]);
 
+  const startCamera = useCallback(async () => {
+    try {
+      await camera.startCamera();
+      facialAnalysis.reset();
+      toast.success("Camera enabled for local expression coaching.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to access camera.",
+      );
+    }
+  }, [camera, facialAnalysis]);
+
+  const stopCamera = useCallback(() => {
+    camera.stopCamera();
+    toast.info("Camera turned off. The interview can continue normally.");
+  }, [camera]);
+
   return {
     persona,
     state,
@@ -390,6 +420,16 @@ export function useInterviewRoomController() {
     micSupported,
     latestQuestionAudio,
     messagesEndRef,
+    localVideoRef,
+    cameraOn: camera.cameraOn,
+    cameraSupported: camera.cameraSupported,
+    cameraError: camera.cameraError,
+    facialMetrics: facialAnalysis.metrics,
+    facialScore: facialAnalysis.facialScore,
+    facialAnalysisReady: facialAnalysis.modelReady,
+    facialAnalysisError: facialAnalysis.analysisError,
+    startCamera,
+    stopCamera,
     startRecording,
     stopRecording,
     sendMessage,

@@ -1,13 +1,14 @@
 "use client";
 
 import { useInterviewRoomController } from "../hooks/use-interview-room-controller";
-import { InterviewOrb } from "./interview-orb";
 import { InterviewChat } from "./interview-chat";
 import { InterviewControls } from "./interview-controls";
+import { InterviewVideoStage } from "./interview-video-stage";
 
 export function InterviewRoomScreen() {
   const {
     state,
+    persona,
     messages,
     inputText,
     setInputText,
@@ -15,6 +16,15 @@ export function InterviewRoomScreen() {
     micSupported,
     latestQuestionAudio,
     messagesEndRef,
+    localVideoRef,
+    cameraOn,
+    cameraSupported,
+    facialMetrics,
+    facialScore,
+    facialAnalysisReady,
+    facialAnalysisError,
+    startCamera,
+    stopCamera,
     startRecording,
     stopRecording,
     sendMessage,
@@ -24,15 +34,20 @@ export function InterviewRoomScreen() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background px-6 py-10">
-      <div className="container mx-auto max-w-5xl">
-        <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
-          <InterviewOrb
+      <div className="container mx-auto max-w-6xl">
+        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md">
+          <InterviewVideoStage
+            persona={persona}
             state={state}
-            canReplayAudio={Boolean(latestQuestionAudio)}
-            replayDisabled={state !== "ready" && state !== "ended"}
-            onReplayAudio={() => {
-              void replayLatestAudio();
-            }}
+            localVideoRef={localVideoRef}
+            cameraOn={cameraOn}
+            cameraSupported={cameraSupported}
+            facialAnalysisReady={facialAnalysisReady}
+            facialScore={facialScore}
+            facialMetrics={facialMetrics}
+            facialAnalysisError={facialAnalysisError}
+            onStartCamera={startCamera}
+            onStopCamera={stopCamera}
           />
 
           <InterviewChat
@@ -51,6 +66,11 @@ export function InterviewRoomScreen() {
             onKeyPress={handleKeyPress}
             onStartRecording={startRecording}
             onStopRecording={stopRecording}
+            canReplayAudio={Boolean(latestQuestionAudio)}
+            replayDisabled={state !== "ready" && state !== "ended"}
+            onReplayAudio={() => {
+              void replayLatestAudio();
+            }}
           />
         </div>
       </div>

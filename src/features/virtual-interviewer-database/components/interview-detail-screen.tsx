@@ -5,6 +5,7 @@ import { useInterviewDetailController } from "../hooks/use-interview-detail-cont
 import { InterviewDetailError } from "./interview-detail-error";
 import { InterviewDetailHeader } from "./interview-detail-header";
 import { InterviewDetailLoading } from "./interview-detail-loading";
+import { InterviewFacialExpressionCard } from "./interview-facial-expression-card";
 import { InterviewListCard } from "./interview-list-card";
 import { InterviewMetadataCard } from "./interview-metadata-card";
 import { InterviewPerformanceCard } from "./interview-performance-card";
@@ -56,6 +57,7 @@ export function InterviewDetailScreen({
 
         <InterviewMetadataCard interview={interview} />
         <InterviewPerformanceCard interview={interview} />
+        <InterviewFacialExpressionCard interview={interview} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <InterviewListCard

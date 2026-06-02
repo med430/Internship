@@ -31,7 +31,8 @@ export async function startInterview(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to start interview");
+    const message = await response.text().catch(() => "");
+    throw new Error(message || "Failed to start interview");
   }
 
   return (await response.json()) as InterviewStartResponse;
@@ -54,6 +55,9 @@ export async function answerInterview(
     if (input.text) {
       formData.append("text", input.text);
     }
+    if (input.facialMetrics) {
+      formData.append("facialMetrics", JSON.stringify(input.facialMetrics));
+    }
 
     response = await fetchWithAuth(
       `${apiBaseUrl}/onboard/interviews/${interviewId}/answer`,
@@ -72,6 +76,7 @@ export async function answerInterview(
         },
         body: JSON.stringify({
           text: input.text ?? "",
+          facialMetrics: input.facialMetrics,
         }),
       },
     );

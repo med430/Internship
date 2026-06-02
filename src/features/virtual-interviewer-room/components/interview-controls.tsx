@@ -1,4 +1,4 @@
-import { Mic, MicOff, Send } from "lucide-react";
+import { Mic, MicOff, Send, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { InterviewState } from "../types";
@@ -13,6 +13,9 @@ interface InterviewControlsProps {
   onKeyPress: (event: React.KeyboardEvent) => void;
   onStartRecording: () => Promise<void>;
   onStopRecording: () => void;
+  canReplayAudio: boolean;
+  replayDisabled: boolean;
+  onReplayAudio: () => void;
 }
 
 export function InterviewControls({
@@ -25,6 +28,9 @@ export function InterviewControls({
   onKeyPress,
   onStartRecording,
   onStopRecording,
+  canReplayAudio,
+  replayDisabled,
+  onReplayAudio,
 }: InterviewControlsProps) {
   return (
     <div className="p-6 border-t border-border/60 bg-card/40">
@@ -110,6 +116,22 @@ export function InterviewControls({
               </p>
             )}
           </div>
+
+          {canReplayAudio ? (
+            <div className="mt-4 flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="gap-2"
+                disabled={replayDisabled}
+                onClick={onReplayAudio}
+              >
+                <Volume2 className="h-4 w-4" />
+                Replay question
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -34,11 +34,15 @@ export async function getServerMe(): Promise<ResolvedMe | null> {
   const accessToken = await getAccessToken();
   if (!accessToken) return null;
 
-  const response = await fetch(`${API_BASE_URL}/auth/me`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
-  if (!response.ok) return null;
-  return (await response.json()) as ResolvedMe;
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as ResolvedMe;
+  } catch {
+    return null;
+  }
 }

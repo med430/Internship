@@ -16,9 +16,27 @@ export interface Interview {
   areas_for_improvement: string[];
   recommendations: string[];
   next_steps: string[];
+  facial_expression_score?: number | null;
+  facial_summary?: string | null;
+  facial_metrics?: FacialExpressionMetrics | null;
   pdf_url: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface FacialExpressionMetrics {
+  sampleCount: number;
+  facePresentRate: number;
+  smileRate: number;
+  positiveExpressionRate: number;
+  attentionRate: number;
+  expressionStability: number;
+  averageSmile: number;
+  averageEyeOpenness: number;
+  averageBrowTension: number;
+  averageMouthMovement: number;
+  startedAt?: string;
+  endedAt?: string;
 }
 
 export interface InterviewWithPagination {
@@ -51,6 +69,7 @@ export interface AnswerInterviewInput {
   text?: string;
   audio?: Blob;
   audioFilename?: string;
+  facialMetrics?: FacialExpressionMetrics;
 }
 
 export interface InterviewAnswerResponse {

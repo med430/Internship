@@ -28,11 +28,29 @@ type InterviewTurn = {
     feedback: string
 }
 
+type FacialExpressionMetrics = {
+    sampleCount: number
+    facePresentRate: number
+    smileRate: number
+    positiveExpressionRate: number
+    attentionRate: number
+    expressionStability: number
+    averageSmile: number
+    averageEyeOpenness: number
+    averageBrowTension: number
+    averageMouthMovement: number
+    startedAt?: string
+    endedAt?: string
+}
+
 type InterviewState = {
     maxQuestions: number
     questions: string[]
     answers: string[]
     turns: InterviewTurn[]
+    facialMetrics?: FacialExpressionMetrics
+    facialExpressionScore?: number | null
+    facialSummary?: string
 }
 
 type JobDocument = {
@@ -771,9 +789,23 @@ export class OnboardService {
         return { interviewId: created.id, questionText: question, questionIndex: 1, interviewerName: persona.name, personaKey, audioBase64: openingAudio?.audioBase64, audioMime: openingAudio?.audioMime }
     }
 
-    async answerInterview(sessionKey: string, interviewId: string, input: { audio?: Express.Multer.File; text?: string }, baseUrl: string) {
-        const interview = await this.prisma.publicInterview.findFirst({ where: { id: interviewId, sessionKey } })
-        if (!interview) throw new Error('Interview not found.')
+    async answerInterview(
+        sessionKey: string,
+        interviewId: string,
+        input: {
+            audio?: Express.Multer.File
+            text?: string
+            facialMetrics?: unknown
+        },
+        baseUrl: string,
+    ) {
+        const interview = await this.prisma.publicInterview.findFirst({
+            where: { id: interviewId, sessionKey },
+        })
+
+        if (!interview) {
+            throw new Error('Interview not found.')
+        }
 
         const persona = PERSONAS[interview.personaKey] ?? PERSONAS.alex_chen
         const data = (interview.data ?? { maxQuestions: 3, questions: [], answers: [], turns: [] }) as InterviewState
@@ -782,8 +814,28 @@ export class OnboardService {
         const recruiterMode = this.parseRecruiterMode(interview.recruiterMode, persona)
         const context = this.buildInterviewContext(interview, persona)
         const transcript = await this.resolveInterviewTranscript(input)
-        const evaluation = await this.evaluateInterviewAnswer(context, recruiterMode, persona, questionAsked, transcript, data)
-        const turn: InterviewTurn = { question: questionAsked, answer: transcript, score: evaluation.score, feedback: evaluation.feedback }
+        const facialMetrics = this.sanitizeFacialMetrics(input.facialMetrics)
+        if (facialMetrics) {
+            data.facialMetrics = facialMetrics
+            data.facialExpressionScore = this.computeFacialExpressionScore(facialMetrics)
+            data.facialSummary = this.summarizeFacialMetrics(facialMetrics)
+        }
+        const evaluation = await this.evaluateInterviewAnswer(
+            context,
+            recruiterMode,
+            persona,
+            questionAsked,
+            transcript,
+            data,
+        )
+        const score = evaluation.score
+        const feedback = evaluation.feedback
+        const turn: InterviewTurn = {
+            question: questionAsked,
+            answer: transcript,
+            score,
+            feedback,
+        }
 
         data.answers.push(transcript)
         data.turns.push(turn)
@@ -1028,11 +1080,173 @@ export class OnboardService {
         return { id: guide.id, user_id: guide.sessionKey, current_strengths: guide.currentStrengths, readiness_score: guide.readinessScore, skills_to_learn: guide.skillsToLearn, projects_to_work_on: guide.projectsToWorkOn, soft_skills_to_develop: guide.softSkillsToDevelop, career_roadmap: guide.careerRoadmap, domain: guide.domain, current_job: guide.currentJob, target_job: guide.targetJob, created_at: guide.createdAt.toISOString(), updated_at: guide.updatedAt.toISOString() }
     }
 
-    private mapInterview(interview: { id: string; sessionKey: string; interviewerName: string; interviewerRole: string; interviewStyle: string; difficultyLevel: string; totalExchanges: number; overallScore: number; technicalCompetency: number; communicationSkills: number; problemSolving: number; culturalFit: number; acceptanceProbability: number; keyStrengths: string[]; areasForImprovement: string[]; recommendations: string[]; nextSteps: string[]; summary: string; createdAt: Date; updatedAt: Date }, baseUrl: string) {
-        return { id: interview.id, user_id: interview.sessionKey, interviewer_name: interview.interviewerName, interviewer_role: interview.interviewerRole, interview_style: interview.interviewStyle, difficulty_level: interview.difficultyLevel, total_exchanges: interview.totalExchanges, overall_score: interview.overallScore, technical_competency: interview.technicalCompetency, communication_skills: interview.communicationSkills, problem_solving: interview.problemSolving, cultural_fit: interview.culturalFit, acceptance_probability: interview.acceptanceProbability, key_strengths: interview.keyStrengths, areas_for_improvement: interview.areasForImprovement, recommendations: interview.recommendations, next_steps: interview.nextSteps, summary: interview.summary, pdf_url: `${baseUrl}/onboard/interviews/${interview.id}/pdf`, created_at: interview.createdAt.toISOString(), updated_at: interview.updatedAt.toISOString() }
+    private mapInterview(
+        interview: {
+            id: string
+            sessionKey: string
+            interviewerName: string
+            interviewerRole: string
+            interviewStyle: string
+            difficultyLevel: string
+            totalExchanges: number
+            overallScore: number
+            technicalCompetency: number
+            communicationSkills: number
+            problemSolving: number
+            culturalFit: number
+            acceptanceProbability: number
+            keyStrengths: string[]
+            areasForImprovement: string[]
+            recommendations: string[]
+            nextSteps: string[]
+            summary: string
+            data?: unknown
+            createdAt: Date
+            updatedAt: Date
+        },
+        baseUrl: string,
+    ) {
+        const data = this.asInterviewState(interview.data)
+        const facialMetrics = data?.facialMetrics
+        const facialExpressionScore =
+            typeof data?.facialExpressionScore === 'number'
+                ? data.facialExpressionScore
+                : this.computeFacialExpressionScore(facialMetrics)
+        const facialSummary =
+            data?.facialSummary ?? this.summarizeFacialMetrics(facialMetrics)
+
+        return {
+            id: interview.id,
+            user_id: interview.sessionKey,
+            interviewer_name: interview.interviewerName,
+            interviewer_role: interview.interviewerRole,
+            interview_style: interview.interviewStyle,
+            difficulty_level: interview.difficultyLevel,
+            total_exchanges: interview.totalExchanges,
+            overall_score: interview.overallScore,
+            technical_competency: interview.technicalCompetency,
+            communication_skills: interview.communicationSkills,
+            problem_solving: interview.problemSolving,
+            cultural_fit: interview.culturalFit,
+            acceptance_probability: interview.acceptanceProbability,
+            key_strengths: interview.keyStrengths,
+            areas_for_improvement: interview.areasForImprovement,
+            recommendations: interview.recommendations,
+            next_steps: interview.nextSteps,
+            summary: interview.summary,
+            facial_expression_score: facialExpressionScore,
+            facial_summary: facialSummary,
+            facial_metrics: facialMetrics ?? null,
+            pdf_url: `${baseUrl}/onboard/interviews/${interview.id}/pdf`,
+            created_at: interview.createdAt.toISOString(),
+            updated_at: interview.updatedAt.toISOString(),
+        }
     }
 
-    private buildPortfolioHtml(input: { profile: { name: string; email: string | null; location: string | null; targetedRole: string | null; skills: string[]; education: string[]; experiences: string[]; achievements: string[]; githubUrl: string | null; linkedinUrl: string | null; twitterUrl: string | null; avatarUrl: string | null }; cvText: string; wireframe: string; theme: string; personalInfo: Record<string, unknown>; photoUrl?: string }) {
+    private asInterviewState(value: unknown): InterviewState | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined
+        }
+        return value as InterviewState
+    }
+
+    private sanitizeFacialMetrics(value: unknown): FacialExpressionMetrics | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined
+        }
+
+        const input = value as Record<string, unknown>
+        const sampleCount = this.metricNumber(input.sampleCount, 0, 100000)
+        if (sampleCount <= 0) {
+            return undefined
+        }
+
+        return {
+            sampleCount,
+            facePresentRate: this.metricNumber(input.facePresentRate),
+            smileRate: this.metricNumber(input.smileRate),
+            positiveExpressionRate: this.metricNumber(input.positiveExpressionRate),
+            attentionRate: this.metricNumber(input.attentionRate),
+            expressionStability: this.metricNumber(input.expressionStability),
+            averageSmile: this.metricNumber(input.averageSmile),
+            averageEyeOpenness: this.metricNumber(input.averageEyeOpenness),
+            averageBrowTension: this.metricNumber(input.averageBrowTension),
+            averageMouthMovement: this.metricNumber(input.averageMouthMovement),
+            startedAt: typeof input.startedAt === 'string' ? input.startedAt : undefined,
+            endedAt: typeof input.endedAt === 'string' ? input.endedAt : undefined,
+        }
+    }
+
+    private metricNumber(value: unknown, min = 0, max = 100): number {
+        const numeric = Number(value)
+        if (!Number.isFinite(numeric)) return min
+        return Math.max(min, Math.min(max, Math.round(numeric)))
+    }
+
+    private computeFacialExpressionScore(metrics?: FacialExpressionMetrics): number | null {
+        if (!metrics || metrics.sampleCount < 3 || metrics.facePresentRate < 15) {
+            return null
+        }
+
+        return this.metricNumber(
+            metrics.facePresentRate * 0.25 +
+                metrics.attentionRate * 0.25 +
+                metrics.positiveExpressionRate * 0.2 +
+                metrics.expressionStability * 0.2 +
+                metrics.averageEyeOpenness * 0.1,
+        )
+    }
+
+    private summarizeFacialMetrics(metrics?: FacialExpressionMetrics): string {
+        if (!metrics || metrics.sampleCount < 3 || metrics.facePresentRate < 15) {
+            return 'Camera-based communication cues were unavailable for this interview.'
+        }
+
+        const cues: string[] = []
+        if (metrics.attentionRate >= 75) {
+            cues.push('steady camera presence')
+        } else if (metrics.attentionRate < 45) {
+            cues.push('limited camera presence')
+        }
+
+        if (metrics.smileRate >= 35 || metrics.positiveExpressionRate >= 40) {
+            cues.push('positive facial engagement')
+        }
+
+        if (metrics.expressionStability >= 70) {
+            cues.push('stable expression control')
+        } else if (metrics.expressionStability < 45) {
+            cues.push('noticeable expression variation')
+        }
+
+        if (!cues.length) {
+            return 'Camera-based communication cues were neutral and should be used only as coaching context.'
+        }
+
+        return `Camera-based communication cues showed ${cues.join(', ')}. Treat this as coaching context, not an emotion certainty.`
+    }
+
+    private buildPortfolioHtml(input: {
+        profile: {
+            name: string
+            email: string | null
+            location: string | null
+            targetedRole: string | null
+            skills: string[]
+            education: string[]
+            experiences: string[]
+            achievements: string[]
+            githubUrl: string | null
+            linkedinUrl: string | null
+            twitterUrl: string | null
+            avatarUrl: string | null
+        }
+        cvText: string
+        wireframe: string
+        theme: string
+        personalInfo: Record<string, unknown>
+        photoUrl?: string
+    }) {
         const profile = input.profile
         const mergedSkills = this.uniqueStrings([...profile.skills, ...(Array.isArray(input.personalInfo.skills) ? input.personalInfo.skills.map((v) => String(v)) : [])]).slice(0, 8)
         const experiences = this.collectListField(input.personalInfo.experiences, profile.experiences)
@@ -1538,15 +1752,44 @@ export class OnboardService {
         const culturalFit = Math.max(45, overallScore - 3)
         const acceptanceProbability = Math.round((technical + communication + problemSolving + culturalFit) / 4)
         const summary = `${persona.name} saw clear potential in your responses. Your strongest moments came when you explained decisions with concrete context and outcomes.`
-        const keyStrengths = ['Clear ownership of project work', 'Good alignment with the target role', 'Willingness to reflect on tradeoffs']
-        const areasForImprovement = ['Use more metrics or concrete impact where possible', 'Lead with the result sooner in each answer', 'Keep answers tighter under time pressure']
-        const recommendations = ['Prepare two polished project walkthroughs with measurable outcomes', 'Practice concise STAR-style answers for collaboration questions', 'Highlight technical choices and the reason behind them']
-        const nextSteps = ['Rehearse your top three stories out loud', 'Refine one answer with stronger business impact', 'Run another practice round with a different persona']
+        const keyStrengths = [
+            'Clear ownership of project work',
+            'Good alignment with the target role',
+            'Willingness to reflect on tradeoffs',
+        ]
+        const areasForImprovement = [
+            'Use more metrics or concrete impact where possible',
+            'Lead with the result sooner in each answer',
+            'Keep answers tighter under time pressure',
+        ]
+        const recommendations = [
+            'Prepare two polished project walkthroughs with measurable outcomes',
+            'Practice concise STAR-style answers for collaboration questions',
+            'Highlight technical choices and the reason behind them',
+        ]
+        const nextSteps = [
+            'Rehearse your top three stories out loud',
+            'Refine one answer with stronger business impact',
+            'Run another practice round with a different persona',
+        ]
+        const facialMetrics = data.facialMetrics
+        const facialExpressionScore = this.computeFacialExpressionScore(facialMetrics)
+        const facialSummary = this.summarizeFacialMetrics(facialMetrics)
+        data.facialExpressionScore = facialExpressionScore
+        data.facialSummary = facialSummary
 
         await this.createPdfDocument(`${persona.name} Interview Report`, [
             { heading: 'Summary', lines: [summary] },
             { heading: 'Key Strengths', lines: keyStrengths },
             { heading: 'Areas For Improvement', lines: areasForImprovement },
+            {
+                heading: 'Facial Expression Coaching',
+                lines: [
+                    facialExpressionScore === null
+                        ? facialSummary
+                        : `${facialSummary} Cue score: ${facialExpressionScore}/100.`,
+                ],
+            },
             { heading: 'Recommendations', lines: recommendations },
             { heading: 'Next Steps', lines: nextSteps },
         ])

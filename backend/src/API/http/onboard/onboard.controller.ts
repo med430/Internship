@@ -25,8 +25,8 @@ import { OnboardService } from './onboard.service'
 import { UpdatePublicProfileDto } from './dto/update-public-profile.dto'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
 import { OfferFeedService } from '../../../Application/Features/OfferRecommendationFeature/offer-feed.service'
-import { SubscriptionGuard } from '../guards/subscription.guard'
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard'
+import { SubscriptionGuard } from '../guards/subscription.guard'
 import { SupabaseUser } from '../decorators/supabase-user.decorator'
 import type { ResolvedUser } from '../../../Application/Services/AuthBridge/supabase-auth-bridge.service'
 import { IOfferRepository } from '../../../Application/repositories/offer.repository'
@@ -202,6 +202,17 @@ export class OnboardController {
     private formatSalary(offer: Offer): string {
         if (offer.stipendMin && offer.stipendMax) return `${offer.stipendMin}-${offer.stipendMax} TND`
         return offer.isPaid ? 'Paid' : 'Unpaid'
+    }
+
+    private parseJsonField(value: unknown) {
+        if (!value) return undefined
+        if (typeof value === 'object') return value
+        if (typeof value !== 'string') return undefined
+        try {
+            return JSON.parse(value)
+        } catch {
+            return undefined
+        }
     }
 
     private sanitizeBreakdown(
@@ -460,6 +471,7 @@ async downloadCv(
             {
                 audio,
                 text: body.text,
+                facialMetrics: this.parseJsonField(body.facialMetrics),
             },
             this.getBaseUrl(req),
         )

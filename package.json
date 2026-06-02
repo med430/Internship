@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 5173",
+    "dev": "next dev . -p 5173 --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -15,6 +15,7 @@
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "@hookform/resolvers": "^5.2.2",
+    "@mediapipe/tasks-vision": "^0.10.35",
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-socket.io": "^11.1.24",
     "@radix-ui/react-accordion": "^1.2.12",
