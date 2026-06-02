@@ -15,26 +15,40 @@ import type { CareerGuideStep } from "../types";
 function collectProfileData(
   profile:
     | {
+        name?: unknown;
+        location?: unknown;
+        birthday?: unknown;
+        targeted_role?: unknown;
+        organization?: unknown;
         skills?: unknown;
         experiences?: unknown;
         education?: unknown;
         achievements?: unknown;
+        github_url?: unknown;
+        linkedin_url?: unknown;
+        twitter_url?: unknown;
       }
     | null
     | undefined,
 ): Record<string, unknown> {
-  const profileData: Record<string, unknown> = {};
-
   if (!profile) {
-    return profileData;
+    return {};
   }
 
-  if (profile.skills) profileData.skills = profile.skills;
-  if (profile.experiences) profileData.experiences = profile.experiences;
-  if (profile.education) profileData.education = profile.education;
-  if (profile.achievements) profileData.achievements = profile.achievements;
-
-  return profileData;
+  return {
+    name: profile.name,
+    location: profile.location,
+    birthday: profile.birthday,
+    targeted_role: profile.targeted_role,
+    organization: profile.organization,
+    skills: profile.skills,
+    experiences: profile.experiences,
+    education: profile.education,
+    achievements: profile.achievements,
+    github_url: profile.github_url,
+    linkedin_url: profile.linkedin_url,
+    twitter_url: profile.twitter_url,
+  };
 }
 
 function validateInputs(params: {
@@ -66,10 +80,18 @@ async function fetchProfile() {
   }
 
   return (await response.json()) as {
+    name?: unknown;
+    location?: unknown;
+    birthday?: unknown;
+    targeted_role?: unknown;
+    organization?: unknown;
     skills?: unknown;
     experiences?: unknown;
     education?: unknown;
     achievements?: unknown;
+    github_url?: unknown;
+    linkedin_url?: unknown;
+    twitter_url?: unknown;
   };
 }
 

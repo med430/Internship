@@ -16,8 +16,8 @@ export class NotificationController {
     ) {}
 
     @Get()
-    getAll(@CurrentUser() user: { id: string }) {
-        return this.queryBus.execute(new GetNotificationsQuery(user.id))
+    getAll(@CurrentUser() user: { id: string; role?: string }) {
+        return this.queryBus.execute(new GetNotificationsQuery(user.id, 50, user.role))
     }
 
     @Patch('read-all')

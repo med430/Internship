@@ -1,7 +1,7 @@
 import { Controller, Sse, UseGuards } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { SseService, SseMessage } from './sse.service'
-import { SseAuthGuard } from './sse-auth.guard'
+import { SseAuthGuard } from '../guards/sse-auth.guard'
 import { CurrentUser } from '../decorators/current-user.decorator'
 
 @Controller()

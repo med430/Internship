@@ -24,6 +24,7 @@ export class InterviewSlotMapper implements IGenericMapper<InterviewSlot, Prisma
             r.application?.student?.user?.name ?? undefined,
             r.application?.student?.user?.email ?? undefined,
             r.application?.offer?.recruiterProfile?.user?.name ?? undefined,
+            r.application?.offer?.recruiterProfile?.user?.email ?? undefined,
         )
     }
 

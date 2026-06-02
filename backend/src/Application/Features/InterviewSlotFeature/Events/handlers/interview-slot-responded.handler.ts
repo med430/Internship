@@ -5,6 +5,7 @@ import { INotificationEmitter } from '../../../../Services/NotificationEmitter/n
 import { INotificationRepository } from '../../../../repositories/notification.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
 import { InterviewSlotStatus } from '../../../../../Domain/enums/interview-slot-status.enum'
+import { EmailService, buildConfirmationEmail } from '../../../../Services/EmailService/email.service'
 
 @EventsHandler(InterviewSlotRespondedEvent)
 export class InterviewSlotRespondedHandler implements IEventHandler<InterviewSlotRespondedEvent> {
@@ -13,10 +14,12 @@ export class InterviewSlotRespondedHandler implements IEventHandler<InterviewSlo
         private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
+        private readonly emailService: EmailService,
     ) {}
 
     async handle(event: InterviewSlotRespondedEvent): Promise<void> {
-        const { recipientUserId, slotId, status, offerTitle } = event
+        const { recipientUserId, slotId, status, offerTitle, startAt, endAt,
+                studentEmail, studentName, recruiterEmail, recruiterName } = event
 
         const isConfirmed = status === InterviewSlotStatus.CONFIRMED
         const title = isConfirmed ? 'Interview confirmed!' : 'Interview date declined'
@@ -39,5 +42,19 @@ export class InterviewSlotRespondedHandler implements IEventHandler<InterviewSlo
             slotId,
             status,
         })
+
+        if (isConfirmed && startAt && endAt) {
+            const emailOpts = { offerTitle, startAt, endAt }
+            const subject = `✅ Entretien confirmé — ${offerTitle}`
+
+            if (studentEmail) {
+                const html = buildConfirmationEmail({ recipientName: studentName ?? 'Candidat', role: 'student', ...emailOpts })
+                await this.emailService.send(studentEmail, subject, html)
+            }
+            if (recruiterEmail) {
+                const html = buildConfirmationEmail({ recipientName: recruiterName ?? 'Recruteur', role: 'recruiter', ...emailOpts })
+                await this.emailService.send(recruiterEmail, subject, html)
+            }
+        }
     }
 }

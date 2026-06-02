@@ -13,10 +13,15 @@ export function StrengthsSection({
   strengths,
   readinessScore,
 }: StrengthsSectionProps) {
+  const getSubtitle = (score: number) => {
+    if (score >= 75) return "You're well-positioned!";
+    if (score >= 50) return "You're on the right track";
+    return "Focus on building key skills";
+  };
+
   return (
     <Card className="p-6 rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-lg shadow-primary/5">
       <div className="grid md:grid-cols-2 gap-6 items-center">
-        {/* Readiness Score */}
         <div className="flex flex-col items-center justify-center space-y-4">
           <CircularProgress
             value={readinessScore}
@@ -28,23 +33,18 @@ export function StrengthsSection({
               Career Readiness
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {readinessScore >= 75
-                ? "You&apos;re well-positioned!"
-                : readinessScore >= 50
-                  ? "You&apos;re on the right track"
-                  : "Focus on building key skills"}
+              {getSubtitle(readinessScore)}
             </p>
           </div>
         </div>
 
-        {/* Current Strengths */}
         <div className="space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">
               Current Strengths
             </h3>
             <p className="text-xs text-muted-foreground">
-              Skills you&apos;re already excelling at
+              Skills you're already excelling at
             </p>
           </div>
           <div className="space-y-2">

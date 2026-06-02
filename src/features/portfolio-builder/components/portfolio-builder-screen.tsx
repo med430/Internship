@@ -17,7 +17,6 @@ export function PortfolioBuilderScreen() {
     isGenerating,
     generatedHtml,
     availableFields,
-    subdomainName,
     setSelectedWireframe,
     setSelectedTheme,
     setCustomTheme,
@@ -37,7 +36,6 @@ export function PortfolioBuilderScreen() {
           <PortfolioBuilderResultStep
             isGenerating={isGenerating}
             generatedHtml={generatedHtml}
-            subdomainName={subdomainName}
             onBack={handleBack}
             onOpenInNewTab={openInNewTab}
           />

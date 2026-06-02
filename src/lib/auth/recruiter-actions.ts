@@ -74,7 +74,7 @@ export async function signUpRecruiter(formData: FormData): Promise<RecruiterAuth
     return { success: false, error: "Account created — please confirm your email then sign in." };
   }
 
-  redirect("/recruiter/offers");
+  redirect("/recruiter/dashboard");
 }
 
 export async function signInRecruiter(formData: FormData): Promise<RecruiterAuthResult> {
@@ -92,7 +92,7 @@ export async function signInRecruiter(formData: FormData): Promise<RecruiterAuth
     return { success: false, error: error.message };
   }
 
-  redirect("/recruiter/offers");
+  redirect("/recruiter/dashboard");
 }
 
 export async function signOutRecruiter(): Promise<void> {

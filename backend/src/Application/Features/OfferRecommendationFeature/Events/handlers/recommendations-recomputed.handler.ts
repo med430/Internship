@@ -3,7 +3,9 @@ import { Inject, Logger } from '@nestjs/common'
 import { RecommendationsRecomputedEvent } from '../../../../../Domain/events/recommendations-recomputed.event'
 import { INotificationEmitter } from '../../../../Services/NotificationEmitter/notification-emitter.interface'
 import { INotificationRepository } from '../../../../repositories/notification.repository'
+import { IUserRepository } from '../../../../repositories/user.repository'
 import { Notification } from '../../../../../Domain/entities/notification.entity'
+import { Role } from '../../../../../Domain/enums/role.enum'
 
 @EventsHandler(RecommendationsRecomputedEvent)
 export class RecommendationsRecomputedHandler implements IEventHandler<RecommendationsRecomputedEvent> {
@@ -14,6 +16,8 @@ export class RecommendationsRecomputedHandler implements IEventHandler<Recommend
         private readonly notificationEmitter: INotificationEmitter,
         @Inject(INotificationRepository)
         private readonly notifRepo: INotificationRepository,
+        @Inject(IUserRepository)
+        private readonly userRepo: IUserRepository,
     ) {}
 
     async handle(event: RecommendationsRecomputedEvent): Promise<void> {
@@ -21,6 +25,10 @@ export class RecommendationsRecomputedHandler implements IEventHandler<Recommend
 
         for (const studentUserId of studentUserIds) {
             try {
+                // Only students receive recommendation notifications
+                const user = await this.userRepo.findById(studentUserId)
+                if (!user || user.role !== Role.STUDENT) continue
+
                 const saved = await this.notifRepo.save(new Notification(
                     '',
                     studentUserId,

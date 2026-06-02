@@ -66,7 +66,6 @@ export function createIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
-
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -75,18 +74,14 @@ export function isActiveJobStatus(status: AsyncJobStatus): boolean {
 }
 
 export function isTerminalJobStatus(status: AsyncJobStatus): boolean {
-  return (
-    status === "COMPLETED" || status === "FAILED" || status === "EXPIRED"
-  );
+  return status === "COMPLETED" || status === "FAILED" || status === "EXPIRED";
 }
 
 export async function buildAsyncStreamUrl(): Promise<string> {
   return `${getClientApiBaseUrl()}/health`;
 }
 
-export async function buildIdempotentAuthHeaders(): Promise<
-  Record<string, string>
-> {
+export async function buildIdempotentAuthHeaders(): Promise<Record<string, string>> {
   const headers = await buildAuthHeaders();
   return {
     ...headers,
@@ -120,38 +115,26 @@ export async function fetchCVQuestionSession(
   questionSessionId: string,
 ): Promise<CVQuestionSessionReadResponse> {
   const apiBaseUrl = getClientApiBaseUrl();
-  const response = await fetchWithAuth(
-    `${apiBaseUrl}/cv-rewriter/questions/${questionSessionId}`,
-    {
-      method: "GET",
-    },
-  );
+  const url = `${apiBaseUrl}/cv-rewriter/questions/${questionSessionId}`;
 
+  const response = await fetchWithAuth(url, { method: "GET" });
   if (!response.ok) {
-    throw new Error(
-      await getApiErrorMessage(response, ERROR_MESSAGES.NOT_FOUND),
-    );
+    const msg = await getApiErrorMessage(response, ERROR_MESSAGES.NOT_FOUND);
+    throw new Error(typeof msg === "string" ? msg : ERROR_MESSAGES.NOT_FOUND);
   }
-
-  return (await response.json()) as CVQuestionSessionReadResponse;
+  return response.json() as Promise<CVQuestionSessionReadResponse>;
 }
 
 export async function fetchOpenCVQuestionSessions(
   limit: number = 50,
 ): Promise<CVQuestionSessionListItem[]> {
   const apiBaseUrl = getClientApiBaseUrl();
-  const response = await fetchWithAuth(
-    `${apiBaseUrl}/cv-rewriter/questions?limit=${limit}`,
-    {
-      method: "GET",
-    },
-  );
+  const url = `${apiBaseUrl}/cv-rewriter/questions?limit=${limit}`;
 
+  const response = await fetchWithAuth(url, { method: "GET" });
   if (!response.ok) {
-    throw new Error(
-      await getApiErrorMessage(response, ERROR_MESSAGES.SERVICE_UNAVAILABLE),
-    );
+    const msg = await getApiErrorMessage(response, ERROR_MESSAGES.SERVICE_UNAVAILABLE);
+    throw new Error(typeof msg === "string" ? msg : ERROR_MESSAGES.SERVICE_UNAVAILABLE);
   }
-
-  return (await response.json()) as CVQuestionSessionListItem[];
+  return response.json() as Promise<CVQuestionSessionListItem[]>;
 }

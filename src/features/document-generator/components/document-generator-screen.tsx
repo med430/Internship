@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   FileText,
   Loader2,
   Plus,
@@ -12,8 +13,10 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api/auth";
 import { getClientApiBaseUrl } from "@/lib/api/client-utils";
+import { fetchOffer, fetchOffers, type Offer } from "@/lib/api/offers";
 import {
   generateStudentDocuments,
   openGeneratedCoverLetter,
@@ -62,11 +65,42 @@ const makeEmptyEducation = (): EducationRow => ({
   details: "",
 });
 
+function formatCompensation(offer: Offer): string[] {
+  if (typeof offer.stipendMin === "number" && typeof offer.stipendMax === "number") {
+    return [`${offer.stipendMin} - ${offer.stipendMax}`];
+  }
+
+  if (typeof offer.stipendMin === "number") {
+    return [`From ${offer.stipendMin}`];
+  }
+
+  if (typeof offer.stipendMax === "number") {
+    return [`Up to ${offer.stipendMax}`];
+  }
+
+  return offer.isPaid ? ["Paid position"] : ["Unpaid position"];
+}
+
 function splitLines(value: string): string[] {
   return value
     .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function offerToGeneratedJobOffer(offer: Offer): GeneratedJobOffer {
+  return {
+    title: offer.title,
+    company: offer.company,
+    location: offer.location,
+    domain: offer.domain,
+    type: offer.type,
+    workMode: offer.workMode,
+    description: offer.description,
+    requirements: offer.skillRequirements?.map((skillRequirement) => skillRequirement.skill.name) ?? [],
+    compensation: formatCompensation(offer),
+    recruiterName: "",
+  };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -112,13 +146,17 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 export function DocumentGeneratorScreen() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isOfferPickerOpen, setIsOfferPickerOpen] = useState(false);
   const [openingDocId, setOpeningDocId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ title?: string; company?: string }>({});
   const [success, setSuccess] = useState("");
   const [generatedCvId, setGeneratedCvId] = useState("");
   const [generatedCoverLetterId, setGeneratedCoverLetterId] = useState("");
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [selectedOfferId, setSelectedOfferId] = useState("");
 
   const [profile, setProfile] = useState<GeneratedDocumentProfile>({
     name: "", email: "", phone: "", location: "", targetedRole: "",
@@ -135,10 +173,9 @@ export function DocumentGeneratorScreen() {
 
   const [offer, setOffer] = useState<GeneratedJobOffer>({
     title: "", company: "", location: "", domain: "", type: "",
-    workMode: "", description: "", requirements: [], benefits: [], recruiterName: "",
+    workMode: "", description: "", requirements: [], compensation: [], recruiterName: "",
   });
   const [requirementsInput, setRequirementsInput] = useState("");
-  const [benefitsInput, setBenefitsInput] = useState("");
 
   // Cancelled-fetch guard
   const cancelledRef = useRef(false);
@@ -210,6 +247,31 @@ export function DocumentGeneratorScreen() {
     return () => { cancelledRef.current = true; };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadOffers() {
+      try {
+        setIsLoadingOffers(true);
+        const data = await fetchOffers(1, 200);
+        if (!mounted) return;
+        const sortedOffers = data.slice().sort((a, b) => a.title.localeCompare(b.title));
+        setOffers(sortedOffers);
+      } catch (loadError) {
+        if (mounted) {
+          setError(loadError instanceof Error ? loadError.message : "Failed to load job offers");
+        }
+      } finally {
+        if (mounted) setIsLoadingOffers(false);
+      }
+    }
+
+    void loadOffers();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const updateExperience = useCallback(
     (id: string, field: keyof ExperienceRow, value: string) => {
       setExperiences((current) =>
@@ -235,6 +297,29 @@ export function DocumentGeneratorScreen() {
   const removeEducation = useCallback((id: string) => {
     setEducation((current) => (current.length > 1 ? current.filter((e) => e.id !== id) : current));
   }, []);
+
+  const handleOfferSelection = useCallback(
+    async (offerId: string) => {
+      setSelectedOfferId(offerId);
+      setIsOfferPickerOpen(false);
+
+      if (!offerId) {
+        return;
+      }
+
+      const selectedOffer = offers.find((item) => item.id === offerId) ?? (await fetchOffer(offerId));
+      if (!selectedOffer) {
+        toast.error("Selected job offer could not be loaded");
+        return;
+      }
+
+      setOffer(offerToGeneratedJobOffer(selectedOffer));
+      setRequirementsInput((selectedOffer.skillRequirements?.map((item) => item.skill.name) ?? []).join(", "));
+    },
+    [offers],
+  );
+
+  const selectedOffer = offers.find((item) => item.id === selectedOfferId) ?? null;
 
   // ── Client-side validation ─────────────────────────────────────────────────
 
@@ -300,7 +385,7 @@ export function DocumentGeneratorScreen() {
       const offerPayload: GeneratedJobOffer = {
         ...offer,
         requirements: splitLines(requirementsInput),
-        benefits: splitLines(benefitsInput),
+        compensation: offer.compensation,
       };
 
       const result = await generateStudentDocuments({ profile: profilePayload, offer: offerPayload });
@@ -359,7 +444,6 @@ export function DocumentGeneratorScreen() {
                 [CheckCircle2, "Immediately reusable in applications"],
               ].map(([Icon, text], i) => (
                 <div key={i} className="flex items-center gap-2">
-                  {/* @ts-ignore */}
                   <Icon className="h-3.5 w-3.5 text-sky-500" />
                   <span>{text as string}</span>
                 </div>
@@ -544,9 +628,75 @@ export function DocumentGeneratorScreen() {
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">Job Offer</h2>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  The more detail you provide, the more targeted the AI-generated documents will be.
+                    Pick an existing offer and the fields will be filled automatically.
                 </p>
               </div>
+
+                <div className="space-y-2">
+                  <FieldLabel>Choose an existing job offer</FieldLabel>
+                  <button
+                    type="button"
+                    onClick={() => setIsOfferPickerOpen((current) => !current)}
+                    disabled={isLoadingOffers || offers.length === 0}
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-sm text-slate-900 outline-none transition hover:border-sky-300 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-sky-500/60 dark:focus:border-sky-500 dark:focus:ring-sky-900/40"
+                  >
+                    <span>
+                      {isLoadingOffers
+                        ? "Loading offers..."
+                        : selectedOffer
+                          ? `${selectedOffer.title} · ${selectedOffer.company}`
+                          : offers.length > 0
+                            ? "Choose offer"
+                            : "No offers available"}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isOfferPickerOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {isOfferPickerOpen && offers.length > 0 && (
+                    <div className="mt-2 max-h-72 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-900/5 dark:border-slate-700 dark:bg-slate-900">
+                      <div className="grid gap-2">
+                        {offers.map((item) => {
+                          const isActive = item.id === selectedOfferId;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => void handleOfferSelection(item.id)}
+                              className={`rounded-xl border px-3 py-3 text-left transition ${
+                                isActive
+                                  ? "border-sky-400 bg-sky-50 dark:border-sky-500 dark:bg-sky-950/40"
+                                  : "border-slate-200 bg-slate-50/60 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-sky-500/50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {item.title}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    {item.company} · {item.location || "No location"}
+                                  </p>
+                                </div>
+                                <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-400">
+                                  {item.type || "Offer"}
+                                </span>
+                              </div>
+                              <p className="mt-2 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">
+                                {item.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedOffer && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Selected offer details are used to prefill the generation fields. You can still adjust them below.
+                    </p>
+                  )}
+                </div>
 
               <div className="space-y-3">
                 <SectionHeading>Position</SectionHeading>
@@ -613,8 +763,17 @@ export function DocumentGeneratorScreen() {
                   <Textarea rows={3} value={requirementsInput} onChange={(e) => setRequirementsInput(e.target.value)} placeholder="3+ years React, REST APIs, team collaboration…" />
                 </div>
                 <div className="space-y-1">
-                  <FieldLabel>Benefits</FieldLabel>
-                  <Textarea rows={2} value={benefitsInput} onChange={(e) => setBenefitsInput(e.target.value)} placeholder="Health insurance, flexible hours, remote Fridays…" />
+                  <FieldLabel>Compensation</FieldLabel>
+                  <Textarea
+                    rows={2}
+                    value={offer.compensation?.join(", ") ?? ""}
+                    readOnly
+                    placeholder="Choose an offer to auto-fill compensation"
+                    className="bg-slate-50/80 text-slate-700 dark:bg-slate-800/60 dark:text-slate-200"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Compensation is pulled from the selected job offer and shown here automatically.
+                  </p>
                 </div>
               </div>
 

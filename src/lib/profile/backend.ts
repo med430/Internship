@@ -76,6 +76,24 @@ export async function getServerProfile(): Promise<Profile | null> {
   return getProfileWithAccessToken(accessToken);
 }
 
+// Reads name and avatarUrl directly from the authenticated User entity
+// (GET /me/profile) so the services layout nav always reflects the latest
+// values without depending on publicSessionProfile.
+export async function getStudentNavData(): Promise<{ name: string | null; avatarUrl: string | null } | null> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return null;
+
+  const response = await fetch(`${API_BASE_URL}/me/profile`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as { name?: string | null; avatarUrl?: string | null };
+  return { name: data.name ?? null, avatarUrl: data.avatarUrl ?? null };
+}
+
 export async function patchServerProfile(
   updates: ProfileUpdate,
 ): Promise<{ success: boolean; error?: string; profile?: Profile }> {

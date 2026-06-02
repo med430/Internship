@@ -236,7 +236,7 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
   ).toUpperCase();
 
   if (role === "RECRUITER") {
-    redirect("/recruiter/offers");
+    redirect("/recruiter/dashboard");
   }
 
   redirect("/services/dashboard");

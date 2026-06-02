@@ -3,11 +3,12 @@
 import { cn } from "@/lib/utils";
 
 interface CircularProgressProps {
-  value: number; // 0-100
+  value: number;
   size?: number;
   strokeWidth?: number;
   className?: string;
   showLabel?: boolean;
+  label?: string;
 }
 
 export function CircularProgress({
@@ -16,28 +17,34 @@ export function CircularProgress({
   strokeWidth = 12,
   className,
   showLabel = true,
+  label,
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (value / 100) * circumference;
   const center = size / 2;
 
-  // Determine color based on value (green/yellow/red based on severity)
   const getColor = (val: number) => {
-    if (val >= 75) return { start: "#05e34f", end: "#04c945" }; // Green
-    if (val >= 50) return { start: "#eab308", end: "#facc15" }; // Yellow
-    if (val >= 30) return { start: "#f97316", end: "#fb923c" }; // Orange
-    return { start: "#ef4444", end: "#f87171" }; // Red
+    if (val >= 75) return { start: "#05e34f", end: "#04c945" };
+    if (val >= 50) return { start: "#eab308", end: "#facc15" };
+    if (val >= 30) return { start: "#f97316", end: "#fb923c" };
+    return { start: "#ef4444", end: "#f87171" };
   };
 
   const colors = getColor(value);
 
-  // Get text color (green/yellow/red based on severity)
   const getTextColor = (val: number) => {
     if (val >= 75) return "#05e34f";
     if (val >= 50) return "#eab308";
     if (val >= 30) return "#f97316";
     return "#ef4444";
+  };
+
+  const getDefaultLabel = (val: number) => {
+    if (val >= 75) return "Well positioned";
+    if (val >= 50) return "On the right track";
+    if (val >= 30) return "Keep building";
+    return "Needs focus";
   };
 
   return (
@@ -59,8 +66,6 @@ export function CircularProgress({
             <stop offset="0%" stopColor={colors.start} />
             <stop offset="100%" stopColor={colors.end} />
           </linearGradient>
-
-          {/* Glow filter */}
           <filter
             id={`glow-${value}`}
             x="-50%"
@@ -75,8 +80,6 @@ export function CircularProgress({
             </feMerge>
           </filter>
         </defs>
-
-        {/* Background circle */}
         <circle
           cx={center}
           cy={center}
@@ -86,8 +89,6 @@ export function CircularProgress({
           strokeWidth={strokeWidth}
           className="text-muted dark:text-muted"
         />
-
-        {/* Progress circle with gradient */}
         <circle
           cx={center}
           cy={center}
@@ -102,7 +103,6 @@ export function CircularProgress({
         />
       </svg>
 
-      {/* Label */}
       {showLabel && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
@@ -113,7 +113,7 @@ export function CircularProgress({
               {value}%
             </div>
             <div className="text-base text-muted-foreground mt-3 font-bold">
-              Ready
+              {label ?? getDefaultLabel(value)}
             </div>
           </div>
         </div>

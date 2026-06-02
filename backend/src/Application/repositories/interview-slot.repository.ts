@@ -7,4 +7,5 @@ export abstract class IInterviewSlotRepository {
     abstract findByStudentUserId(userId: string): Promise<InterviewSlot[]>
     abstract findByRecruiterUserId(userId: string): Promise<InterviewSlot[]>
     abstract findByApplicationId(applicationId: string): Promise<InterviewSlot[]>
+    abstract findConfirmedInWindow(from: Date, to: Date): Promise<InterviewSlot[]>
 }

@@ -93,18 +93,6 @@ export function usePortfolioBuilderController() {
     });
   }, [profile]);
 
-  const subdomainName = useMemo(() => {
-    if (!profile?.name) {
-      return "john-doe";
-    }
-
-    return profile.name
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-  }, [profile?.name]);
-
   const toggleField = useCallback((fieldKey: string) => {
     setSelectedFields((previous) =>
       previous.includes(fieldKey)
@@ -213,7 +201,6 @@ export function usePortfolioBuilderController() {
     isGenerating,
     generatedHtml,
     availableFields,
-    subdomainName,
     setSelectedWireframe,
     setSelectedTheme,
     setCustomTheme,
