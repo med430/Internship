@@ -1,0 +1,11 @@
+**QDRANT dashboard
+http://localhost:6333/dashboard 
+
+**PRISMA DB 
+npx prisma studio 
+
+**DOCKER build and run all containers
+docker compose up -d --build ml-service ml-worker
+
+**to recreate the container,then recompute after changin ml-service .env 
+docker compose up -d ml-service
