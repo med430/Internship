@@ -46,7 +46,7 @@ Stagio is a career readiness platform targeting three user roles — **students*
 
 | Feature | Description |
 |---|---|
-| **Job Matcher** | Three-signal recommendation engine: content similarity (skills, domain, work mode) + semantic scoring via BGE-M3 dense vector embeddings (Qdrant) + collaborative filtering signals. |
+| **Job Matcher** | Hybrid recommendation engine: deterministic content scoring (skills, domain, location, work mode) + semantic matching via BGE-M3 multilingual embeddings (Qdrant ANN) + collaborative-filtering signals (LightFM / ALS), merged with Reciprocal Rank Fusion, diversified via MMR re-ranking, and re-scored in real time by freshness, deadline-urgency, and bookmark signals. |
 | **Application Tracker** | Apply to offers with CV + cover letter selection, track status through the full pipeline (Submitted → In Review → Accepted / Rejected). |
 | **Interview Scheduling** | Recruiters propose slots, students accept or decline — calendar view with automatic email confirmations via Brevo. |
 
@@ -82,7 +82,7 @@ Stagio is a career readiness platform targeting three user roles — **students*
                                └────────────────────────┘
 ```
 
-The backend follows a strict **CQRS** architecture (47+ commands, 40+ queries). The Python sidecar runs independently — it embeds students and offers into Qdrant using BGE-M3 (1024-dim vectors) and serves cosine similarity scores to the NestJS scoring service.
+The backend follows a strict **CQRS** architecture (47+ commands, 40+ queries). The Python sidecar runs independently: an APScheduler worker continuously embeds students and offers into Qdrant with BGE-M3 (1024-dim vectors), and a multi-stage pipeline runs semantic ANN retrieval, fuses it with content and collaborative-filtering candidates via Reciprocal Rank Fusion, blends the signals, and applies MMR diversity re-ranking before returning ranked scores to the NestJS scoring service. A nightly cron recomputes and persists every active student's feed, falling back to content-only scoring whenever the sidecar is unavailable.
 
 ---
 
